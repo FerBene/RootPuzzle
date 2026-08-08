@@ -1325,32 +1325,108 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
 
   useEffect(() => {
     if (!isCanvasMaximized) return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     const onKey = (event) => {
       if (event.key === 'Escape') setCanvasMaximized(false);
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow || '';
+    };
   }, [isCanvasMaximized]);
 
   if (!person) return <EmptyState onAdd={onAdd} />;
 
+  // Remove hard zoom limits: allow free scaling
   const setZoom = (nextScale) => {
-    setViewport((prev) => ({ ...prev, scale: clamp(nextScale, 0.45, 1.7) }));
+    setViewport((prev) => ({ ...prev, scale: nextScale }));
   };
 
+  // Enhanced pointer handling to support pan and pinch-to-zoom
   const onPointerDown = (event) => {
-    dragRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, originX: viewport.x, originY: viewport.y };
+    // initialize pointers map if not present
+    if (!dragRef.current) dragRef.current = { pointers: new Map(), pinch: null };
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    dragRef.current.pointers.set(event.pointerId, { x, y, clientX: event.clientX, clientY: event.clientY });
     event.currentTarget.setPointerCapture(event.pointerId);
+
+    if (dragRef.current.pointers.size === 1) {
+      // start pan
+      const point = dragRef.current.pointers.values().next().value;
+      dragRef.current.pan = { startX: point.clientX, startY: point.clientY, originX: viewport.x, originY: viewport.y };
+    } else if (dragRef.current.pointers.size === 2) {
+      // start pinch
+      const iter = dragRef.current.pointers.values();
+      const a = iter.next().value;
+      const b = iter.next().value;
+      const dx = b.clientX - a.clientX;
+      const dy = b.clientY - a.clientY;
+      const distance = Math.hypot(dx, dy) || 1;
+      const centerClientX = (a.clientX + b.clientX) / 2;
+      const centerClientY = (a.clientY + b.clientY) / 2;
+      // compute center in canvas coordinates
+      const rectLocal = event.currentTarget.getBoundingClientRect();
+      const centerX = centerClientX - rectLocal.left;
+      const centerY = centerClientY - rectLocal.top;
+      dragRef.current.pinch = { distance, centerX, centerY, startScale: viewport.scale };
+    }
   };
 
   const onPointerMove = (event) => {
-    const drag = dragRef.current;
-    if (!drag) return;
-    setViewport((prev) => ({ ...prev, x: drag.originX + event.clientX - drag.startX, y: drag.originY + event.clientY - drag.startY }));
+    if (!dragRef.current) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const entry = dragRef.current.pointers.get(event.pointerId);
+    if (entry) {
+      entry.clientX = event.clientX;
+      entry.clientY = event.clientY;
+      entry.x = event.clientX - rect.left;
+      entry.y = event.clientY - rect.top;
+    }
+
+    if (dragRef.current.pinch) {
+      // update pinch
+      const vals = Array.from(dragRef.current.pointers.values());
+      if (vals.length < 2) return;
+      const a = vals[0];
+      const b = vals[1];
+      const dx = b.clientX - a.clientX;
+      const dy = b.clientY - a.clientY;
+      const distance = Math.hypot(dx, dy) || 1;
+      const factor = distance / dragRef.current.pinch.distance;
+      const newScale = dragRef.current.pinch.startScale * factor;
+
+      // Compute world coordinate of pinch center and adjust x/y so center stays under fingers
+      const centerClientX = (a.clientX + b.clientX) / 2;
+      const centerClientY = (a.clientY + b.clientY) / 2;
+      const containerRect = event.currentTarget.getBoundingClientRect();
+      const containerX = centerClientX - containerRect.left;
+      const containerY = centerClientY - containerRect.top;
+
+      const worldX = (containerX - viewport.x) / viewport.scale;
+      const worldY = (containerY - viewport.y) / viewport.scale;
+      const newX = containerX - worldX * newScale;
+      const newY = containerY - worldY * newScale;
+
+      setViewport((prev) => ({ ...prev, scale: newScale, x: newX, y: newY }));
+      return;
+    }
+
+    // pan if single pointer
+    if (dragRef.current.pan && dragRef.current.pointers.size === 1) {
+      const p = dragRef.current.pointers.values().next().value;
+      setViewport((prev) => ({ ...prev, x: dragRef.current.pan.originX + (p.clientX - dragRef.current.pan.startX), y: dragRef.current.pan.originY + (p.clientY - dragRef.current.pan.startY) }));
+    }
   };
 
   const onPointerUp = (event) => {
-    if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
+    if (!dragRef.current) return;
+    dragRef.current.pointers.delete(event.pointerId);
+    if (dragRef.current.pointers.size < 2) dragRef.current.pinch = null;
+    if (dragRef.current.pointers.size === 0) dragRef.current = null;
   };
 
   const loadCanvasBackground = async (event) => {
@@ -1413,6 +1489,9 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
           {layout.temporal.ticks.map((tick) => <div key={tick.year} className="temporalTick" style={{ top: viewport.y + tick.y * viewport.scale }}><span>{tick.year}</span></div>)}
           {layout.temporal.hasUnknownDates && <div className="temporalTick unknown" style={{ top: viewport.y + layout.temporal.unknownY * viewport.scale }}><span>Sin fecha</span></div>}
         </div>}
+        <div className="canvasFloatingControls">
+          <button className={`iconButton canvasMaximizeButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? 'Restaurar vista' : 'Maximizar lienzo'}>{isCanvasMaximized ? '🗗' : '⛶'}</button>
+        </div>
         <div className="treePanLayer" style={{ transform: `translate(${viewport.x + (temporalScale && layout.temporal ? TEMPORAL_AXIS_WIDTH + TEMPORAL_AXIS_GAP : 0)}px, ${viewport.y}px) scale(${viewport.scale})` }}>
           <div className="treeContent" style={{ width: layout.width, height: layout.height }}>
             <svg className="treeLines" viewBox={`0 0 ${layout.width} ${layout.height}`} aria-hidden="true">
@@ -1512,22 +1591,87 @@ function PublicTreePage({ db }) {
   const dragRef = useRef(null);
   const layout = useMemo(() => buildAllPeopleLayout(db), [db]);
 
-  const setZoom = (nextScale) => setViewport((prev) => ({ ...prev, scale: clamp(nextScale, 0.45, 1.7) }));
+  // Allow free scaling in public view as well
+  const setZoom = (nextScale) => setViewport((prev) => ({ ...prev, scale: nextScale }));
   const openContribution = (personId = '') => {
     setContributionPersonId(personId);
     setShowContributionForm(true);
   };
+
+  // Pointer handling for public canvas: support pan and pinch-to-zoom
   const onPointerDown = (event) => {
-    dragRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, originX: viewport.x, originY: viewport.y };
+    if (!dragRef.current) dragRef.current = { pointers: new Map(), pinch: null };
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    dragRef.current.pointers.set(event.pointerId, { x, y, clientX: event.clientX, clientY: event.clientY });
     event.currentTarget.setPointerCapture(event.pointerId);
+
+    if (dragRef.current.pointers.size === 1) {
+      const point = dragRef.current.pointers.values().next().value;
+      dragRef.current.pan = { startX: point.clientX, startY: point.clientY, originX: viewport.x, originY: viewport.y };
+    } else if (dragRef.current.pointers.size === 2) {
+      const iter = dragRef.current.pointers.values();
+      const a = iter.next().value;
+      const b = iter.next().value;
+      const dx = b.clientX - a.clientX;
+      const dy = b.clientY - a.clientY;
+      const distance = Math.hypot(dx, dy) || 1;
+      const centerClientX = (a.clientX + b.clientX) / 2;
+      const centerClientY = (a.clientY + b.clientY) / 2;
+      const rectLocal = event.currentTarget.getBoundingClientRect();
+      const centerX = centerClientX - rectLocal.left;
+      const centerY = centerClientY - rectLocal.top;
+      dragRef.current.pinch = { distance, centerX, centerY, startScale: viewport.scale };
+    }
   };
   const onPointerMove = (event) => {
-    const drag = dragRef.current;
-    if (!drag) return;
-    setViewport((prev) => ({ ...prev, x: drag.originX + event.clientX - drag.startX, y: drag.originY + event.clientY - drag.startY }));
+    if (!dragRef.current) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const entry = dragRef.current.pointers.get(event.pointerId);
+    if (entry) {
+      entry.clientX = event.clientX;
+      entry.clientY = event.clientY;
+      entry.x = event.clientX - rect.left;
+      entry.y = event.clientY - rect.top;
+    }
+
+    if (dragRef.current.pinch) {
+      const vals = Array.from(dragRef.current.pointers.values());
+      if (vals.length < 2) return;
+      const a = vals[0];
+      const b = vals[1];
+      const dx = b.clientX - a.clientX;
+      const dy = b.clientY - a.clientY;
+      const distance = Math.hypot(dx, dy) || 1;
+      const factor = distance / dragRef.current.pinch.distance;
+      const newScale = dragRef.current.pinch.startScale * factor;
+
+      const centerClientX = (a.clientX + b.clientX) / 2;
+      const centerClientY = (a.clientY + b.clientY) / 2;
+      const containerRect = event.currentTarget.getBoundingClientRect();
+      const containerX = centerClientX - containerRect.left;
+      const containerY = centerClientY - containerRect.top;
+
+      const worldX = (containerX - viewport.x) / viewport.scale;
+      const worldY = (containerY - viewport.y) / viewport.scale;
+      const newX = containerX - worldX * newScale;
+      const newY = containerY - worldY * newScale;
+
+      setViewport((prev) => ({ ...prev, scale: newScale, x: newX, y: newY }));
+      return;
+    }
+
+    if (dragRef.current.pan && dragRef.current.pointers.size === 1) {
+      const p = dragRef.current.pointers.values().next().value;
+      setViewport((prev) => ({ ...prev, x: dragRef.current.pan.originX + (p.clientX - dragRef.current.pan.startX), y: dragRef.current.pan.originY + (p.clientY - dragRef.current.pan.startY) }));
+    }
   };
   const onPointerUp = (event) => {
-    if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
+    if (!dragRef.current) return;
+    dragRef.current.pointers.delete(event.pointerId);
+    if (dragRef.current.pointers.size < 2) dragRef.current.pinch = null;
+    if (dragRef.current.pointers.size === 0) dragRef.current = null;
   };
 
   return (

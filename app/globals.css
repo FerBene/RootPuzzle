@@ -131,6 +131,15 @@ h1 { font-size: 34px; margin-bottom: 0; } h2 { font-size: 26px; margin-bottom: 6
 .zoomControls { display: flex; align-items: center; gap: 7px; }
 .zoomControls span { min-width: 44px; color: var(--muted); font-size: 11px; font-weight: 800; text-align: center; }
 .treeCanvas { position: relative; min-height: 585px; height: 62vh; padding: 0; overflow: hidden; display: block; background: #fbfaf6; cursor: grab; touch-action: none; user-select: none; isolation: isolate; }
+
+/* Floating canvas controls (maximize, etc.) */
+.canvasFloatingControls { position: absolute; top: 12px; right: 12px; z-index: 6; display: flex; gap: 8px; pointer-events: auto; }
+.canvasFloatingControls .canvasMaximizeButton { width: 44px; height: 44px; padding: 0; display: inline-grid; place-items: center; background: rgba(255,255,255,.9); border-radius: 9px; box-shadow: 0 8px 22px rgba(31,37,33,.06); }
+
+/* Maximized workspace uses fixed positioning to occupy the entire viewport */
+.treeWorkspace.canvasMaximized { position: fixed; inset: 0; z-index: 9999; margin: 0; width: 100%; height: 100%; border-radius: 0; background: var(--surface); display: block; }
+.treeWorkspace.canvasMaximized .treeCanvas { height: 100vh; }
+
 .treeCanvas:active { cursor: grabbing; }
 .treeCanvas::before { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; }
 .treeCanvas.hasCanvasBackground::before { background-image: var(--canvas-bg-image); background-size: cover; background-position: center; background-repeat: no-repeat; opacity: .24; filter: grayscale(.18) saturate(.58) contrast(.82) brightness(1.12); }
