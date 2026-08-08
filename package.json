@@ -10,6 +10,7 @@
     "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.2",
     "next": "16.2.4",
     "react": "19.2.5",
     "react-dom": "19.2.5"

@@ -5,3 +5,5 @@ out
 *.log
 .env*
 !.env.example
+.agents
+skills-lock.json

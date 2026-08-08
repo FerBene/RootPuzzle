@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { defaultDatabase, displayName, emptyDatabase, newId, normalizeDatabase, relativesFor, STORAGE_KEY } from '@/lib/model';
 import { exportGedcom, importGedcom } from '@/lib/gedcom';
+import { getRemoteTree, remoteTreeStorageKey, saveRemoteTree } from '@/lib/supabaseStore';
+import { isSupabaseConfigured } from '@/lib/supabaseClient';
 
 const sections = [
   ['tree', 'Árbol', '⌘'],
@@ -1665,6 +1667,8 @@ export default function GenealogyApp() {
   const [db, setDb] = useState(emptyDatabase);
   const [publicDb, setPublicDb] = useState(null);
   const [publicLoadError, setPublicLoadError] = useState('');
+  const [remoteTreeId, setRemoteTreeId] = useState(null);
+  const [remoteSyncError, setRemoteSyncError] = useState('');
   const [hydrated, setHydrated] = useState(false);
   const [section, setSection] = useState('tree');
   const [selectedId, setSelectedId] = useState(null);
@@ -1683,26 +1687,52 @@ export default function GenealogyApp() {
   const pieceImportRef = useRef(null);
 
   useEffect(() => {
-    try {
-      if (window.location.hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) {
-        const payload = window.location.hash.slice(PUBLIC_TREE_HASH_PREFIX.length);
-        setPublicDb(normalizeDatabase(decodeSharePayload(payload)));
+    const initialize = async () => {
+      try {
+        if (window.location.hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) {
+          const payload = window.location.hash.slice(PUBLIC_TREE_HASH_PREFIX.length);
+          setPublicDb(normalizeDatabase(decodeSharePayload(payload)));
+          setHydrated(true);
+          return;
+        }
+        setDarkMode(localStorage.getItem(THEME_STORAGE_KEY) === 'dark');
+        const remoteTreeId = localStorage.getItem(remoteTreeStorageKey);
+        setRemoteTreeId(remoteTreeId);
+        const saved = localStorage.getItem(STORAGE_KEY);
+        const parsed = saved ? normalizeDatabase(JSON.parse(saved)) : defaultDatabase();
+        const nextDb = parsed.people.length ? parsed : defaultDatabase();
+        setDb(nextDb);
+        setSelectedId(nextDb.settings.rootPersonId || nextDb.people[0]?.id || null);
+        setFocusedId(nextDb.settings.rootPersonId || nextDb.people[0]?.id || null);
+
+        if (isSupabaseConfigured) {
+          const { data, error } = await getRemoteTree(remoteTreeId);
+          if (error) {
+            setRemoteSyncError(`No pude conectar con Supabase: ${error.message || 'Revisa tus credenciales.'}`);
+          } else if (data?.data && data.data.people && data.data.people.length > 0) {
+            const remoteDb = normalizeDatabase(data.data);
+            setDb(remoteDb);
+            setSelectedId(remoteDb.settings.rootPersonId || remoteDb.people[0]?.id || null);
+            setFocusedId(remoteDb.settings.rootPersonId || remoteDb.people[0]?.id || null);
+            setRemoteTreeId(data.id);
+            localStorage.setItem(remoteTreeStorageKey, data.id);
+          } else if (nextDb.people.length > 0) {
+            const { data: savedRemote, error: saveErr } = await saveRemoteTree({ id: remoteTreeId, data: nextDb });
+            if (!saveErr && savedRemote?.id) {
+              setRemoteTreeId(savedRemote.id);
+              localStorage.setItem(remoteTreeStorageKey, savedRemote.id);
+            }
+          }
+        }
+      } catch {
+        if (window.location.hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) setPublicLoadError('No pude abrir este enlace público. Puede estar incompleto o dañado.');
+        else setDb(defaultDatabase());
+      } finally {
         setHydrated(true);
-        return;
       }
-      setDarkMode(localStorage.getItem(THEME_STORAGE_KEY) === 'dark');
-      const saved = localStorage.getItem(STORAGE_KEY);
-      const parsed = saved ? normalizeDatabase(JSON.parse(saved)) : defaultDatabase();
-      const nextDb = parsed.people.length ? parsed : defaultDatabase();
-      setDb(nextDb);
-      setSelectedId(nextDb.settings.rootPersonId || nextDb.people[0]?.id || null);
-      setFocusedId(nextDb.settings.rootPersonId || nextDb.people[0]?.id || null);
-    } catch {
-      if (window.location.hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) setPublicLoadError('No pude abrir este enlace público. Puede estar incompleto o dañado.');
-      else setDb(defaultDatabase());
-    } finally {
-      setHydrated(true);
-    }
+    };
+
+    initialize();
   }, []);
 
   useEffect(() => {
@@ -1714,6 +1744,23 @@ export default function GenealogyApp() {
     if (!hydrated || publicDb) return;
     localStorage.setItem(THEME_STORAGE_KEY, darkMode ? 'dark' : 'light');
   }, [darkMode, hydrated, publicDb]);
+
+  useEffect(() => {
+    if (!hydrated || publicDb || !isSupabaseConfigured) return;
+    const syncRemote = async () => {
+      const { data, error } = await saveRemoteTree({ id: remoteTreeId, data: db });
+      if (error) {
+        setRemoteSyncError(`No pude guardar los cambios en Supabase: ${error.message || error.details || 'Error desconocido'}`);
+        return;
+      }
+      if (data?.id) {
+        setRemoteTreeId(data.id);
+        localStorage.setItem(remoteTreeStorageKey, data.id);
+      }
+      setRemoteSyncError('');
+    };
+    syncRemote();
+  }, [db, hydrated, publicDb, remoteTreeId]);
 
   const selected = db.people.find((p) => p.id === selectedId) || null;
   const filteredPeople = useMemo(() => {
@@ -1918,6 +1965,10 @@ export default function GenealogyApp() {
 
   if (!hydrated) return <main className="loading"><img className="loadingLogo" src="/raices-logo.png" alt="" /><span>Abriendo tu árbol…</span></main>;
   if (publicLoadError) return <main className="loading"><img className="loadingLogo" src="/raices-logo.png" alt="" /><span>{publicLoadError}</span></main>;
+
+  const remoteSyncNotice = isSupabaseConfigured
+    ? remoteSyncError ? `Sincronización en la nube falla: ${remoteSyncError}` : `Sincronizado con Supabase${remoteTreeId ? '' : ' (creando registro remoto)'}`
+    : 'Supabase no está configurado. Usa localStorage y agrega las variables NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.';
   if (publicDb) return <PublicTreePage db={publicDb} />;
 
   return (
@@ -1962,7 +2013,7 @@ export default function GenealogyApp() {
             <article className="dataCard"><div className="dataIcon">GED</div><h3>GEDCOM 5.5.1</h3><p>Intercambio básico con otras aplicaciones genealógicas.</p><div className="buttonRow"><button className="secondaryButton" onClick={() => downloadText('raices.ged', exportGedcom(db), 'text/plain')}>Exportar GEDCOM</button><button className="textButton" onClick={() => gedcomRef.current?.click()}>Importar</button></div><input ref={gedcomRef} hidden type="file" accept=".ged,text/plain" onChange={(e) => e.target.files?.[0] && importGed(e.target.files[0])} /></article>
             <article className="dataCard"><div className="dataIcon">PDF</div><h3>Exportar como PDF</h3><p>Descarga un PDF del lienzo del árbol. Para respetar filtros, escala temporal y fondo, usá también el botón PDF dentro del lienzo.</p><div className="buttonRow"><button className="secondaryButton" onClick={() => exportPdf(db)}>Exportar PDF</button></div></article>
             <article className="dataCard publishCard"><div className="dataIcon puzzleIcon">🧩</div><h3>Publicar árbol</h3><p>Genera un enlace público de solo lectura con nombres, relaciones, fechas y lugares. Quien lo vea puede aportar una pieza del rompecabezas familiar.</p><div className="buttonRow"><button className="secondaryButton" onClick={publishTree}>Generar enlace</button></div>{publicTreeUrl && <div className="shareBox"><input readOnly value={publicTreeUrl} onFocus={(event) => event.target.select()} /><small>El enlace se copió al portapapeles si el navegador lo permitió.</small></div>}</article>
-            <article className="dataCard accent"><div className="dataIcon">☁</div><h3>Siguiente paso: sincronización</h3><p>La arquitectura está preparada para reemplazar el almacenamiento del navegador por Postgres/Supabase cuando quieras usar el mismo árbol desde distintos dispositivos.</p></article>
+            <article className="dataCard accent"><div className="dataIcon">☁</div><h3>Siguiente paso: sincronización</h3><p>{remoteSyncNotice}</p></article>
             <article className="dataCard detectiveCard"><div className="dataIcon detectiveIcon">🕵</div><h3>Activar detective</h3><p>Analiza el árbol vigente, genera hipótesis, arma búsquedas en actas/censos/registros y deja sugerencias aceptables o rechazables con fuente citada.</p><div className="buttonRow"><button className="secondaryButton" onClick={runDetective} disabled={detectiveRunning}>{detectiveRunning ? 'Investigando…' : 'Activar detective'}</button></div></article>
             <article className="dataCard puzzleCard"><div className="dataIcon puzzleIcon">🧩</div><h3>Importar pieza</h3><p>Importa una sugerencia enviada desde el árbol público para revisarla antes de actualizar tu árbol.</p><div className="buttonRow"><button className="secondaryButton" onClick={() => pieceImportRef.current?.click()}>Importar pieza</button></div><input ref={pieceImportRef} hidden type="file" accept="application/json,.json" onChange={(e) => e.target.files?.[0] && importPuzzlePiece(e.target.files[0])} /></article>
           </div>
