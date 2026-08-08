@@ -14,6 +14,31 @@ const sections = [
   ['data', 'Importar / Exportar', '⇅']
 ];
 
+const sectionHashMap = {
+  canvas: 'tree',
+  tree: 'tree',
+  people: 'people',
+  timeline: 'timeline',
+  sources: 'sources',
+  data: 'data'
+};
+
+const sectionTitles = {
+  tree: 'Árbol',
+  people: 'Personas',
+  timeline: 'Línea de tiempo',
+  sources: 'Fuentes',
+  data: 'Importar / Exportar'
+};
+
+const sectionSubtitles = {
+  tree: 'Visualiza y navega el árbol familiar.',
+  people: 'Gestiona las personas registradas y sus perfiles.',
+  timeline: 'Revisa los eventos en orden cronológico.',
+  sources: 'Organiza las fuentes documentales de tu investigación.',
+  data: 'Importa, exporta y respalda tu árbol.'
+};
+
 const blankPerson = () => ({
   givenNames: '',
   surnames: '',
@@ -1352,7 +1377,7 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
           </div>}
           <div className="zoomControls" aria-label="Controles de zoom">
             <button className={`secondaryButton ${temporalScale ? 'activeToggle' : ''}`} type="button" onClick={() => setTemporalScale((value) => !value)}>Escala temporal</button>
-            <button className={`secondaryButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)}>{isCanvasMaximized ? 'Salir' : 'Maximizar'}</button>
+            <button className={`iconButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? 'Restaurar vista' : 'Maximizar lienzo'}>{isCanvasMaximized ? '🗗' : '⛶'}</button>
             <button className={`secondaryButton ${canvasBackground ? 'activeToggle' : ''}`} type="button" onClick={() => backgroundInputRef.current?.click()}>Fondo</button>
             {canvasBackground && <button className="textButton" type="button" onClick={() => setCanvasBackground('')}>Quitar fondo</button>}
             <input ref={backgroundInputRef} hidden type="file" accept="image/*" onChange={loadCanvasBackground} />
@@ -1746,6 +1771,39 @@ export default function GenealogyApp() {
   }, [darkMode, hydrated, publicDb]);
 
   useEffect(() => {
+    const parseSectionHash = () => {
+      const hash = window.location.hash || '';
+      if (hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) return null;
+      const key = hash.startsWith('#') ? hash.slice(1) : hash;
+      return sectionHashMap[key] || null;
+    };
+
+    const applyHashSection = () => {
+      const next = parseSectionHash();
+      if (next) setSection(next);
+      else if (!window.location.hash || window.location.hash === '#') {
+        window.history.replaceState(null, '', '#canvas');
+      }
+    };
+
+    const onHashChange = () => {
+      const next = parseSectionHash();
+      if (next) setSection(next);
+    };
+
+    applyHashSection();
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [publicDb]);
+
+  useEffect(() => {
+    if (publicDb) return;
+    const nextHash = `#${section === 'tree' ? 'canvas' : section}`;
+    if (window.location.hash === nextHash || window.location.hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) return;
+    window.history.replaceState(null, '', nextHash);
+  }, [section, publicDb]);
+
+  useEffect(() => {
     if (!hydrated || publicDb || !isSupabaseConfigured) return;
     const syncRemote = async () => {
       const { data, error } = await saveRemoteTree({ id: remoteTreeId, data: db });
@@ -1976,19 +2034,33 @@ export default function GenealogyApp() {
       <aside className="sidebar">
         <div className="brand"><div className="brandMark"><img src="/raices-logo.png" alt="" /></div><div><strong>Raíces</strong><span>Genealogía web</span></div></div>
         <nav>{sections.map(([id, label, icon]) => <button key={id} className={section === id ? 'active' : ''} onClick={() => setSection(id)}><span>{icon}</span>{label}</button>)}</nav>
-        <div className="sidebarBottom"><div className="privacy"><span>●</span><div><strong>Privado por defecto</strong><small>Los datos quedan en este navegador.</small></div></div></div>
+        <div className="sidebarBottom">
+          <div className="themeToggle">
+            <button className={`secondaryButton ${darkMode ? 'activeToggle' : ''}`} type="button" onClick={() => setDarkMode((value) => !value)} aria-label="Cambiar tema">
+              {darkMode ? '☀️ Tema claro' : '🌙 Tema oscuro'}
+            </button>
+          </div>
+          <div className="privacy"><span>●</span><div><strong>Privado por defecto</strong><small>Los datos quedan en este navegador.</small></div></div>
+        </div>
       </aside>
 
       <section className="mainArea">
         <header className="topbar">
-          <div><p className="eyebrow">{db.settings.treeName}</p><h1>{section === 'tree' ? 'Árbol familiar' : section === 'people' ? 'Personas' : section === 'timeline' ? 'Línea de tiempo' : section === 'sources' ? 'Fuentes documentales' : 'Tus datos'}</h1></div>
+          <div className="topbarTitle">
+            <p className="eyebrow">{db.settings.treeName}</p>
+            <h1>{sectionTitles[section] || 'Árbol'}</h1>
+            <p className="topbarSubtitle">{sectionSubtitles[section] || 'Visualiza y navega el árbol familiar.'}</p>
+          </div>
           <div className="topbarActions">
-            <button className={`secondaryButton ${darkMode ? 'activeToggle' : ''}`} type="button" onClick={() => setDarkMode((value) => !value)}>{darkMode ? 'Modo claro' : 'Dark mode'}</button>
+            <div className="topbarStats">
+              <Stat value={db.people.length} label="personas" />
+              <Stat value={db.parentChild.length + db.partnerships.length} label="vínculos" />
+              <Stat value={db.events.length} label="eventos" />
+              <Stat value={db.sources.length} label="fuentes" />
+            </div>
             <button className="primaryButton" onClick={() => setPersonModal({ mode: 'new' })}>+ Nueva persona</button>
           </div>
         </header>
-
-        <div className="statsBar"><Stat value={db.people.length} label="personas" /><Stat value={db.parentChild.length + db.partnerships.length} label="vínculos" /><Stat value={db.events.length} label="eventos" /><Stat value={db.sources.length} label="fuentes" /></div>
 
         {section === 'tree' && <TreeView db={db} focusedId={focusedId} setFocusedId={(id) => { setFocusedId(id); setSelectedId(id); }} onOpenPerson={(id) => openPersonDrawer(id, 'view')} onAdd={() => setPersonModal({ mode: 'new' })} />}
 
