@@ -449,3 +449,74 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
   .personDrawer { width: 100vw; }
   .treeWorkspace.canvasMaximized { inset: 0; border-radius: 0; }
 }
+
+/* Mobile enhancements */
+@media (max-width: 520px) {
+  /* Compact sidebar into a horizontal top strip to save vertical space */
+  .sidebar { position: static; width: 100%; height: auto; padding: 8px 10px; display: flex; flex-direction: row; align-items: center; gap: 8px; }
+  .brand { gap: 8px; padding: 4px 6px; }
+  .brandMark { width: 36px; height: 36px; }
+  .brand strong, .brand span { display: none; }
+  .sidebar nav { display: flex; gap: 6px; flex: 1; justify-content: space-around; }
+  .sidebar nav button { padding: 10px; font-size: 12px; justify-content: center; }
+  .sidebarBottom { display: none; }
+
+  .appShell { display: block; }
+  .mainArea { padding: 12px 10px 28px; }
+  .topbar { grid-template-columns: 1fr; gap: 10px; align-items: start; }
+  .topbarTitle h1 { font-size: 20px; }
+  .topbarSubtitle { display: none; }
+  .topbarActions { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+  .topbarStats { grid-template-columns: repeat(2, 1fr); gap: 8px; width: auto; }
+  .statsBar { grid-template-columns: repeat(2, 1fr); }
+
+  /* Tree layout adjustments */
+  .treeToolbar { padding: 12px 10px; flex-direction: column; align-items: stretch; gap: 10px; }
+  .treeToolbar select { min-width: 100%; }
+  .zoomControls button { padding: 10px; min-width: 44px; height: 44px; border-radius: 10px; }
+  .treeCanvas { height: 52vh; min-height: 360px; padding: 8px; }
+  .treeCard { width: 150px; }
+
+  /* Lists and panes */
+  .personRow { padding: 14px 12px; }
+  .personList { max-height: calc(100vh - 220px); }
+  .peoplePane .paneToolbar { padding: 12px 8px; }
+
+  /* Drawer becomes full screen, easier to tap */
+  .drawerBackdrop { justify-content: center; }
+  .personDrawer { width: 100vw; border-left: 0; border-radius: 0; box-shadow: none; height: 100vh; padding: 14px; }
+  .drawerHeader { position: sticky; top: 0; margin: 0  -14px 12px; padding: 12px 14px; }
+  .drawerHeaderActions .iconButton { width: 44px; height: 44px; }
+  .drawerHeader h2 { font-size: 18px; }
+  .detailTop h2 { font-size: 18px; }
+
+  /* Make relation chips and their remove buttons touch-friendly */
+  .relationChip { padding: 8px 10px; font-size: 13px; }
+  .relationChipRemove { padding: 6px; font-size: 16px; }
+  .relationChipName { font-size: 13px; }
+
+  /* Bigger tappable buttons */
+  .primaryButton, .secondaryButton, .textButton { padding: 12px 14px; font-size: 14px; }
+  .iconButton { width: 44px; height: 44px; }
+
+  /* Modal sizing on mobile */
+  .modal { width: calc(100vw - 20px); height: 90vh; padding: 16px; }
+  .modalBackdrop { padding: 10px; }
+
+  /* Forms and grids */
+  .formGrid.two, .formGrid.three { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 420px) {
+  /* Further condense for very small screens */
+  .sidebar nav button span { display: none; }
+  .sidebar nav button { padding: 10px; }
+  .topbarStats { display: none; }
+  .topbarActions { gap: 6px; }
+  .personRow .chevron { display: none; }
+  .treeToolbar select { font-size: 13px; }
+  .treeCard { width: 130px; }
+  .detailTop { gap: 10px; }
+  .factList dd { font-size: 13px; }
+  .detailActions { flex-direction: column; align-items: stretch; gap: 8px; }
+}
