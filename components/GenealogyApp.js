@@ -161,6 +161,7 @@ const comparePeopleByName = (a, b) => displayName(a).localeCompare(displayName(b
 const isDeceased = (person) => Boolean(String(person?.deathDate || '').trim());
 const personStatusClass = (person) => isDeceased(person) ? 'deceased' : 'living';
 const personStatusLabel = (person) => isDeceased(person) ? 'Fallecido/a' : 'Vivo/a';
+const displayField = (value) => String(value || '-');
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
@@ -1192,6 +1193,7 @@ function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus
           </div>
           <div className="drawerHeaderActions">
             <span className={`modePill ${isEditing ? 'editing' : 'viewing'}`}>{isEditing ? 'Editando' : 'Vista'}</span>
+            <button className="iconButton dangerIcon" type="button" onClick={onDelete} title="Eliminar persona">🗑</button>
             <button className="iconButton" onClick={onClose}>×</button>
           </div>
         </div>
@@ -1207,34 +1209,45 @@ function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus
           </div>
           <div className="detailActions"><button className="secondaryButton" onClick={() => onModeChange('edit')}>Editar</button><button className="secondaryButton" onClick={() => openInTree()}>Ver en árbol</button></div>
           <dl className="factList">
-            {person.nickname && <div><dt>Apodo</dt><dd>{person.nickname}</dd></div>}
-            <div><dt>Email</dt><dd>{person.email ? <a href={`mailto:${person.email}`}>{person.email}</a> : '?'}</dd></div>
-            <div><dt>Nacimiento</dt><dd>{[person.birthDate, person.birthPlace].filter(Boolean).join(' · ') || '?'}</dd></div>
-            <div><dt>Fallecimiento</dt><dd>{[person.deathDate, person.deathPlace].filter(Boolean).join(' · ') || '?'}</dd></div>
-            <div><dt>Ocupación</dt><dd>{person.occupation || '?'}</dd></div>
-            <div><dt>Notas</dt><dd>{person.notes || '?'}</dd></div>
+            <div><dt>Apodo</dt><dd>{displayField(person.nickname)}</dd></div>
+            <div><dt>Email</dt><dd>{person.email ? <a href={`mailto:${person.email}`}>{person.email}</a> : '-'}</dd></div>
+            <div><dt>Nacimiento</dt><dd>{[person.birthDate, person.birthPlace].filter(Boolean).join(' · ') || '-'}</dd></div>
+            <div><dt>Fallecimiento</dt><dd>{[person.deathDate, person.deathPlace].filter(Boolean).join(' · ') || '-'}</dd></div>
+            <div><dt>Ocupación</dt><dd>{displayField(person.occupation)}</dd></div>
+            <div><dt>Notas</dt><dd>{displayField(person.notes)}</dd></div>
           </dl>
           <section className="detailSection"><div className="sectionTitle"><h3>Familia</h3></div>
-            <RelationList title="Padres" people={[...rel.parents].sort(comparePeopleByDate)} onOpen={openInTree} />
+            <RelationList title="Padres" kind="parent" people={[...rel.parents].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={onRemoveRelation} />
             <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('parent', id)} label="Agregar padre/madre" />
-            <RelationList title="Parejas" people={[...rel.partners].sort(comparePeopleByDate)} onOpen={openInTree} />
+            <RelationList title="Parejas" kind="partner" people={[...rel.partners].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={onRemoveRelation} />
             <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('partner', id)} label="Agregar pareja" />
-            <RelationList title="Hijos" people={[...rel.children].sort(comparePeopleByDate)} onOpen={openInTree} />
+            <RelationList title="Hijos" kind="child" people={[...rel.children].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={onRemoveRelation} />
             <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('child', id)} label="Agregar hijo/a" />
           </section>
           <section className="detailSection"><div className="sectionTitle"><h3>Línea de tiempo</h3><button className="textButton" onClick={onAddEvent}>+ Agregar</button></div>
             {timeline.length ? <ol className="timelineList">{timeline.map((event) => <li key={event.id} className="timelineItem"><span className="timelineDot" /><div><strong>{event.type}</strong><span>{[event.date, event.place].filter(Boolean).join(' · ') || 'Fecha pendiente'}</span>{event.description && <p>{event.description}</p>}</div></li>)}</ol> : <p className="muted small">Todavía no hay eventos registrados.</p>}
           </section>
-          <button className="dangerText" onClick={onDelete}>Eliminar persona</button>
         </div>}
       </aside>
     </div>
   );
 }
 
-function RelationList({ title, people, onOpen }) {
+function RelationList({ title, people, onOpen, onRemove, kind }) {
   if (!people.length) return <div className="relationBlock"><span>{title}</span><em>Sin datos</em></div>;
-  return <div className="relationBlock"><span>{title}</span><div>{people.map((p) => <button key={p.id} className={`relationChip ${personStatusClass(p)}`} onClick={() => onOpen(p.id)}>{displayName(p)}</button>)}</div></div>;
+  return (
+    <div className="relationBlock">
+      <span>{title}</span>
+      <div>
+        {people.map((p) => (
+          <div key={p.id} className={`relationChip ${personStatusClass(p)}`}>
+            <button type="button" className="relationChipName" onClick={() => onOpen(p.id)}>{displayName(p)}</button>
+            {onRemove && <button type="button" className="relationChipRemove" onClick={(event) => { event.stopPropagation(); onRemove(kind, p.id); }} title="Eliminar vínculo">🗑</button>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function TreeCard({ person, label, onOpen, onFocus, focal = false, style }) {
@@ -1366,7 +1379,7 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
   return (
     <div className={`treeWorkspace ${isCanvasMaximized ? 'canvasMaximized' : ''}`}>
       <div className="treeToolbar">
-        <div><p className="eyebrow">{showAllPeople ? 'Vista completa' : 'Ascendencia y descendencia'}</p><h2>{showAllPeople ? 'Todas las personas' : displayName(person)}</h2><p>{showAllPeople ? `${layout.allPeopleCount} personas visibles · doble click para enfocar una rama.${temporalScale ? ' Escala temporal activa.' : ''}` : `${layout.ancestorCount} ancestros · ${layout.descendantCount} descendientes · ramas ordenadas por fecha.${temporalScale ? ' Escala temporal activa.' : ''}`}</p></div>
+        <div><p className="eyebrow">{showAllPeople ? 'Vista completa' : 'Ascendencia y descendencia'}</p><p className="toolbarSummaryText">{showAllPeople ? `${layout.allPeopleCount} personas visibles · doble click para enfocar una rama.${temporalScale ? ' Escala temporal activa.' : ''}` : `${layout.ancestorCount} ancestros · ${layout.descendantCount} descendientes · ramas ordenadas por fecha.${temporalScale ? ' Escala temporal activa.' : ''}`}</p></div>
         <div className="treeControls">
           <select value={person.id} onChange={(e) => { setShowAllPeople(false); setFocusedId(e.target.value); }}>{[...db.people].sort(comparePeopleByName).map((p) => <option key={p.id} value={p.id}>{displayName(p)}</option>)}</select>
           <button className={`secondaryButton ${showAllPeople ? 'activeToggle' : ''}`} type="button" onClick={() => setShowAllPeople((value) => !value)}>{showAllPeople ? 'Ver rama enfocada' : 'Ver todas las personas'}</button>
@@ -1560,16 +1573,10 @@ function TimelineView({ db, onOpenPerson }) {
 
   return (
     <section className="contentPanel globalTimelinePanel">
-      <div className="panelHeader timelineHeader">
-        <div>
-          <p className="eyebrow">{'Cronología familiar'}</p>
-          <h2>{'Línea de tiempo'}</h2>
-          <p>{ 'Eventos de todas las personas, ordenados por fecha conocida. Los eventos sin fecha quedan al final.' }</p>
-        </div>
-        <div className="timelineSummary">
-          <strong>{timeline.length}</strong><span>eventos</span>
-          <strong>{datedCount}</strong><span>con fecha</span>
-        </div>
+      <div className="sectionIntro"><p>Eventos de todas las personas, ordenados por fecha conocida. Los eventos sin fecha quedan al final.</p></div>
+      <div className="timelineSummary">
+        <strong>{timeline.length}</strong><span>eventos</span>
+        <strong>{datedCount}</strong><span>con fecha</span>
       </div>
       <div className="timelineFilters">
         <label>Tipo<select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">Todos</option>{eventTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
@@ -1868,6 +1875,22 @@ export default function GenealogyApp() {
     }
   };
 
+  const removeRelation = (personId, kind, otherId) => {
+    if (!personId || !otherId) return;
+    updateDb((prev) => {
+      if (kind === 'parent') {
+        return { ...prev, parentChild: prev.parentChild.filter((rel) => !(rel.parentId === otherId && rel.childId === personId)) };
+      }
+      if (kind === 'child') {
+        return { ...prev, parentChild: prev.parentChild.filter((rel) => !(rel.parentId === personId && rel.childId === otherId)) };
+      }
+      if (kind === 'partner') {
+        return { ...prev, partnerships: prev.partnerships.filter((rel) => !((rel.personAId === personId && rel.personBId === otherId) || (rel.personAId === otherId && rel.personBId === personId))) };
+      }
+      return prev;
+    });
+  };
+
   const deleteSelected = () => {
     if (!selected || !confirm(`¿Eliminar a ${displayName(selected)}? También se eliminarán sus vínculos y eventos.`)) return;
     const id = selected.id;
@@ -2074,12 +2097,11 @@ export default function GenealogyApp() {
         </div>}
 
         {section === 'sources' && <section className="contentPanel">
-          <div className="panelHeader"><div><p className="eyebrow">Evidencia</p><h2>Fuentes y documentos</h2><p>Registrá de dónde sale cada dato antes de sacar conclusiones.</p></div><button className="primaryButton" onClick={() => setSourceModal(true)}>+ Nueva fuente</button></div>
+          <div className="sectionActions"><button className="primaryButton" onClick={() => setSourceModal(true)}>+ Nueva fuente</button></div>
           {db.sources.length ? <div className="sourceGrid">{db.sources.map((source) => <article key={source.id} className="sourceCard"><span className="sourceType">{source.type}</span><h3>{source.title}</h3><p>{source.repository || 'Repositorio no indicado'}</p>{source.url && <a href={source.url} target="_blank" rel="noreferrer">Abrir referencia ↗</a>}<small>{source.notes}</small></article>)}</div> : <div className="softEmpty"><h3>Todavía no cargaste fuentes</h3><p>Podés registrar actas, censos, libros parroquiales, fotografías, entrevistas y páginas web.</p></div>}
         </section>}
 
         {section === 'data' && <section className="contentPanel dataPanel">
-          <div className="panelHeader"><div><p className="eyebrow">Portabilidad</p><h2>Importar, exportar y respaldar</h2><p>No quedás encerrado en la aplicación: tus datos pueden salir en JSON o GEDCOM.</p></div></div>
           <div className="dataGrid">
             <article className="dataCard"><div className="dataIcon">{`{ }`}</div><h3>Backup completo JSON</h3><p>Guarda personas, vínculos, eventos, fuentes y configuración.</p><div className="buttonRow"><button className="secondaryButton" onClick={() => downloadText('raices-backup.json', JSON.stringify(db, null, 2), 'application/json')}>Exportar JSON</button><button className="textButton" onClick={() => importRef.current?.click()}>Importar</button></div><input ref={importRef} hidden type="file" accept="application/json,.json" onChange={(e) => e.target.files?.[0] && importJson(e.target.files[0])} /></article>
             <article className="dataCard"><div className="dataIcon">GED</div><h3>GEDCOM 5.5.1</h3><p>Intercambio básico con otras aplicaciones genealógicas.</p><div className="buttonRow"><button className="secondaryButton" onClick={() => downloadText('raices.ged', exportGedcom(db), 'text/plain')}>Exportar GEDCOM</button><button className="textButton" onClick={() => gedcomRef.current?.click()}>Importar</button></div><input ref={gedcomRef} hidden type="file" accept=".ged,text/plain" onChange={(e) => e.target.files?.[0] && importGed(e.target.files[0])} /></article>
@@ -2095,7 +2117,7 @@ export default function GenealogyApp() {
         </section>}
       </section>
 
-      {drawerPersonId && <PersonDrawer db={db} person={db.people.find((p) => p.id === drawerPersonId)} mode={drawerMode} onModeChange={setDrawerMode} onClose={() => { setDrawerPersonId(null); setDrawerMode('view'); }} onSave={saveExistingPerson} onFocus={openInTree} onLink={linkPerson} onDelete={deleteSelected} onAddEvent={() => setEventModal(true)} />}
+      {drawerPersonId && <PersonDrawer db={db} person={db.people.find((p) => p.id === drawerPersonId)} mode={drawerMode} onModeChange={setDrawerMode} onClose={() => { setDrawerPersonId(null); setDrawerMode('view'); }} onSave={saveExistingPerson} onFocus={openInTree} onLink={linkPerson} onRemoveRelation={(kind, otherId) => removeRelation(drawerPersonId, kind, otherId)} onDelete={deleteSelected} onAddEvent={() => setEventModal(true)} />}
       {personModal && <Modal title="Nueva persona" onClose={() => setPersonModal(null)}><PersonForm initial={personModal.person} onCancel={() => setPersonModal(null)} onSave={savePerson} /></Modal>}
       {eventModal && selected && <EventForm person={selected} onClose={() => setEventModal(false)} onSave={addEvent} />}
       {sourceModal && <SourceForm onClose={() => setSourceModal(false)} onSave={(source) => { updateDb((prev) => ({ ...prev, sources: [...prev.sources, { id: newId('source'), ...source }] })); setSourceModal(false); }} />}
