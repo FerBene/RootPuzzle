@@ -1714,6 +1714,7 @@ export default function GenealogyApp() {
   const [darkMode, setDarkMode] = useState(false);
   const [detectiveRunning, setDetectiveRunning] = useState(false);
   const [publicTreeUrl, setPublicTreeUrl] = useState('');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const importRef = useRef(null);
   const gedcomRef = useRef(null);
   const pieceImportRef = useRef(null);
@@ -2053,10 +2054,10 @@ export default function GenealogyApp() {
   if (publicDb) return <PublicTreePage db={publicDb} />;
 
   return (
-    <main className={`appShell ${darkMode ? 'darkMode' : ''}`}>
-      <aside className="sidebar">
+    <main className={`appShell ${darkMode ? 'darkMode' : ''} ${typeof mobileMenuOpen !== 'undefined' && mobileMenuOpen ? 'sidebarOpen' : ''}`}>
+      <aside className={`sidebar`}> 
         <div className="brand"><div className="brandMark"><img src="/raices-logo.png" alt="" /></div><div><strong>Raíces</strong><span>Genealogía web</span></div></div>
-        <nav>{sections.map(([id, label, icon]) => <button key={id} className={section === id ? 'active' : ''} onClick={() => setSection(id)}><span>{icon}</span>{label}</button>)}</nav>
+        <nav>{sections.map(([id, label, icon]) => <button key={id} className={section === id ? 'active' : ''} onClick={() => { setSection(id); if (typeof setMobileMenuOpen === 'function') setMobileMenuOpen(false); }}><span>{icon}</span>{label}</button>)}</nav>
         <div className="sidebarBottom">
           <div className="themeToggle">
             <button className={`secondaryButton ${darkMode ? 'activeToggle' : ''}`} type="button" onClick={() => setDarkMode((value) => !value)} aria-label="Cambiar tema">
@@ -2067,6 +2068,9 @@ export default function GenealogyApp() {
         </div>
       </aside>
 
+      {/* Mobile menu backdrop (click to close) */}
+      {typeof mobileMenuOpen !== 'undefined' && mobileMenuOpen && <div className="mobileMenuBackdrop" onClick={() => setMobileMenuOpen(false)} />}
+
       <section className="mainArea">
         <header className="topbar">
           <div className="topbarTitle">
@@ -2075,6 +2079,8 @@ export default function GenealogyApp() {
             <p className="topbarSubtitle">{sectionSubtitles[section] || 'Visualiza y navega el árbol familiar.'}</p>
           </div>
           <div className="topbarActions">
+            {/* Hamburger button visible on small screens */}
+            <button className="hamburgerButton" type="button" onClick={() => setMobileMenuOpen((v) => !v)} aria-label="Abrir menú">☰</button>
             <div className="topbarStats">
               <Stat value={db.people.length} label="personas" />
               <Stat value={db.parentChild.length + db.partnerships.length} label="vínculos" />

@@ -454,6 +454,15 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 @media (max-width: 520px) {
   /* Compact sidebar into a horizontal top strip to save vertical space */
   .sidebar { position: static; width: 100%; height: auto; padding: 8px 10px; display: flex; flex-direction: row; align-items: center; gap: 8px; }
+  /* Hamburger button - hidden by default on desktop */
+  .hamburgerButton { display: none; border: 0; background: transparent; font-size: 22px; padding: 6px 10px; }
+  /* Mobile open state: show the sidebar as an overlay sheet */
+  .appShell.sidebarOpen .sidebar { position: fixed; top: 0; left: 0; right: 0; z-index: 120; background: var(--surface); color: var(--ink); padding: 14px 12px; box-shadow: 0 12px 40px rgba(0,0,0,.25); display: flex; flex-direction: column; gap: 12px; }
+  .appShell.sidebarOpen .sidebar nav { display: flex; flex-direction: column; gap: 8px; }
+  .appShell.sidebarOpen .sidebar .brand { display: flex; align-items: center; gap: 10px; }
+  .mobileMenuBackdrop { display: none; }
+  .appShell.sidebarOpen .mobileMenuBackdrop { display: block; position: fixed; inset: 0; z-index: 110; background: rgba(3,8,5,.36); }
+
   .brand { gap: 8px; padding: 4px 6px; }
   .brandMark { width: 36px; height: 36px; }
   .brand strong, .brand span { display: none; }
