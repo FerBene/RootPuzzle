@@ -544,9 +544,20 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 }
 
 /* Mobile bottom navigation (footer) */
-.mobileBottomNav { position: fixed; left: 0; right: 0; bottom: 0; height: 64px; display: flex; gap: 6px; justify-content: space-around; align-items: center; background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -8px 24px rgba(0,0,0,.06); z-index: 70; padding: 6px 8px; }
-.mobileBottomNav button { background: transparent; border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--muted); font-size: 11px; padding: 6px 8px; border-radius: 8px; min-width: 54px; }
+.mobileBottomNav { position: fixed; left: 0; right: 0; bottom: 0; height: 64px; display: flex; gap: 6px; justify-content: space-around; align-items: center; background: #14231d; color: #fff; border-top: 1px solid rgba(255,255,255,.06); box-shadow: 0 -12px 28px rgba(0,0,0,.26); z-index: 999; padding: 6px 8px; }
+.mobileBottomNav button { background: transparent; border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: rgba(255,255,255,.9); font-size: 11px; padding: 6px 8px; border-radius: 8px; min-width: 54px; }
 .mobileBottomNav button span { font-size: 20px; line-height: 1; }
-.mobileBottomNav button.active { color: var(--accent); background: rgba(36,91,77,.06); box-shadow: inset 0 0 0 2px rgba(36,91,77,.03); }
+.mobileBottomNav button.active { color: #fff; background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 2px rgba(255,255,255,.02); }
+.mobileBottomNav small { color: rgba(255,255,255,.8); }
 @media (min-width: 761px) { .mobileBottomNav { display: none; } }
-@media (max-width: 760px) { .mainArea { padding-bottom: 92px; } }
+@media (max-width: 760px) { .mainArea { padding-bottom: 96px; } }
+
+/* Ensure footer is always visible (fixed) on mobile */
+@media (max-width: 760px) {
+  .mobileBottomNav { position: fixed; }
+  /* Hide top-level sidebar navigation and hamburger: footer is the only nav */
+  .sidebar nav { display: none !important; }
+  .hamburgerButton { display: none !important; }
+  .mobileMenuBackdrop { display: none !important; }
+}
+
