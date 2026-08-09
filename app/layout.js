@@ -1,4 +1,5 @@
 import './globals.css';
+import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
 
 export const metadata = {
   title: 'Raíces — Árbol Genealógico',
@@ -12,7 +13,16 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#245b4d" />
+        <link rel="apple-touch-icon" href="/raices-icon.png" />
+      </head>
+      <body>
+        {/* SW registrar runs on client */}
+        <ServiceWorkerRegistrar />
+        {children}
+      </body>
     </html>
   );
 }
