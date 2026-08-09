@@ -6,11 +6,17 @@ import { exportGedcom, importGedcom } from '@/lib/gedcom';
 import { getRemoteTree, remoteTreeStorageKey, saveRemoteTree } from '@/lib/supabaseStore';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 
+const IconHome = (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10.5z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+const IconPeople = (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M16 11c1.657 0 3-1.79 3-4s-1.343-4-3-4-3 1.79-3 4 1.343 4 3 4zM8 11c1.657 0 3-1.79 3-4S9.657 3 8 3 5 4.79 5 7s1.343 4 3 4z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 21c0-2.5 2.686-4.5 6-4.5s6 2 6 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+const IconTimeline = (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.4"/><path d="M12 7v6l4 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+const IconSources = (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 5h14v14H3z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M7 5v14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+const IconProfile = (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="8.5" r="3" stroke="currentColor" strokeWidth="1.4"/><path d="M4 20c0-3.313 3.582-6 8-6s8 2.687 8 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+
 const sections = [
-  ['tree', 'Árbol', '⌘'],
-  ['people', 'Personas', '◎'],
-  ['timeline', 'Línea de tiempo', '↕'],
-  ['sources', 'Fuentes', '▱'],
+  ['tree', 'Árbol', IconHome],
+  ['people', 'Personas', IconPeople],
+  ['timeline', 'Línea de tiempo', IconTimeline],
+  ['sources', 'Fuentes', IconSources],
   ['data', 'Importar / Exportar', '⇅']
 ];
 
@@ -1193,7 +1199,9 @@ function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus
           </div>
           <div className="drawerHeaderActions">
             <span className={`modePill ${isEditing ? 'editing' : 'viewing'}`}>{isEditing ? 'Editando' : 'Vista'}</span>
-            <button className="iconButton dangerIcon" type="button" onClick={onDelete} title="Eliminar persona">🗑</button>
+            <button className="iconButton dangerIcon" type="button" onClick={onDelete} title="Eliminar persona" aria-label="Eliminar persona">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 6h18" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 6v14a2 2 0 002 2h4a2 2 0 002-2V6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
             <button className="iconButton" onClick={onClose}>×</button>
           </div>
         </div>
@@ -1242,7 +1250,7 @@ function RelationList({ title, people, onOpen, onRemove, kind }) {
         {people.map((p) => (
           <div key={p.id} className={`relationChip ${personStatusClass(p)}`}>
             <button type="button" className="relationChipName" onClick={() => onOpen(p.id)}>{displayName(p)}</button>
-            {onRemove && <button type="button" className="relationChipRemove" onClick={(event) => { event.stopPropagation(); onRemove(kind, p.id); }} title="Eliminar vínculo">🗑</button>}
+            {onRemove && <button type="button" className="relationChipRemove" onClick={(event) => { event.stopPropagation(); onRemove(kind, p.id); }} title="Eliminar vínculo" aria-label="Eliminar vínculo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 6h18" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 6v14a2 2 0 002 2h4a2 2 0 002-2V6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg></button>}
           </div>
         ))}
       </div>
@@ -1466,7 +1474,13 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
           </div>}
           <div className="zoomControls" aria-label="Controles de zoom">
             <button className={`secondaryButton ${temporalScale ? 'activeToggle' : ''}`} type="button" onClick={() => setTemporalScale((value) => !value)}>Escala temporal</button>
-            <button className={`iconButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? 'Restaurar vista' : 'Maximizar lienzo'}>{isCanvasMaximized ? '🗗' : '⛶'}</button>
+            <button className={`iconButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? 'Restaurar vista' : 'Maximizar lienzo'} aria-label={isCanvasMaximized ? 'Restaurar vista' : 'Maximizar lienzo'}>
+                {isCanvasMaximized ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 10v-4h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 14v4h-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 3l-9 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M8 8h3M13 13h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                )}
+              </button>
             <button className={`secondaryButton ${canvasBackground ? 'activeToggle' : ''}`} type="button" onClick={() => backgroundInputRef.current?.click()}>Fondo</button>
             {canvasBackground && <button className="textButton" type="button" onClick={() => setCanvasBackground('')}>Quitar fondo</button>}
             <input ref={backgroundInputRef} hidden type="file" accept="image/*" onChange={loadCanvasBackground} />
@@ -1490,7 +1504,13 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
           {layout.temporal.hasUnknownDates && <div className="temporalTick unknown" style={{ top: viewport.y + layout.temporal.unknownY * viewport.scale }}><span>Sin fecha</span></div>}
         </div>}
         <div className="canvasFloatingControls">
-          <button className={`iconButton canvasMaximizeButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? 'Restaurar vista' : 'Maximizar lienzo'}>{isCanvasMaximized ? '🗗' : '⛶'}</button>
+          <button className={`iconButton canvasMaximizeButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? 'Restaurar vista' : 'Maximizar lienzo'} aria-label={isCanvasMaximized ? 'Restaurar vista' : 'Maximizar lienzo'}>
+                {isCanvasMaximized ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 10v-4h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 14v4h-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 3l-9 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M8 8h3M13 13h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                )}
+              </button>
         </div>
         <div className="treePanLayer" style={{ transform: `translate(${viewport.x + (temporalScale && layout.temporal ? TEMPORAL_AXIS_WIDTH + TEMPORAL_AXIS_GAP : 0)}px, ${viewport.y}px) scale(${viewport.scale})` }}>
           <div className="treeContent" style={{ width: layout.width, height: layout.height }}>
@@ -2204,8 +2224,12 @@ export default function GenealogyApp() {
         <nav>{sections.map(([id, label, icon]) => <button key={id} className={section === id ? 'active' : ''} onClick={() => { setSection(id); if (typeof setMobileMenuOpen === 'function') setMobileMenuOpen(false); }}><span>{icon}</span>{label}</button>)}</nav>
         <div className="sidebarBottom">
           <div className="themeToggle">
-            <button className={`secondaryButton ${darkMode ? 'activeToggle' : ''}`} type="button" onClick={() => setDarkMode((value) => !value)} aria-label="Cambiar tema">
-              {darkMode ? '☀️ Tema claro' : '🌙 Tema oscuro'}
+            <button className={`secondaryButton ${darkMode ? 'activeToggle' : ''}`} type="button" onClick={() => setDarkMode((value) => !value)} aria-label="Cambiar tema" title="Cambiar tema">
+              {darkMode ? (
+                <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 3v2M12 19v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M12 7a5 5 0 100 10 5 5 0 000-10z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg><span style={{marginLeft:8}}>Tema claro</span></>
+              ) : (
+                <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg><span style={{marginLeft:8}}>Tema oscuro</span></>
+              )}
             </button>
           </div>
           <div className="privacy"><span>●</span><div><strong>Privado por defecto</strong><small>Los datos quedan en este navegador.</small></div></div>
@@ -2224,7 +2248,9 @@ export default function GenealogyApp() {
           </div>
           <div className="topbarActions">
             {/* Hamburger button visible on small screens */}
-            <button className="hamburgerButton" type="button" onClick={() => setMobileMenuOpen((v) => !v)} aria-label="Abrir menú">☰</button>
+            <button className="hamburgerButton" type="button" onClick={() => setMobileMenuOpen((v) => !v)} aria-label="Abrir menú" title="Abrir menú">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
             <div className="topbarStats">
               <Stat value={db.people.length} label="personas" />
               <Stat value={db.parentChild.length + db.partnerships.length} label="vínculos" />
@@ -2265,7 +2291,55 @@ export default function GenealogyApp() {
           <DetectivePanel suggestions={db.detectiveSuggestions || []} db={db} running={detectiveRunning} onRun={runDetective} onAccept={acceptDetectiveSuggestion} onReject={(id) => updateDetectiveSuggestionStatus(id, 'rejected')} />
           <div className="warningBox"><strong>Importante sobre esta versión:</strong> al estar pensada como MVP web sin cuenta ni servidor de base de datos, los datos se guardan en <code>localStorage</code> del navegador. Hacé backups JSON periódicos. Si borrás los datos del navegador, también se borra el árbol local.</div>
         </section>}
+
+        {section === 'profile' && <section className="contentPanel profilePanel">
+          <div className="panelHeader">
+            <div>
+              <p className="eyebrow">Cuenta</p>
+              <h2>Mi perfil</h2>
+              <p className="muted">Accedé a tu perfil y ajustes</p>
+            </div>
+          </div>
+          <div className="personDetail">
+            <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
+              <PersonAvatar person={selected || { givenNames: 'Tú', surnames: '' }} large />
+              <div>
+                <strong>{displayName(selected) || 'Tu perfil'}</strong>
+                <div className="muted small">{selected?.email || 'Sin email'}</div>
+              </div>
+            </div>
+            <div style={{marginTop: 18}}>
+              <button className={`secondaryButton ${darkMode ? 'activeToggle' : ''}`} onClick={() => setDarkMode((v) => !v)}>{darkMode ? '☀️ Tema claro' : '🌙 Tema oscuro'}</button>
+            </div>
+            <div style={{marginTop: 18}} className="warningBox"><small>Perfil básico local. Para sincronizar y tener cuenta, configurá Supabase.</small></div>
+          </div>
+        </section>}
+
       </section>
+
+      {/* Mobile bottom navigation (visible on small screens) */}
+      <nav className="mobileBottomNav" role="navigation" aria-label="Navegación">
+        <button className={section === 'tree' ? 'active' : ''} onClick={() => setSection('tree')} aria-label="Inicio" title="Inicio">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10.5z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <small>Inicio</small>
+        </button>
+        <button className={section === 'people' ? 'active' : ''} onClick={() => setSection('people')} aria-label="Personas" title="Personas">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M16 11c1.657 0 3-1.79 3-4s-1.343-4-3-4-3 1.79-3 4 1.343 4 3 4zM8 11c1.657 0 3-1.79 3-4S9.657 3 8 3 5 4.79 5 7s1.343 4 3 4z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 21c0-2.5 2.686-4.5 6-4.5s6 2 6 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <small>Personas</small>
+        </button>
+        <button className={section === 'timeline' ? 'active' : ''} onClick={() => setSection('timeline')} aria-label="Timeline" title="Timeline">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.4"/><path d="M12 7v6l4 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <small>Timeline</small>
+        </button>
+        <button className={section === 'sources' ? 'active' : ''} onClick={() => setSection('sources')} aria-label="Fuentes" title="Fuentes">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 5h14v14H3z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M7 5v14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <small>Fuentes</small>
+        </button>
+        <button className={section === 'profile' ? 'active' : ''} onClick={() => setSection('profile')} aria-label="Perfil" title="Perfil">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="8.5" r="3" stroke="currentColor" strokeWidth="1.4"/><path d="M4 20c0-3.313 3.582-6 8-6s8 2.687 8 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <small>Perfil</small>
+        </button>
+      </nav>
 
       {drawerPersonId && <PersonDrawer db={db} person={db.people.find((p) => p.id === drawerPersonId)} mode={drawerMode} onModeChange={setDrawerMode} onClose={() => { setDrawerPersonId(null); setDrawerMode('view'); }} onSave={saveExistingPerson} onFocus={openInTree} onLink={linkPerson} onRemoveRelation={(kind, otherId) => removeRelation(drawerPersonId, kind, otherId)} onDelete={deleteSelected} onAddEvent={() => setEventModal(true)} />}
       {personModal && <Modal title="Nueva persona" onClose={() => setPersonModal(null)}><PersonForm initial={personModal.person} onCancel={() => setPersonModal(null)} onSave={savePerson} /></Modal>}
