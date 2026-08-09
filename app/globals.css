@@ -559,5 +559,9 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
   .sidebar nav { display: none !important; }
   .hamburgerButton { display: none !important; }
   .mobileMenuBackdrop { display: none !important; }
+
+  /* Ensure drawers and modals have extra bottom padding so action buttons aren't occluded by the fixed footer */
+  .personDrawer, .modal { box-sizing: border-box; padding-bottom: 140px; }
+  .personDetail, .formStack { padding-bottom: 16px; }
 }
 
