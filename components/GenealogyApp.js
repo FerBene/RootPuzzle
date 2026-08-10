@@ -1089,9 +1089,12 @@ function Modal({ title, onClose, children }) {
   );
 }
 
-function PersonForm({ initial, onCancel, onSave }) {
+function PersonForm({ initial, people = [], showRelation = false, onCancel, onSave }) {
   const [form, setForm] = useState({ ...blankPerson(), ...(initial || {}) });
+  const [relationKind, setRelationKind] = useState('');
+  const [relationPersonId, setRelationPersonId] = useState('');
   const imageInputRef = useRef(null);
+  const relationOptions = people.filter((person) => person.id !== initial?.id).sort(comparePeopleByName);
   const set = (key) => (event) => setForm((prev) => ({ ...prev, [key]: event.target.value }));
   const setProfileImage = async (event) => {
     const file = event.target.files?.[0];
@@ -1107,40 +1110,52 @@ function PersonForm({ initial, onCancel, onSave }) {
   };
   const submit = (event) => {
     event.preventDefault();
-    if (!form.givenNames.trim() && !form.surnames.trim()) return;
-    onSave(form);
+    onSave(form, showRelation ? { kind: relationKind, personId: relationPersonId } : null);
   };
   return (
     <form onSubmit={submit} className="formStack">
-      <div className="profileImageField">
-        <PersonAvatar person={form} large />
-        <div>
-          <span>Imagen de perfil</span>
-          <div className="buttonRow compact">
-            <button type="button" className="secondaryButton" onClick={() => imageInputRef.current?.click()}>Cargar imagen</button>
-            {form.profileImage && <button type="button" className="textButton" onClick={() => setForm((prev) => ({ ...prev, profileImage: '' }))}>Quitar</button>}
-          </div>
-          <input ref={imageInputRef} hidden type="file" accept="image/*" onChange={setProfileImage} />
-        </div>
-      </div>
-      <div className="formGrid three">
+      <div className="formGrid two">
         <label>Nombres<input value={form.givenNames} onChange={set('givenNames')} autoFocus /></label>
         <label>Apellidos<input value={form.surnames} onChange={set('surnames')} /></label>
-        <label>Apodo<input value={form.nickname} onChange={set('nickname')} /></label>
-      </div>
-      <label>Email<input type="email" value={form.email} onChange={set('email')} placeholder="nombre@dominio.com" /></label>
-      <div className="formGrid three">
-        <label>Sexo<select value={form.sex} onChange={set('sex')}><option value="">Sin indicar</option><option value="M">Masculino</option><option value="F">Femenino</option><option value="X">Otro / no binario</option></select></label>
-        <label>Nacimiento<input type="date" value={form.birthDate} onChange={set('birthDate')} /></label>
-        <label>Lugar de nacimiento<input value={form.birthPlace} onChange={set('birthPlace')} placeholder="Ciudad, provincia, país" /></label>
       </div>
       <div className="formGrid two">
-        <label>Fallecimiento<input type="date" value={form.deathDate} onChange={set('deathDate')} /></label>
-        <label>Lugar de fallecimiento<input value={form.deathPlace} onChange={set('deathPlace')} /></label>
+        <label>Año de nacimiento<input value={form.birthDate} onChange={set('birthDate')} inputMode="numeric" placeholder="Ej. 1942" /></label>
+        {showRelation ? (
+          relationOptions.length ? <label>Parentesco<select value={relationKind} onChange={(event) => setRelationKind(event.target.value)}><option value="">Sin vínculo por ahora</option><option value="parent_of">Es padre/madre de</option><option value="child_of">Es hijo/a de</option><option value="partner_of">Es pareja de</option></select></label> : <label>Parentesco<input disabled placeholder="Sin otras piezas para vincular" /></label>
+        ) : (
+          <label>Apodo<input value={form.nickname} onChange={set('nickname')} /></label>
+        )}
       </div>
-      <label>Ocupación<input value={form.occupation} onChange={set('occupation')} /></label>
-      <label>Notas<textarea rows="5" value={form.notes} onChange={set('notes')} placeholder="Hipótesis, datos pendientes, variantes del apellido..." /></label>
-      <div className="modalActions"><button type="button" className="secondaryButton" onClick={onCancel}>Cancelar</button><button className="primaryButton">Guardar persona</button></div>
+      {showRelation && relationOptions.length > 0 && <label>Vincular con<select value={relationPersonId} onChange={(event) => setRelationPersonId(event.target.value)}><option value="">Elegir pieza</option>{relationOptions.map((person) => <option key={person.id} value={person.id}>{displayName(person)}</option>)}</select></label>}
+      <details className="moreData">
+        <summary>+ datos</summary>
+        <div className="moreDataBody">
+          <div className="profileImageField">
+            <PersonAvatar person={form} large />
+            <div>
+              <span>Imagen de perfil</span>
+              <div className="buttonRow compact">
+                <button type="button" className="secondaryButton" onClick={() => imageInputRef.current?.click()}>Cargar imagen</button>
+                {form.profileImage && <button type="button" className="textButton" onClick={() => setForm((prev) => ({ ...prev, profileImage: '' }))}>Quitar</button>}
+              </div>
+              <input ref={imageInputRef} hidden type="file" accept="image/*" onChange={setProfileImage} />
+            </div>
+          </div>
+          {showRelation && <label>Apodo<input value={form.nickname} onChange={set('nickname')} /></label>}
+          <label>Email<input type="email" value={form.email} onChange={set('email')} placeholder="nombre@dominio.com" /></label>
+          <div className="formGrid two">
+            <label>Sexo<select value={form.sex} onChange={set('sex')}><option value="">Sin indicar</option><option value="M">Masculino</option><option value="F">Femenino</option><option value="X">Otro / no binario</option></select></label>
+            <label>Lugar de nacimiento<input value={form.birthPlace} onChange={set('birthPlace')} placeholder="Ciudad, provincia, país" /></label>
+          </div>
+          <div className="formGrid two">
+            <label>Fallecimiento<input type="date" value={form.deathDate} onChange={set('deathDate')} /></label>
+            <label>Lugar de fallecimiento<input value={form.deathPlace} onChange={set('deathPlace')} /></label>
+          </div>
+          <label>Ocupación<input value={form.occupation} onChange={set('occupation')} /></label>
+          <label>Notas<textarea rows="5" value={form.notes} onChange={set('notes')} placeholder="Hipótesis, datos pendientes, variantes del apellido..." /></label>
+        </div>
+      </details>
+      <div className="modalActions"><button type="button" className="secondaryButton" onClick={onCancel}>Cancelar</button><button className="primaryButton">Guardar pieza</button></div>
     </form>
   );
 }
@@ -1149,9 +1164,9 @@ function EmptyState({ onAdd }) {
   return (
     <div className="emptyState">
       <div className="emptyMark"><img src="/raices-logo.png" alt="" /></div>
-      <h2>Empezá por una persona</h2>
-      <p>El árbol se construye alrededor de personas y vínculos. Podés cargar datos incompletos e ir documentándolos a medida que investigás.</p>
-      <button className="primaryButton" onClick={onAdd}>+ Agregar primera persona</button>
+      <h2>Empezá por una pieza</h2>
+      <p>El árbol se construye alrededor de piezas y vínculos. Podés cargar datos incompletos e ir documentándolos a medida que investigás.</p>
+      <button className="primaryButton" onClick={onAdd}>+ Agregar primera pieza</button>
     </div>
   );
 }
@@ -1426,7 +1441,8 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
     // pan if single pointer
     if (dragRef.current.pan && dragRef.current.pointers.size === 1) {
       const p = dragRef.current.pointers.values().next().value;
-      setViewport((prev) => ({ ...prev, x: dragRef.current.pan.originX + (p.clientX - dragRef.current.pan.startX), y: dragRef.current.pan.originY + (p.clientY - dragRef.current.pan.startY) }));
+      const pan = dragRef.current.pan;
+      setViewport((prev) => ({ ...prev, x: pan.originX + (p.clientX - pan.startX), y: pan.originY + (p.clientY - pan.startY) }));
     }
   };
 
@@ -1572,7 +1588,7 @@ function PublicContributionForm({ db, initialPersonId = '', onClose }) {
         <label>Tu nombre o contacto<input value={contributor} onChange={(event) => setContributor(event.target.value)} placeholder="Opcional" /></label>
         <div className="segmentedControl">
           <button type="button" className={kind === 'edit_person' ? 'active' : ''} onClick={() => setKind('edit_person')}>Sugerir edición</button>
-          <button type="button" className={kind === 'add_person' ? 'active' : ''} onClick={() => setKind('add_person')}>Agregar persona</button>
+          <button type="button" className={kind === 'add_person' ? 'active' : ''} onClick={() => setKind('add_person')}>Agregar pieza</button>
         </div>
         {kind === 'edit_person' && <label>Persona a editar<select value={targetPersonId} onChange={(event) => setTargetPersonId(event.target.value)}><option value="">Elegir persona</option>{[...db.people].sort(comparePeopleByName).map((person) => <option key={person.id} value={person.id}>{displayName(person)}</option>)}</select></label>}
         {kind === 'add_person' && <div className="formGrid two">
@@ -1580,18 +1596,23 @@ function PublicContributionForm({ db, initialPersonId = '', onClose }) {
           <label>Persona vinculada<select value={relationPersonId} onChange={(event) => setRelationPersonId(event.target.value)}><option value="">Elegir persona</option>{[...db.people].sort(comparePeopleByName).map((person) => <option key={person.id} value={person.id}>{displayName(person)}</option>)}</select></label>
         </div>}
         <div className="formGrid two">
-          <label>Nombres<input value={form.givenNames} onChange={set('givenNames')} required={kind === 'add_person'} /></label>
+          <label>Nombres<input value={form.givenNames} onChange={set('givenNames')} /></label>
           <label>Apellidos<input value={form.surnames} onChange={set('surnames')} /></label>
         </div>
         <div className="formGrid two">
-          <label>Nacimiento<input type="date" value={form.birthDate} onChange={set('birthDate')} /></label>
-          <label>Lugar de nacimiento<input value={form.birthPlace} onChange={set('birthPlace')} /></label>
+          <label>Año de nacimiento<input value={form.birthDate} onChange={set('birthDate')} inputMode="numeric" placeholder="Ej. 1942" /></label>
         </div>
-        <div className="formGrid two">
-          <label>Fallecimiento<input type="date" value={form.deathDate} onChange={set('deathDate')} /></label>
-          <label>Lugar de fallecimiento<input value={form.deathPlace} onChange={set('deathPlace')} /></label>
-        </div>
-        <label>Fuente o explicación<textarea rows="4" value={form.notes} onChange={set('notes')} placeholder="Acta, censo, recuerdo familiar, enlace, archivo..." /></label>
+        <details className="moreData">
+          <summary>+ datos</summary>
+          <div className="moreDataBody">
+            <label>Lugar de nacimiento<input value={form.birthPlace} onChange={set('birthPlace')} /></label>
+            <div className="formGrid two">
+              <label>Fallecimiento<input type="date" value={form.deathDate} onChange={set('deathDate')} /></label>
+              <label>Lugar de fallecimiento<input value={form.deathPlace} onChange={set('deathPlace')} /></label>
+            </div>
+            <label>Fuente o explicación<textarea rows="4" value={form.notes} onChange={set('notes')} placeholder="Acta, censo, recuerdo familiar, enlace, archivo..." /></label>
+          </div>
+        </details>
         <div className="modalActions"><button type="button" className="secondaryButton" onClick={onClose}>Cancelar</button><button className="primaryButton">Generar pieza</button></div>
         {pieceText && <div className="pieceOutput">
           <strong>Pieza lista para enviar</strong>
@@ -1684,7 +1705,8 @@ function PublicTreePage({ db }) {
 
     if (dragRef.current.pan && dragRef.current.pointers.size === 1) {
       const p = dragRef.current.pointers.values().next().value;
-      setViewport((prev) => ({ ...prev, x: dragRef.current.pan.originX + (p.clientX - dragRef.current.pan.startX), y: dragRef.current.pan.originY + (p.clientY - dragRef.current.pan.startY) }));
+      const pan = dragRef.current.pan;
+      setViewport((prev) => ({ ...prev, x: pan.originX + (p.clientX - pan.startX), y: pan.originY + (p.clientY - pan.startY) }));
     }
   };
   const onPointerUp = (event) => {
@@ -2000,10 +2022,18 @@ export default function GenealogyApp() {
 
   const updateDb = (fn) => setDb((prev) => normalizeDatabase(fn(prev)));
 
-  const savePerson = (form) => {
+  const savePerson = (form, relation) => {
     const now = new Date().toISOString();
     const person = { id: newId('person'), ...form, createdAt: now, updatedAt: now };
-    updateDb((prev) => ({ ...prev, people: [...prev.people, person], settings: { ...prev.settings, rootPersonId: prev.settings.rootPersonId || person.id } }));
+    updateDb((prev) => {
+      let next = { ...prev, people: [...prev.people, person], settings: { ...prev.settings, rootPersonId: prev.settings.rootPersonId || person.id } };
+      if (relation?.kind && relation?.personId) {
+        if (relation.kind === 'parent_of') next = { ...next, parentChild: [...next.parentChild, { id: newId('pc'), parentId: person.id, childId: relation.personId }] };
+        if (relation.kind === 'child_of') next = { ...next, parentChild: [...next.parentChild, { id: newId('pc'), parentId: relation.personId, childId: person.id }] };
+        if (relation.kind === 'partner_of') next = { ...next, partnerships: [...next.partnerships, { id: newId('partner'), personAId: person.id, personBId: relation.personId, status: '' }] };
+      }
+      return next;
+    });
     setSelectedId(person.id);
     setFocusedId((id) => id || person.id);
     setDrawerPersonId(person.id);
@@ -2249,7 +2279,7 @@ export default function GenealogyApp() {
               <Stat value={db.events.length} label="eventos" />
               <Stat value={db.sources.length} label="fuentes" />
             </div>
-            <button className="primaryButton" onClick={() => setPersonModal({ mode: 'new' })}>+ Nueva persona</button>
+            <button className="primaryButton" onClick={() => setPersonModal({ mode: 'new' })}>+ Nueva pieza</button>
           </div>
         </header>
 
@@ -2334,7 +2364,7 @@ export default function GenealogyApp() {
       </nav>
 
       {drawerPersonId && <PersonDrawer db={db} person={db.people.find((p) => p.id === drawerPersonId)} mode={drawerMode} onModeChange={setDrawerMode} onClose={() => { setDrawerPersonId(null); setDrawerMode('view'); }} onSave={saveExistingPerson} onFocus={openInTree} onLink={linkPerson} onRemoveRelation={(kind, otherId) => removeRelation(drawerPersonId, kind, otherId)} onDelete={deleteSelected} onAddEvent={() => setEventModal(true)} />}
-      {personModal && <Modal title="Nueva persona" onClose={() => setPersonModal(null)}><PersonForm initial={personModal.person} onCancel={() => setPersonModal(null)} onSave={savePerson} /></Modal>}
+      {personModal && <Modal title="Nueva pieza" onClose={() => setPersonModal(null)}><PersonForm initial={personModal.person} people={db.people} showRelation onCancel={() => setPersonModal(null)} onSave={savePerson} /></Modal>}
       {eventModal && selected && <EventForm person={selected} onClose={() => setEventModal(false)} onSave={addEvent} />}
       {sourceModal && <SourceForm onClose={() => setSourceModal(false)} onSave={(source) => { updateDb((prev) => ({ ...prev, sources: [...prev.sources, { id: newId('source'), ...source }] })); setSourceModal(false); }} />}
     </main>

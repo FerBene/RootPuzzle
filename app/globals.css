@@ -288,6 +288,13 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .profileImageField { display: flex; align-items: center; gap: 14px; padding: 13px; border: 1px solid var(--line); border-radius: 14px; background: #fbfcf8; }
 .profileImageField > div { min-width: 0; display: grid; gap: 6px; }
 .profileImageField span { color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.moreData { border: 1px solid var(--line); border-radius: 12px; background: rgba(255,253,248,.68); overflow: hidden; }
+.moreData summary { cursor: pointer; padding: 11px 13px; color: var(--accent); font-size: 12px; font-weight: 900; list-style: none; }
+.moreData summary::-webkit-details-marker { display: none; }
+.moreData summary::after { content: '+'; float: right; color: var(--muted); font-size: 14px; line-height: 1; }
+.moreData[open] summary { border-bottom: 1px solid var(--line); }
+.moreData[open] summary::after { content: '−'; }
+.moreDataBody { display: grid; gap: 13px; padding: 13px; }
 .buttonRow.compact { margin-top: 0; flex-wrap: wrap; }
 .buttonRow.compact .secondaryButton, .buttonRow.compact .textButton { padding: 8px 10px; font-size: 11px; }
 .sourceCard, .dataCard, .globalTimelineItem article { border-radius: 12px; box-shadow: 0 8px 22px rgba(31,37,33,.05); }
@@ -406,6 +413,7 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .appShell.darkMode input,
 .appShell.darkMode select,
 .appShell.darkMode textarea { background: #121a17; color: var(--ink); border-color: var(--line); }
+.appShell.darkMode .moreData { background: #121a17; border-color: var(--line); }
 .appShell.darkMode .primaryButton,
 .appShell.darkMode .activeToggle { background: #3da77b; color: #06110d; border-color: #3da77b; }
 .appShell.darkMode .treeCanvas { background-color: #121916; background-image: none; }
