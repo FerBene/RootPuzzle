@@ -5,19 +5,22 @@ import { defaultDatabase, displayName, emptyDatabase, newId, normalizeDatabase, 
 import { exportGedcom, importGedcom } from '@/lib/gedcom';
 import { getRemoteTree, remoteTreeStorageKey, saveRemoteTree } from '@/lib/supabaseStore';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
+import { BookOpen, ChevronsLeft, ChevronsRight, Database, Hourglass, Puzzle, TreePine, UserCircle } from 'lucide-react';
 
-const IconHome = (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10.5z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>);
-const IconPeople = (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M16 11c1.657 0 3-1.79 3-4s-1.343-4-3-4-3 1.79-3 4 1.343 4 3 4zM8 11c1.657 0 3-1.79 3-4S9.657 3 8 3 5 4.79 5 7s1.343 4 3 4z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 21c0-2.5 2.686-4.5 6-4.5s6 2 6 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>);
-const IconTimeline = (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.4"/><path d="M12 7v6l4 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>);
-const IconSources = (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 5h14v14H3z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M7 5v14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>);
-const IconProfile = (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="8.5" r="3" stroke="currentColor" strokeWidth="1.4"/><path d="M4 20c0-3.313 3.582-6 8-6s8 2.687 8 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>);
+const iconProps = { size: 20, strokeWidth: 1.9, 'aria-hidden': true };
+const IconHome = <TreePine {...iconProps} />;
+const IconPieces = <Puzzle {...iconProps} />;
+const IconTimeline = <Hourglass {...iconProps} />;
+const IconSources = <BookOpen {...iconProps} />;
+const IconData = <Database {...iconProps} />;
+const IconProfile = <UserCircle {...iconProps} />;
 
 const sections = [
   ['tree', 'Árbol', IconHome],
-  ['people', 'Personas', IconPeople],
+  ['people', 'Piezas', IconPieces],
   ['timeline', 'Línea de tiempo', IconTimeline],
   ['sources', 'Fuentes', IconSources],
-  ['data', 'Importar / Exportar', '⇅']
+  ['data', 'Importar / Exportar', IconData]
 ];
 
 const sectionHashMap = {
@@ -31,7 +34,7 @@ const sectionHashMap = {
 
 const sectionTitles = {
   tree: 'Árbol',
-  people: 'Personas',
+  people: 'Piezas',
   timeline: 'Línea de tiempo',
   sources: 'Fuentes',
   data: 'Importar / Exportar'
@@ -39,7 +42,7 @@ const sectionTitles = {
 
 const sectionSubtitles = {
   tree: 'Visualiza y navega el árbol familiar.',
-  people: 'Gestiona las personas registradas y sus perfiles.',
+  people: 'Gestiona las piezas registradas y sus perfiles.',
   timeline: 'Revisa los eventos en orden cronológico.',
   sources: 'Organiza las fuentes documentales de tu investigación.',
   data: 'Importa, exporta y respalda tu árbol.'
@@ -139,6 +142,7 @@ const TEMPORAL_BOTTOM_PADDING = 96;
 const TEMPORAL_PIXELS_PER_YEAR = 8;
 const UNKNOWN_BIRTH_YEAR_OFFSET = 30;
 const THEME_STORAGE_KEY = 'raices.theme';
+const LANGUAGE_STORAGE_KEY = 'rootPuzzle.language';
 const CANVAS_BACKGROUND_STORAGE_KEY = 'raices.canvasBackground';
 const PUBLIC_TREE_HASH_PREFIX = '#public-tree=';
 
@@ -311,7 +315,7 @@ const buildPdfExportHtml = (db) => {
     <img src="${window.location.origin}/raices-logo.png" alt="" />
     <div>
       <h1>${escapeHtml(db.settings.treeName)}</h1>
-      <div class="meta">Exportado desde Raíces · ${new Date().toLocaleDateString('es-AR')}</div>
+      <div class="meta">Exportado desde Root Puzzle · ${new Date().toLocaleDateString('es-AR')}</div>
     </div>
   </header>
   <section class="stats">
@@ -320,7 +324,7 @@ const buildPdfExportHtml = (db) => {
     <div class="stat"><strong>${db.partnerships.length}</strong><span>parejas</span></div>
     <div class="stat"><strong>${db.sources.length}</strong><span>fuentes</span></div>
   </section>
-  <h3>Personas</h3>
+  <h3>Piezas</h3>
   ${rows}
   <h3>Vínculos</h3>
   <ul>${relationships || '<li>Sin vínculos registrados.</li>'}</ul>
@@ -465,7 +469,7 @@ const drawTreeExportCanvas = async ({ db, layout, title, temporalScale, canvasBa
   ctx.fillText(title || db.settings.treeName || 'Árbol familiar', padding, 38);
   ctx.fillStyle = '#707a72';
   ctx.font = '12px Arial';
-  ctx.fillText(`${layout.allPeopleCount || layout.nodes.length} personas visibles · Exportado desde Raíces`, padding, 58);
+  ctx.fillText(`${layout.allPeopleCount || layout.nodes.length} piezas visibles · Exportado desde Root Puzzle`, padding, 58);
 
   if (hasTemporalAxis) {
     ctx.save();
@@ -1089,6 +1093,20 @@ function Modal({ title, onClose, children }) {
   );
 }
 
+function AppLoader({ message = 'Abriendo tu árbol', animated = true }) {
+  return (
+    <main className={`loading ${animated ? 'loadingAnimated' : ''}`}>
+      <div className="loadingCard" role={animated ? 'status' : 'alert'} aria-live="polite">
+        <div className="loadingLogoWrap" aria-hidden="true">
+          <span className="loadingRing" />
+          <img className="loadingLogo" src="/raices-logo.png" alt="" />
+        </div>
+        <span>{message}</span>
+      </div>
+    </main>
+  );
+}
+
 function PersonForm({ initial, people = [], showRelation = false, onCancel, onSave }) {
   const [form, setForm] = useState({ ...blankPerson(), ...(initial || {}) });
   const [relationKind, setRelationKind] = useState('');
@@ -1470,7 +1488,7 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
       db,
       layout,
       filename: `raices-${Date.now()}.pdf`,
-      title: showAllPeople ? `${db.settings.treeName} · Todas las personas` : `${db.settings.treeName} · ${displayName(person)}`,
+      title: showAllPeople ? `${db.settings.treeName} · Todas las piezas` : `${db.settings.treeName} · ${displayName(person)}`,
       temporalScale,
       canvasBackground
     });
@@ -1479,14 +1497,14 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
   return (
     <div className={`treeWorkspace ${isCanvasMaximized ? 'canvasMaximized' : ''}`}>
       <div className="treeToolbar">
-        <div><p className="eyebrow">{showAllPeople ? 'Vista completa' : 'Ascendencia y descendencia'}</p><p className="toolbarSummaryText">{showAllPeople ? `${layout.allPeopleCount} personas visibles · doble click para enfocar una rama.${temporalScale ? ' Escala temporal activa.' : ''}` : `${layout.ancestorCount} ancestros · ${layout.descendantCount} descendientes · ramas ordenadas por fecha.${temporalScale ? ' Escala temporal activa.' : ''}`}</p></div>
+        <div><p className="eyebrow">{showAllPeople ? 'Vista completa' : 'Ascendencia y descendencia'}</p><p className="toolbarSummaryText">{showAllPeople ? `${layout.allPeopleCount} piezas visibles · doble click para enfocar una rama.${temporalScale ? ' Escala temporal activa.' : ''}` : `${layout.ancestorCount} ancestros · ${layout.descendantCount} descendientes · ramas ordenadas por fecha.${temporalScale ? ' Escala temporal activa.' : ''}`}</p></div>
         <div className="treeControls">
           <select value={person.id} onChange={(e) => { setShowAllPeople(false); setFocusedId(e.target.value); }}>{[...db.people].sort(comparePeopleByName).map((p) => <option key={p.id} value={p.id}>{displayName(p)}</option>)}</select>
-          <button className={`secondaryButton ${showAllPeople ? 'activeToggle' : ''}`} type="button" onClick={() => setShowAllPeople((value) => !value)}>{showAllPeople ? 'Ver rama enfocada' : 'Ver todas las personas'}</button>
+          <button className={`secondaryButton ${showAllPeople ? 'activeToggle' : ''}`} type="button" onClick={() => setShowAllPeople((value) => !value)}>{showAllPeople ? 'Ver rama enfocada' : 'Ver todas las piezas'}</button>
           {!showAllPeople && <div className="treeFilterChecks" aria-label="Filtros de rama">
-            <label><input type="checkbox" checked={showAncestors} onChange={(event) => setShowAncestors(event.target.checked)} /> Mostrar ascendencia</label>
-            <label><input type="checkbox" checked={showDescendants} onChange={(event) => setShowDescendants(event.target.checked)} /> Mostrar descendencia</label>
-            <label><input type="checkbox" checked={showGeneration} onChange={(event) => setShowGeneration(event.target.checked)} /> Mostrar generación</label>
+            <label data-short="Asc."><input type="checkbox" checked={showAncestors} onChange={(event) => setShowAncestors(event.target.checked)} /> Mostrar ascendencia</label>
+            <label data-short="Desc."><input type="checkbox" checked={showDescendants} onChange={(event) => setShowDescendants(event.target.checked)} /> Mostrar descendencia</label>
+            <label data-short="Gen."><input type="checkbox" checked={showGeneration} onChange={(event) => setShowGeneration(event.target.checked)} /> Mostrar generación</label>
           </div>}
           <div className="zoomControls" aria-label="Controles de zoom">
             <button className={`secondaryButton ${temporalScale ? 'activeToggle' : ''}`} type="button" onClick={() => setTemporalScale((value) => !value)}>Escala temporal</button>
@@ -1898,6 +1916,8 @@ export default function GenealogyApp() {
   const [sourceModal, setSourceModal] = useState(false);
   const [query, setQuery] = useState('');
   const [darkMode, setDarkMode] = useState(false);
+  const [language, setLanguage] = useState('es');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [detectiveRunning, setDetectiveRunning] = useState(false);
   const [publicTreeUrl, setPublicTreeUrl] = useState('');
   const importRef = useRef(null);
@@ -1914,6 +1934,7 @@ export default function GenealogyApp() {
           return;
         }
         setDarkMode(localStorage.getItem(THEME_STORAGE_KEY) === 'dark');
+        setLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'es');
         const remoteTreeId = localStorage.getItem(remoteTreeStorageKey);
         setRemoteTreeId(remoteTreeId);
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -1962,6 +1983,11 @@ export default function GenealogyApp() {
     if (!hydrated || publicDb) return;
     localStorage.setItem(THEME_STORAGE_KEY, darkMode ? 'dark' : 'light');
   }, [darkMode, hydrated, publicDb]);
+
+  useEffect(() => {
+    if (!hydrated || publicDb) return;
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+  }, [language, hydrated, publicDb]);
 
   useEffect(() => {
     const parseSectionHash = () => {
@@ -2238,34 +2264,41 @@ export default function GenealogyApp() {
     });
   };
 
-  if (!hydrated) return <main className="loading"><img className="loadingLogo" src="/raices-logo.png" alt="" /><span>Abriendo tu árbol…</span></main>;
-  if (publicLoadError) return <main className="loading"><img className="loadingLogo" src="/raices-logo.png" alt="" /><span>{publicLoadError}</span></main>;
+  if (!hydrated) return <AppLoader />;
+  if (publicLoadError) return <AppLoader message={publicLoadError} animated={false} />;
 
   const remoteSyncNotice = isSupabaseConfigured
     ? remoteSyncError ? `Sincronización en la nube falla: ${remoteSyncError}` : `Sincronizado con Supabase${remoteTreeId ? '' : ' (creando registro remoto)'}`
     : 'Supabase no está configurado. Usa localStorage y agrega las variables NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.';
   if (publicDb) return <PublicTreePage db={publicDb} />;
+  const profilePerson = selected || db.people.find((person) => person.id === db.settings.rootPersonId) || db.people[0] || { givenNames: 'Mi', surnames: 'perfil', email: '' };
 
   return (
-    <main className={`appShell ${darkMode ? 'darkMode' : ''}`}>
-      <aside className={`sidebar`}> 
-        <div className="brand"><div className="brandMark"><img src="/raices-logo.png" alt="" /></div><div><strong>Raíces</strong><span>Genealogía web</span></div></div>
-        <nav>{sections.map(([id, label, icon]) => <button key={id} className={section === id ? 'active' : ''} onClick={() => { setSection(id); }}><span>{icon}</span>{label}</button>)}</nav>
+    <main className={`appShell ${darkMode ? 'darkMode' : ''} ${sidebarCollapsed ? 'sidebarCollapsed' : ''}`}>
+      <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+        <div className="brand">
+          <div className="brandMark"><img src="/raices-logo.png" alt="" /></div>
+          <div className="brandText"><strong>Root Puzzle</strong><span>Genealogía web</span></div>
+          <button className="sidebarCollapseButton" type="button" onClick={() => setSidebarCollapsed((value) => !value)} aria-label={sidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'} title={sidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'}>
+            {sidebarCollapsed ? <ChevronsRight size={18} strokeWidth={1.9} aria-hidden="true" /> : <ChevronsLeft size={18} strokeWidth={1.9} aria-hidden="true" />}
+          </button>
+        </div>
+        <nav>{sections.map(([id, label, icon]) => <button key={id} title={label} className={section === id ? 'active' : ''} onClick={() => { setSection(id); }}><span className="navIcon">{icon}</span><span className="navLabel">{label}</span></button>)}</nav>
         <div className="sidebarBottom">
-          <div className="themeToggle">
-            <button className={`secondaryButton ${darkMode ? 'activeToggle' : ''}`} type="button" onClick={() => setDarkMode((value) => !value)} aria-label="Cambiar tema" title="Cambiar tema">
-              {darkMode ? (
-                <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 3v2M12 19v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M12 7a5 5 0 100 10 5 5 0 000-10z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg><span style={{marginLeft:8}}>Tema claro</span></>
-              ) : (
-                <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg><span style={{marginLeft:8}}>Tema oscuro</span></>
-              )}
+          <div className="sidebarProfile">
+            <button type="button" title="Mi perfil" className={`sidebarProfileButton ${section === 'profile' ? 'active' : ''}`} onClick={() => setSection('profile')}>
+              <PersonAvatar person={profilePerson} />
+              <div className="sidebarProfileText">
+                <strong>Mi perfil</strong>
+                <span>{displayName(profilePerson)}</span>
+                <small>{profilePerson.email || 'Cuenta local'}</small>
+              </div>
             </button>
           </div>
-          <div className="privacy"><span>●</span><div><strong>Privado por defecto</strong><small>Los datos quedan en este navegador.</small></div></div>
         </div>
       </aside>
 
-      <section className="mainArea">
+      <section className={`mainArea section-${section}`}>
         <header className="topbar">
           <div className="topbarTitle">
             <p className="eyebrow">{db.settings.treeName}</p>
@@ -2274,7 +2307,7 @@ export default function GenealogyApp() {
           </div>
           <div className="topbarActions">
             <div className="topbarStats">
-              <Stat value={db.people.length} label="personas" />
+              <Stat value={db.people.length} label="piezas" />
               <Stat value={db.parentChild.length + db.partnerships.length} label="vínculos" />
               <Stat value={db.events.length} label="eventos" />
               <Stat value={db.sources.length} label="fuentes" />
@@ -2301,7 +2334,7 @@ export default function GenealogyApp() {
 
         {section === 'data' && <section className="contentPanel dataPanel">
           <div className="dataGrid">
-            <article className="dataCard"><div className="dataIcon">{`{ }`}</div><h3>Backup completo JSON</h3><p>Guarda personas, vínculos, eventos, fuentes y configuración.</p><div className="buttonRow"><button className="secondaryButton" onClick={() => downloadText('raices-backup.json', JSON.stringify(db, null, 2), 'application/json')}>Exportar JSON</button><button className="textButton" onClick={() => importRef.current?.click()}>Importar</button></div><input ref={importRef} hidden type="file" accept="application/json,.json" onChange={(e) => e.target.files?.[0] && importJson(e.target.files[0])} /></article>
+            <article className="dataCard"><div className="dataIcon">{`{ }`}</div><h3>Backup completo JSON</h3><p>Guarda piezas, vínculos, eventos, fuentes y configuración.</p><div className="buttonRow"><button className="secondaryButton" onClick={() => downloadText('raices-backup.json', JSON.stringify(db, null, 2), 'application/json')}>Exportar JSON</button><button className="textButton" onClick={() => importRef.current?.click()}>Importar</button></div><input ref={importRef} hidden type="file" accept="application/json,.json" onChange={(e) => e.target.files?.[0] && importJson(e.target.files[0])} /></article>
             <article className="dataCard"><div className="dataIcon">GED</div><h3>GEDCOM 5.5.1</h3><p>Intercambio básico con otras aplicaciones genealógicas.</p><div className="buttonRow"><button className="secondaryButton" onClick={() => downloadText('raices.ged', exportGedcom(db), 'text/plain')}>Exportar GEDCOM</button><button className="textButton" onClick={() => gedcomRef.current?.click()}>Importar</button></div><input ref={gedcomRef} hidden type="file" accept=".ged,text/plain" onChange={(e) => e.target.files?.[0] && importGed(e.target.files[0])} /></article>
             <article className="dataCard"><div className="dataIcon">PDF</div><h3>Exportar como PDF</h3><p>Descarga un PDF del lienzo del árbol. Para respetar filtros, escala temporal y fondo, usá también el botón PDF dentro del lienzo.</p><div className="buttonRow"><button className="secondaryButton" onClick={() => exportPdf(db)}>Exportar PDF</button></div></article>
             <article className="dataCard publishCard"><div className="dataIcon puzzleIcon">🧩</div><h3>Publicar árbol</h3><p>Genera un enlace público de solo lectura con nombres, relaciones, fechas y lugares. Quien lo vea puede aportar una pieza del rompecabezas familiar.</p><div className="buttonRow"><button className="secondaryButton" onClick={publishTree}>Generar enlace</button></div>{publicTreeUrl && <div className="shareBox"><input readOnly value={publicTreeUrl} onFocus={(event) => event.target.select()} /><small>El enlace se copió al portapapeles si el navegador lo permitió.</small></div>}</article>
@@ -2322,18 +2355,29 @@ export default function GenealogyApp() {
               <p className="muted">Accedé a tu perfil y ajustes</p>
             </div>
           </div>
-          <div className="personDetail">
-            <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
-              <PersonAvatar person={selected || { givenNames: 'Tú', surnames: '' }} large />
+          <div className="personDetail profileAccount">
+            <div className="profileAccountCard">
+              <PersonAvatar person={profilePerson} large />
               <div>
-                <strong>{displayName(selected) || 'Tu perfil'}</strong>
-                <div className="muted small">{selected?.email || 'Sin email'}</div>
+                <strong>{displayName(profilePerson)}</strong>
+                <div className="muted small">{profilePerson.email || 'Cuenta local sin email'}</div>
               </div>
             </div>
-            <div style={{marginTop: 18}}>
-              <button className={`secondaryButton ${darkMode ? 'activeToggle' : ''}`} onClick={() => setDarkMode((v) => !v)}>{darkMode ? '☀️ Tema claro' : '🌙 Tema oscuro'}</button>
+            <div className="profileThemeRow">
+              <span>Preferencia visual</span>
+              <button className={`themeSwitch ${darkMode ? 'dark' : 'light'}`} type="button" onClick={() => setDarkMode((v) => !v)} aria-label={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}>
+                <span className="themeSwitchTrack" aria-hidden="true"><span /></span>
+                <span>{darkMode ? 'Modo claro' : 'Modo oscuro'}</span>
+              </button>
             </div>
-            <div style={{marginTop: 18}} className="warningBox"><small>Perfil básico local. Para sincronizar y tener cuenta, configurá Supabase.</small></div>
+            <div className="profileThemeRow">
+              <span>Idioma</span>
+              <div className="segmentedControl languageToggle" role="group" aria-label="Idioma">
+                <button type="button" className={language === 'es' ? 'active' : ''} onClick={() => setLanguage('es')} aria-pressed={language === 'es'}>Español</button>
+                <button type="button" className={language === 'en' ? 'active' : ''} onClick={() => setLanguage('en')} aria-pressed={language === 'en'}>English</button>
+              </div>
+            </div>
+            <div className="warningBox"><small>Perfil básico local. Para sincronizar y tener cuenta, configurá Supabase.</small></div>
           </div>
         </section>}
 
@@ -2342,23 +2386,23 @@ export default function GenealogyApp() {
       {/* Mobile bottom navigation (visible on small screens) */}
       <nav className="mobileBottomNav" role="navigation" aria-label="Navegación">
         <button className={section === 'tree' ? 'active' : ''} onClick={() => setSection('tree')} aria-label="Inicio" title="Inicio">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 10.5L12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10.5z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          {IconHome}
           <small>Inicio</small>
         </button>
-        <button className={section === 'people' ? 'active' : ''} onClick={() => setSection('people')} aria-label="Personas" title="Personas">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M16 11c1.657 0 3-1.79 3-4s-1.343-4-3-4-3 1.79-3 4 1.343 4 3 4zM8 11c1.657 0 3-1.79 3-4S9.657 3 8 3 5 4.79 5 7s1.343 4 3 4z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 21c0-2.5 2.686-4.5 6-4.5s6 2 6 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          <small>Personas</small>
+        <button className={section === 'people' ? 'active' : ''} onClick={() => setSection('people')} aria-label="Piezas" title="Piezas">
+          {IconPieces}
+          <small>Piezas</small>
         </button>
         <button className={section === 'timeline' ? 'active' : ''} onClick={() => setSection('timeline')} aria-label="Timeline" title="Timeline">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.4"/><path d="M12 7v6l4 2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          {IconTimeline}
           <small>Timeline</small>
         </button>
         <button className={section === 'sources' ? 'active' : ''} onClick={() => setSection('sources')} aria-label="Fuentes" title="Fuentes">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 5h14v14H3z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M7 5v14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          {IconSources}
           <small>Fuentes</small>
         </button>
         <button className={section === 'profile' ? 'active' : ''} onClick={() => setSection('profile')} aria-label="Perfil" title="Perfil">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="8.5" r="3" stroke="currentColor" strokeWidth="1.4"/><path d="M4 20c0-3.313 3.582-6 8-6s8 2.687 8 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          {IconProfile}
           <small>Perfil</small>
         </button>
       </nav>

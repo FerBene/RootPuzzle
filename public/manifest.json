@@ -1,10 +1,10 @@
 {
-  "name": "Raíces — Árbol Genealógico",
-  "short_name": "Raíces",
+  "name": "Root Puzzle — Árbol Genealógico",
+  "short_name": "Root Puzzle",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#245b4d",
+  "theme_color": "#0e4b50",
   "orientation": "any",
   "icons": [
     {
