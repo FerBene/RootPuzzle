@@ -34,6 +34,8 @@ a { color: var(--accent); }
 .sidebar nav button { border: 0; background: transparent; color: #c9d2ce; padding: 11px 12px; border-radius: 10px; text-align: left; display: flex; gap: 11px; align-items: center; }
 .sidebar nav button span { width: 22px; text-align: center; opacity: .8; }
 .sidebar nav button .navIcon { display: grid; place-items: center; flex: 0 0 22px; }
+.navImageIcon { width: 22px; height: 22px; display: block; object-fit: cover; border-radius: 7px; mix-blend-mode: screen; filter: contrast(1.08) brightness(1.12); }
+.treeNavIcon { transform: scale(1.12); }
 .sidebar nav button .navLabel { width: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: 1; }
 .sidebar nav button:hover, .sidebar nav button.active { background: #314139; color: white; }
 .sidebarBottom { margin-top: auto; border-top: 1px solid #39453f; padding: 18px 7px 0; }
@@ -55,11 +57,11 @@ a { color: var(--accent); }
 .sidebarProfileButton strong { font-size: 12px; }
 .sidebarProfileButton span { color: #dce6e2; font-size: 11px; }
 .sidebarProfileButton small { color: #96a59e; font-size: 10px; }
-.themeSwitch { width: 100%; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 9px 10px; background: rgba(255,255,255,.04); color: #e9efec; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; font-weight: 800; }
-.themeSwitchTrack { width: 38px; height: 22px; border-radius: 999px; padding: 3px; background: rgba(255,255,255,.14); display: flex; align-items: center; transition: background .16s ease; }
-.themeSwitchTrack span { width: 16px; height: 16px; border-radius: 50%; background: #ffffff; box-shadow: 0 2px 7px rgba(0,0,0,.22); transition: transform .16s ease; }
-.themeSwitch.dark .themeSwitchTrack { background: var(--accent); }
-.themeSwitch.dark .themeSwitchTrack span { transform: translateX(16px); }
+.toggleSwitch { border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 9px 10px; background: rgba(255,255,255,.04); color: #e9efec; display: inline-flex; align-items: center; justify-content: center; gap: 9px; font-size: 12px; font-weight: 900; }
+.toggleSwitchTrack { width: 38px; height: 22px; border-radius: 999px; padding: 3px; background: rgba(255,255,255,.14); display: flex; align-items: center; transition: background .16s ease; }
+.toggleSwitchTrack span { width: 16px; height: 16px; border-radius: 50%; background: #ffffff; box-shadow: 0 2px 7px rgba(0,0,0,.22); transition: transform .16s ease; }
+.toggleSwitch.on .toggleSwitchTrack { background: var(--accent); }
+.toggleSwitch.on .toggleSwitchTrack span { transform: translateX(16px); }
 .privacy { display: flex; gap: 9px; align-items: flex-start; color: #d8dfdc; }
 .privacy > span { color: #79a991; font-size: 10px; margin-top: 4px; }
 .privacy strong, .privacy small { display: block; }
@@ -404,6 +406,11 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .emptyMark img { width: 100%; height: 100%; display: block; object-fit: cover; }
 
 .activeToggle { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 8px 18px rgba(14,75,80,.2); }
+.iconTextButton { display: inline-flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap; }
+.iconTextButton svg,
+.iconButton svg,
+.toggleSwitch svg { flex: 0 0 auto; }
+.compactTextButton { font-size: 11px; white-space: nowrap; }
 
 .topbarActions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .modalBackdrop { z-index: 80; }
@@ -413,20 +420,34 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .personDrawer { width: min(520px, 96vw); height: 100vh; overflow: auto; background: var(--surface); color: var(--ink); border-left: 1px solid var(--line); box-shadow: -24px 0 70px rgba(0,0,0,.18); padding: 20px; animation: drawerIn .18s ease-out; }
 .personDrawer.living { box-shadow: inset 4px 0 0 rgba(77,146,114,.3), -24px 0 70px rgba(0,0,0,.18); }
 .personDrawer.deceased { box-shadow: inset 4px 0 0 rgba(140,130,117,.35), -24px 0 70px rgba(0,0,0,.18); }
-.profileAccount { display: grid; gap: 18px; }
-.profileAccountCard { display: flex; align-items: center; gap: 12px; }
-.profileAccountCard > div { min-width: 0; }
-.profileAccountCard strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.profileThemeRow { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
-.profileThemeRow > span { color: var(--muted); font-size: 12px; font-weight: 850; }
-.profileThemeRow .themeSwitch { width: auto; min-width: 160px; background: var(--surface); color: var(--ink); border-color: var(--line); }
-.profileThemeRow .themeSwitch.light .themeSwitchTrack { background: #d3dcda; }
-.profileThemeRow .languageToggle { width: min(260px, 100%); grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--surface); }
-.profileThemeRow .languageToggle button { padding: 9px 12px; }
-@media (max-width: 520px) {
-  .profileThemeRow { align-items: stretch; flex-direction: column; }
-  .profileThemeRow .themeSwitch,
-  .profileThemeRow .languageToggle { width: 100%; }
+.profilePanel { max-width: 920px; }
+.section-profile .topbar { display: none; }
+.profileAccount { display: grid; gap: 16px; padding: 22px; }
+.profileCard,
+.profileSetting,
+.profileNotice { border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
+.profileCard { display: flex; align-items: center; gap: 14px; padding: 16px; }
+.profileCard > div { min-width: 0; }
+.profileCard strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(16px, 2vw, 20px); }
+.profileSettings { display: grid; gap: 12px; }
+.profileSetting { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, auto); align-items: center; gap: 16px; padding: 14px 16px; }
+.profileSetting > div:first-child { min-width: 0; display: grid; gap: 3px; }
+.profileSetting strong { color: var(--ink); font-size: 13px; font-weight: 900; }
+.profileSetting span { color: var(--muted); font-size: 12px; line-height: 1.35; }
+.profileSetting .toggleSwitch { width: 100%; min-width: 170px; background: var(--surface); color: var(--ink); border-color: var(--line); }
+.profileSetting .toggleSwitch.off .toggleSwitchTrack { background: #d3dcda; }
+.profileSetting .languageSwitch { min-width: 170px; }
+.profileSetting .languageSwitch > span:not(.toggleSwitchTrack) { min-width: 24px; text-align: center; }
+.profileNotice { padding: 13px 16px; color: #6d5a37; background: #fff7e8; border-color: #ead8b7; line-height: 1.5; }
+@media (max-width: 720px) {
+  .profilePanel { max-width: none; }
+  .profileAccount { padding: 16px; }
+  .profileSetting { grid-template-columns: 1fr; align-items: stretch; }
+  .profileSetting .toggleSwitch { min-width: 0; width: 100%; }
+}
+@media (max-width: 420px) {
+  .profileAccount { padding: 12px; gap: 12px; }
+  .profileCard { align-items: flex-start; }
 }
 .drawerHeader { position: sticky; top: -20px; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: -20px -20px 18px; padding: 18px 20px; background: color-mix(in srgb, var(--surface) 94%, transparent); border-bottom: 1px solid var(--line); backdrop-filter: blur(10px); }
 .drawerHeader h2 { margin: 0; font-size: 23px; }
@@ -526,8 +547,11 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .appShell.darkMode .suggestionStatus.pending { color: var(--brand-secondary); background: #372d19; }
 .appShell.darkMode .suggestionSource,
 .appShell.darkMode .detectiveSummary span,
-.appShell.darkMode .segmentedControl { background: var(--surface-2); border-color: var(--line); }
+.appShell.darkMode .segmentedControl,
+.appShell.darkMode .treeFilterChecks,
+.appShell.darkMode .zoomControls { background: var(--surface-2); border-color: var(--line); }
 .appShell.darkMode .segmentedControl button.active { background: #0f1516; color: var(--accent); }
+.appShell.darkMode .profileNotice { background: #2c2416; border-color: #5c4824; color: #e5cf9e; }
 .appShell.darkMode .temporalAxis { background: linear-gradient(90deg, rgba(15,21,22,.98), rgba(15,21,22,.92) 72%, rgba(15,21,22,0)); border-right-color: var(--line); }
 .appShell.darkMode .temporalAxisLine { background: rgba(143,213,200,.24); }
 .appShell.darkMode .temporalTick { border-top-color: rgba(143,213,200,.36); }
@@ -637,13 +661,15 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .section-tree .topbarStats .stat span { font-size: 11px; }
 .section-tree .topbarActions .primaryButton { padding: 9px 12px; }
 .section-tree .treeWorkspace { min-height: calc(100vh - 112px); overflow: hidden; }
-.section-tree .treeToolbar { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, auto); gap: 10px; align-items: center; padding: 10px 12px; }
-.section-tree .treeToolbar .eyebrow { margin-bottom: 3px; }
-.section-tree .toolbarSummaryText { margin: 0; font-size: 11px; line-height: 1.35; }
-.section-tree .treeControls { min-width: 0; gap: 7px; justify-items: end; }
-.section-tree .treeFilterChecks { gap: 8px; max-width: none; }
+.section-tree .treeToolbar { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, auto); gap: 12px; align-items: center; padding: 10px 12px; }
+.treeScope { display: grid; grid-template-columns: minmax(220px, 1fr) auto; gap: 8px; align-items: end; min-width: 0; }
+.treeScope label { display: grid; gap: 4px; min-width: 0; color: var(--muted); font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+.treeScope label span { color: var(--muted); }
+.treeScope select { width: 100%; min-width: 0; height: 38px; padding-block: 8px; font-size: 12px; }
+.section-tree .treeControls { min-width: 0; gap: 8px; justify-items: end; }
+.section-tree .treeFilterChecks { gap: 8px; max-width: none; padding: 6px 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
 .section-tree .treeFilterChecks label { font-size: 10px; }
-.section-tree .zoomControls { gap: 6px; flex-wrap: nowrap; }
+.section-tree .zoomControls { gap: 6px; flex-wrap: nowrap; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
 .section-tree .zoomControls .secondaryButton { padding: 8px 10px; }
 .section-tree .zoomControls .iconButton { width: 34px; height: 34px; }
 .section-tree .zoomControls span { min-width: 38px; }
@@ -656,7 +682,7 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
   .section-tree .topbarTitle h1 { font-size: 24px; }
   .section-tree .topbarStats { display: none; }
   .section-tree .treeToolbar { grid-template-columns: 1fr; align-items: stretch; }
-  .section-tree .treeToolbar > div:first-child { display: none; }
+  .section-tree .treeScope { grid-template-columns: minmax(0, 1fr) auto; }
   .section-tree .treeControls { justify-items: stretch; }
   .section-tree .treeFilterChecks { justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; }
   .section-tree .zoomControls { overflow-x: auto; padding-bottom: 2px; }
@@ -674,13 +700,17 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
   .section-tree .topbarActions .primaryButton { padding: 8px 10px; font-size: 13px; white-space: nowrap; }
   .section-tree .treeWorkspace { min-height: calc(100dvh - 112px); border-radius: 12px; }
   .section-tree .treeToolbar { padding: 7px; gap: 6px; }
-  .section-tree .treeToolbar .eyebrow,
-  .section-tree .toolbarSummaryText { display: none; }
+  .section-tree .treeScope { grid-template-columns: 1fr auto; gap: 6px; }
+  .section-tree .treeScope label span { display: none; }
+  .section-tree .treeScope select { height: 36px; font-size: 11px; }
+  .section-tree .treeScope .iconTextButton { min-width: 42px; padding: 8px; }
+  .section-tree .treeScope .iconTextButton span { display: none; }
   .section-tree .treeFilterChecks { gap: 7px; }
   .section-tree .treeFilterChecks label { font-size: 0; }
   .section-tree .treeFilterChecks label input { width: 16px; height: 16px; }
   .section-tree .treeFilterChecks label::after { content: attr(data-short); font-size: 11px; color: var(--muted); }
   .section-tree .zoomControls .secondaryButton { padding: 8px 9px; font-size: 12px; }
+  .section-tree .zoomControls .iconTextButton span { display: none; }
   .section-tree .zoomControls .iconButton { width: 34px; height: 34px; min-width: 34px; }
   .section-tree .treeCanvas { height: calc(100dvh - 180px); min-height: 0; padding: 0; }
   .section-tree .treeHint { display: none; }
@@ -694,11 +724,12 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 }
 
 /* Mobile bottom navigation (footer) */
-.mobileBottomNav { position: fixed; left: 0; right: 0; bottom: 0; height: 64px; display: flex; gap: 6px; justify-content: space-around; align-items: center; background: #11191b; color: #fff; border-top: 1px solid rgba(255,255,255,.08); box-shadow: 0 -12px 28px rgba(0,0,0,.28); z-index: 999; padding: 6px 8px; }
-.mobileBottomNav button { background: transparent; border: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: rgba(255,255,255,.9); font-size: 11px; padding: 6px 8px; border-radius: 8px; min-width: 54px; }
+.mobileBottomNav { position: fixed; left: 0; right: 0; bottom: 0; height: 66px; display: flex; gap: 4px; justify-content: space-between; align-items: center; background: #11191b; color: #fff; border-top: 1px solid rgba(255,255,255,.08); box-shadow: 0 -12px 28px rgba(0,0,0,.28); z-index: 999; padding: 6px max(7px, env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom)) max(7px, env(safe-area-inset-right)); }
+.mobileBottomNav button { background: transparent; border: 0; display: flex; flex: 1 1 0; min-width: 0; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: rgba(255,255,255,.9); font-size: 10px; padding: 6px 4px; border-radius: 8px; }
 .mobileBottomNav button span { font-size: 20px; line-height: 1; }
+.mobileBottomNav .navImageIcon { width: 21px; height: 21px; }
 .mobileBottomNav button.active { color: #fff; background: rgba(14,75,80,.55); box-shadow: inset 0 -2px 0 var(--brand-secondary), inset 0 0 0 1px rgba(255,255,255,.04); }
-.mobileBottomNav small { color: rgba(255,255,255,.8); }
+.mobileBottomNav small { color: rgba(255,255,255,.8); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (min-width: 761px) { .mobileBottomNav { display: none; } }
 @media (max-width: 760px) { .mainArea { padding-bottom: 96px; } }
 

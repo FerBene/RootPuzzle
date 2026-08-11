@@ -5,10 +5,10 @@ import { defaultDatabase, displayName, emptyDatabase, newId, normalizeDatabase, 
 import { exportGedcom, importGedcom } from '@/lib/gedcom';
 import { getRemoteTree, remoteTreeStorageKey, saveRemoteTree } from '@/lib/supabaseStore';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
-import { BookOpen, ChevronsLeft, ChevronsRight, Database, Hourglass, Puzzle, TreePine, UserCircle } from 'lucide-react';
+import { BookOpen, ChevronsLeft, ChevronsRight, Database, FileDown, Hourglass, Image as ImageIcon, LocateFixed, Maximize2, Minimize2, Moon, Puzzle, Sun, UsersRound, ZoomIn, ZoomOut, UserCircle } from 'lucide-react';
 
 const iconProps = { size: 20, strokeWidth: 1.9, 'aria-hidden': true };
-const IconHome = <TreePine {...iconProps} />;
+const IconHome = <img className="navImageIcon treeNavIcon" src="/tree-icon-glow.png" alt="" aria-hidden="true" />;
 const IconPieces = <Puzzle {...iconProps} />;
 const IconTimeline = <Hourglass {...iconProps} />;
 const IconSources = <BookOpen {...iconProps} />;
@@ -20,7 +20,7 @@ const sections = [
   ['people', 'Piezas', IconPieces],
   ['timeline', 'Línea de tiempo', IconTimeline],
   ['sources', 'Fuentes', IconSources],
-  ['data', 'Importar / Exportar', IconData]
+  ['data', 'Datos', IconData]
 ];
 
 const sectionHashMap = {
@@ -29,7 +29,8 @@ const sectionHashMap = {
   people: 'people',
   timeline: 'timeline',
   sources: 'sources',
-  data: 'data'
+  data: 'data',
+  profile: 'profile'
 };
 
 const sectionTitles = {
@@ -37,7 +38,8 @@ const sectionTitles = {
   people: 'Piezas',
   timeline: 'Línea de tiempo',
   sources: 'Fuentes',
-  data: 'Importar / Exportar'
+  data: 'Datos',
+  profile: 'Mi perfil'
 };
 
 const sectionSubtitles = {
@@ -45,7 +47,8 @@ const sectionSubtitles = {
   people: 'Gestiona las piezas registradas y sus perfiles.',
   timeline: 'Revisa los eventos en orden cronológico.',
   sources: 'Organiza las fuentes documentales de tu investigación.',
-  data: 'Importa, exporta y respalda tu árbol.'
+  data: 'Importa, exporta y respalda tu árbol.',
+  profile: 'Cuenta y preferencias.'
 };
 
 const blankPerson = () => ({
@@ -1497,32 +1500,48 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
   return (
     <div className={`treeWorkspace ${isCanvasMaximized ? 'canvasMaximized' : ''}`}>
       <div className="treeToolbar">
-        <div><p className="eyebrow">{showAllPeople ? 'Vista completa' : 'Ascendencia y descendencia'}</p><p className="toolbarSummaryText">{showAllPeople ? `${layout.allPeopleCount} piezas visibles · doble click para enfocar una rama.${temporalScale ? ' Escala temporal activa.' : ''}` : `${layout.ancestorCount} ancestros · ${layout.descendantCount} descendientes · ramas ordenadas por fecha.${temporalScale ? ' Escala temporal activa.' : ''}`}</p></div>
+        <div className="treeScope">
+          <label>
+            <span>Rama</span>
+            <select value={person.id} onChange={(e) => { setShowAllPeople(false); setFocusedId(e.target.value); }}>{[...db.people].sort(comparePeopleByName).map((p) => <option key={p.id} value={p.id}>{displayName(p)}</option>)}</select>
+          </label>
+          <button className={`secondaryButton iconTextButton ${showAllPeople ? 'activeToggle' : ''}`} type="button" onClick={() => setShowAllPeople((value) => !value)}>
+            <UsersRound size={16} strokeWidth={2} aria-hidden="true" />
+            <span>{showAllPeople ? 'Rama enfocada' : 'Todas las piezas'}</span>
+          </button>
+        </div>
         <div className="treeControls">
-          <select value={person.id} onChange={(e) => { setShowAllPeople(false); setFocusedId(e.target.value); }}>{[...db.people].sort(comparePeopleByName).map((p) => <option key={p.id} value={p.id}>{displayName(p)}</option>)}</select>
-          <button className={`secondaryButton ${showAllPeople ? 'activeToggle' : ''}`} type="button" onClick={() => setShowAllPeople((value) => !value)}>{showAllPeople ? 'Ver rama enfocada' : 'Ver todas las piezas'}</button>
           {!showAllPeople && <div className="treeFilterChecks" aria-label="Filtros de rama">
-            <label data-short="Asc."><input type="checkbox" checked={showAncestors} onChange={(event) => setShowAncestors(event.target.checked)} /> Mostrar ascendencia</label>
-            <label data-short="Desc."><input type="checkbox" checked={showDescendants} onChange={(event) => setShowDescendants(event.target.checked)} /> Mostrar descendencia</label>
-            <label data-short="Gen."><input type="checkbox" checked={showGeneration} onChange={(event) => setShowGeneration(event.target.checked)} /> Mostrar generación</label>
+            <label data-short="Asc."><input type="checkbox" checked={showAncestors} onChange={(event) => setShowAncestors(event.target.checked)} /> Ascendencia</label>
+            <label data-short="Desc."><input type="checkbox" checked={showDescendants} onChange={(event) => setShowDescendants(event.target.checked)} /> Descendencia</label>
+            <label data-short="Gen."><input type="checkbox" checked={showGeneration} onChange={(event) => setShowGeneration(event.target.checked)} /> Generación</label>
           </div>}
-          <div className="zoomControls" aria-label="Controles de zoom">
-            <button className={`secondaryButton ${temporalScale ? 'activeToggle' : ''}`} type="button" onClick={() => setTemporalScale((value) => !value)}>Escala temporal</button>
+          <div className="zoomControls" aria-label="Herramientas del lienzo">
+            <button className={`secondaryButton iconTextButton ${temporalScale ? 'activeToggle' : ''}`} type="button" onClick={() => setTemporalScale((value) => !value)} title="Escala temporal">
+              <Hourglass size={16} strokeWidth={2} aria-hidden="true" />
+              <span>Escala</span>
+            </button>
             <button className={`iconButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? 'Restaurar vista' : 'Maximizar lienzo'} aria-label={isCanvasMaximized ? 'Restaurar vista' : 'Maximizar lienzo'}>
-                {isCanvasMaximized ? (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 10v-4h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 14v4h-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 3l-9 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M8 8h3M13 13h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                )}
-              </button>
-            <button className={`secondaryButton ${canvasBackground ? 'activeToggle' : ''}`} type="button" onClick={() => backgroundInputRef.current?.click()}>Fondo</button>
-            {canvasBackground && <button className="textButton" type="button" onClick={() => setCanvasBackground('')}>Quitar fondo</button>}
+              {isCanvasMaximized ? <Minimize2 size={18} strokeWidth={2} aria-hidden="true" /> : <Maximize2 size={18} strokeWidth={2} aria-hidden="true" />}
+            </button>
+            <button className={`iconButton ${canvasBackground ? 'activeToggle' : ''}`} type="button" onClick={() => backgroundInputRef.current?.click()} title="Fondo" aria-label="Cambiar fondo">
+              <ImageIcon size={18} strokeWidth={2} aria-hidden="true" />
+            </button>
+            {canvasBackground && <button className="textButton compactTextButton" type="button" onClick={() => setCanvasBackground('')}>Quitar</button>}
             <input ref={backgroundInputRef} hidden type="file" accept="image/*" onChange={loadCanvasBackground} />
-            <button className="secondaryButton" type="button" onClick={exportCurrentCanvasPdf}>PDF</button>
-            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale - 0.12)} title="Alejar">-</button>
+            <button className="iconButton" type="button" onClick={exportCurrentCanvasPdf} title="Exportar PDF" aria-label="Exportar PDF">
+              <FileDown size={18} strokeWidth={2} aria-hidden="true" />
+            </button>
+            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale - 0.12)} title="Alejar" aria-label="Alejar">
+              <ZoomOut size={18} strokeWidth={2} aria-hidden="true" />
+            </button>
             <span>{Math.round(viewport.scale * 100)}%</span>
-            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale + 0.12)} title="Acercar">+</button>
-            <button className="secondaryButton" type="button" onClick={() => setViewport({ x: 24, y: 18, scale: 0.92 })}>Centrar</button>
+            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale + 0.12)} title="Acercar" aria-label="Acercar">
+              <ZoomIn size={18} strokeWidth={2} aria-hidden="true" />
+            </button>
+            <button className="iconButton" type="button" onClick={() => setViewport({ x: 24, y: 18, scale: 0.92 })} title="Centrar" aria-label="Centrar">
+              <LocateFixed size={18} strokeWidth={2} aria-hidden="true" />
+            </button>
           </div>
         </div>
       </div>
@@ -2272,6 +2291,12 @@ export default function GenealogyApp() {
     : 'Supabase no está configurado. Usa localStorage y agrega las variables NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.';
   if (publicDb) return <PublicTreePage db={publicDb} />;
   const profilePerson = selected || db.people.find((person) => person.id === db.settings.rootPersonId) || db.people[0] || { givenNames: 'Mi', surnames: 'perfil', email: '' };
+  const topbarAction = section === 'sources'
+    ? <button className="primaryButton" onClick={() => setSourceModal(true)}>+ Nueva fuente</button>
+    : ['tree', 'people'].includes(section)
+      ? <button className="primaryButton" onClick={() => setPersonModal({ mode: 'new' })}>+ Nueva pieza</button>
+      : null;
+  const showTopbarStats = section === 'tree';
 
   return (
     <main className={`appShell ${darkMode ? 'darkMode' : ''} ${sidebarCollapsed ? 'sidebarCollapsed' : ''}`}>
@@ -2306,13 +2331,13 @@ export default function GenealogyApp() {
             <p className="topbarSubtitle">{sectionSubtitles[section] || 'Visualiza y navega el árbol familiar.'}</p>
           </div>
           <div className="topbarActions">
-            <div className="topbarStats">
+            {showTopbarStats && <div className="topbarStats">
               <Stat value={db.people.length} label="piezas" />
               <Stat value={db.parentChild.length + db.partnerships.length} label="vínculos" />
               <Stat value={db.events.length} label="eventos" />
               <Stat value={db.sources.length} label="fuentes" />
-            </div>
-            <button className="primaryButton" onClick={() => setPersonModal({ mode: 'new' })}>+ Nueva pieza</button>
+            </div>}
+            {topbarAction}
           </div>
         </header>
 
@@ -2328,7 +2353,6 @@ export default function GenealogyApp() {
         </div>}
 
         {section === 'sources' && <section className="contentPanel">
-          <div className="sectionActions"><button className="primaryButton" onClick={() => setSourceModal(true)}>+ Nueva fuente</button></div>
           {db.sources.length ? <div className="sourceGrid">{db.sources.map((source) => <article key={source.id} className="sourceCard"><span className="sourceType">{source.type}</span><h3>{source.title}</h3><p>{source.repository || 'Repositorio no indicado'}</p>{source.url && <a href={source.url} target="_blank" rel="noreferrer">Abrir referencia ↗</a>}<small>{source.notes}</small></article>)}</div> : <div className="softEmpty"><h3>Todavía no cargaste fuentes</h3><p>Podés registrar actas, censos, libros parroquiales, fotografías, entrevistas y páginas web.</p></div>}
         </section>}
 
@@ -2355,29 +2379,33 @@ export default function GenealogyApp() {
               <p className="muted">Accedé a tu perfil y ajustes</p>
             </div>
           </div>
-          <div className="personDetail profileAccount">
-            <div className="profileAccountCard">
+          <div className="profileAccount">
+            <div className="profileCard">
               <PersonAvatar person={profilePerson} large />
               <div>
                 <strong>{displayName(profilePerson)}</strong>
                 <div className="muted small">{profilePerson.email || 'Cuenta local sin email'}</div>
               </div>
             </div>
-            <div className="profileThemeRow">
-              <span>Preferencia visual</span>
-              <button className={`themeSwitch ${darkMode ? 'dark' : 'light'}`} type="button" onClick={() => setDarkMode((v) => !v)} aria-label={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}>
-                <span className="themeSwitchTrack" aria-hidden="true"><span /></span>
-                <span>{darkMode ? 'Modo claro' : 'Modo oscuro'}</span>
-              </button>
-            </div>
-            <div className="profileThemeRow">
-              <span>Idioma</span>
-              <div className="segmentedControl languageToggle" role="group" aria-label="Idioma">
-                <button type="button" className={language === 'es' ? 'active' : ''} onClick={() => setLanguage('es')} aria-pressed={language === 'es'}>Español</button>
-                <button type="button" className={language === 'en' ? 'active' : ''} onClick={() => setLanguage('en')} aria-pressed={language === 'en'}>English</button>
+            <div className="profileSettings">
+              <div className="profileSetting">
+                <div><strong>Preferencia visual</strong><span>{darkMode ? 'Interfaz oscura activa' : 'Interfaz clara activa'}</span></div>
+                <button className={`toggleSwitch iconOnly ${darkMode ? 'on' : 'off'}`} type="button" onClick={() => setDarkMode((v) => !v)} aria-label={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'} aria-pressed={darkMode}>
+                  <Sun size={16} strokeWidth={2} aria-hidden="true" />
+                  <span className="toggleSwitchTrack" aria-hidden="true"><span /></span>
+                  <Moon size={16} strokeWidth={2} aria-hidden="true" />
+                </button>
               </div>
+              <div className="profileSetting">
+                <div><strong>Idioma</strong><span>{language === 'es' ? 'Español seleccionado' : 'English selected'}</span></div>
+                <button className={`toggleSwitch languageSwitch ${language === 'en' ? 'on' : 'off'}`} type="button" onClick={() => setLanguage((value) => value === 'es' ? 'en' : 'es')} aria-label={language === 'es' ? 'Cambiar idioma a inglés' : 'Cambiar idioma a español'} aria-pressed={language === 'en'}>
+                  <span>ES</span>
+                  <span className="toggleSwitchTrack" aria-hidden="true"><span /></span>
+                  <span>EN</span>
+                </button>
+              </div>
+              <div className="profileNotice"><small>Perfil básico local. Para sincronizar y tener cuenta, configurá Supabase.</small></div>
             </div>
-            <div className="warningBox"><small>Perfil básico local. Para sincronizar y tener cuenta, configurá Supabase.</small></div>
           </div>
         </section>}
 
@@ -2393,13 +2421,17 @@ export default function GenealogyApp() {
           {IconPieces}
           <small>Piezas</small>
         </button>
-        <button className={section === 'timeline' ? 'active' : ''} onClick={() => setSection('timeline')} aria-label="Timeline" title="Timeline">
+        <button className={section === 'timeline' ? 'active' : ''} onClick={() => setSection('timeline')} aria-label="Tiempo" title="Tiempo">
           {IconTimeline}
-          <small>Timeline</small>
+          <small>Tiempo</small>
         </button>
         <button className={section === 'sources' ? 'active' : ''} onClick={() => setSection('sources')} aria-label="Fuentes" title="Fuentes">
           {IconSources}
           <small>Fuentes</small>
+        </button>
+        <button className={section === 'data' ? 'active' : ''} onClick={() => setSection('data')} aria-label="Datos" title="Datos">
+          {IconData}
+          <small>Datos</small>
         </button>
         <button className={section === 'profile' ? 'active' : ''} onClick={() => setSection('profile')} aria-label="Perfil" title="Perfil">
           {IconProfile}
