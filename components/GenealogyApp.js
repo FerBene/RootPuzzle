@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { defaultDatabase, displayName, emptyDatabase, newId, normalizeDatabase, relativesFor, STORAGE_KEY } from '@/lib/model';
 import { exportGedcom, importGedcom } from '@/lib/gedcom';
 import { getRemoteTree, remoteTreeStorageKey, saveRemoteTree } from '@/lib/supabaseStore';
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
-import { BookOpen, ChevronsLeft, ChevronsRight, Database, FileDown, Hourglass, Image as ImageIcon, LocateFixed, Maximize2, Minimize2, Moon, Puzzle, Sun, UsersRound, ZoomIn, ZoomOut, UserCircle } from 'lucide-react';
+import { BookOpen, CalendarDays, ChevronsLeft, ChevronsRight, Database, FileDown, Hourglass, Image as ImageIcon, LocateFixed, Maximize2, Minimize2, Moon, MoreHorizontal, Puzzle, SlidersHorizontal, Sprout, Sun, UsersRound, ZoomIn, ZoomOut, UserCircle } from 'lucide-react';
 
 const iconProps = { size: 20, strokeWidth: 1.9, 'aria-hidden': true };
 const IconHome = <img className="navImageIcon treeNavIcon" src="/tree-icon-glow.png" alt="" aria-hidden="true" />;
@@ -15,12 +15,95 @@ const IconSources = <BookOpen {...iconProps} />;
 const IconData = <Database {...iconProps} />;
 const IconProfile = <UserCircle {...iconProps} />;
 
+const I18N = {
+  es: {
+    appSubtitle: 'Genealogía web',
+    loading: { openingTree: 'Abriendo tu árbol' },
+    nav: { expand: 'Expandir menú', collapse: 'Colapsar menú', navigation: 'Navegación', rootsShort: 'Raíces', timelineShort: 'Tiempo', profileShort: 'Perfil' },
+    sections: { tree: 'Mis raíces', people: 'Piezas', timeline: 'Línea de tiempo', sources: 'Fuentes', data: 'Datos', profile: 'Mi perfil' },
+    subtitles: {
+      tree: 'Visualiza y navega el árbol familiar.',
+      people: 'Gestiona las piezas registradas y sus perfiles.',
+      timeline: 'Revisa los eventos en orden cronológico.',
+      sources: 'Organiza las fuentes documentales de tu investigación.',
+      data: 'Importa, exporta y respalda tu árbol.',
+      profile: 'Cuenta y preferencias.'
+    },
+    actions: { newPiece: '+ Nueva pieza', newSource: '+ Nueva fuente', cancel: 'Cancelar', savePiece: 'Guardar pieza', saveEvent: 'Guardar evento', saveSource: 'Guardar fuente', edit: 'Editar', viewInTree: 'Ver en árbol', add: '+ Agregar', remove: 'Quitar', import: 'Importar', exportJson: 'Exportar JSON', exportGedcom: 'Exportar GEDCOM', exportPdf: 'Exportar PDF', generateLink: 'Generar enlace', activateDetective: 'Activar detective', accept: 'Aceptar', reject: 'Rechazar', acceptPiece: 'Aceptar pieza', rejectPiece: 'Rechazar', importPiece: 'Importar pieza', tools: 'Herramientas', hideTools: 'Ocultar herramientas', allPieces: 'Todas las piezas', focusedBranch: 'Rama enfocada', uploadImage: 'Cargar imagen', copy: 'Copiar', downloadPiece: 'Descargar pieza' },
+    stats: { pieces: 'piezas', links: 'vínculos', events: 'eventos', sources: 'fuentes', results: 'resultados', dated: 'con fecha', pending: 'pendientes', accepted: 'aceptadas', rejected: 'rechazadas' },
+    forms: { names: 'Nombres', surnames: 'Apellidos', birthYear: 'Año de nacimiento', nickname: 'Apodo', relationship: 'Parentesco', noLinkYet: 'Sin vínculo por ahora', parentOf: 'Es padre/madre de', childOf: 'Es hijo/a de', partnerOf: 'Es pareja de', noPiecesToLink: 'Sin otras piezas para vincular', linkWith: 'Vincular con', choosePiece: 'Elegir pieza', moreData: '+ datos', profileImage: 'Imagen de perfil', email: 'Email', sex: 'Sexo', unspecified: 'Sin indicar', male: 'Masculino', female: 'Femenino', otherGender: 'Otro / no binario', birthPlace: 'Lugar de nacimiento', death: 'Fallecimiento', deathPlace: 'Lugar de fallecimiento', occupation: 'Ocupación', notes: 'Notas', type: 'Tipo', date: 'Fecha', place: 'Lugar', description: 'Descripción', title: 'Título', repository: 'Archivo / repositorio', url: 'URL' },
+    placeholders: { birthYear: 'Ej. 1942', email: 'nombre@dominio.com', birthPlace: 'Ciudad, provincia, país', notes: 'Hipótesis, datos pendientes, variantes del apellido...', search: 'Buscar por nombre, apodo, apellido, lugar…', repository: 'FamilySearch, archivo provincial, parroquia…', sourceExplanation: 'Acta, censo, recuerdo familiar, enlace, archivo...' },
+    modalTitles: { newPiece: 'Nueva pieza', newSource: 'Nueva fuente', newEvent: 'Nuevo evento · {name}' },
+    people: { bioPending: 'Datos biográficos pendientes' },
+    tree: { branch: 'Rama', filters: 'Filtros de rama', tools: 'Herramientas del lienzo', scale: 'Escala', temporalScale: 'Escala temporal', background: 'Fondo', changeBackground: 'Cambiar fondo', center: 'Centrar', zoomIn: 'Acercar', zoomOut: 'Alejar', maximize: 'Maximizar lienzo', restore: 'Restaurar vista', ancestry: 'Ascendencia', descendants: 'Descendencia', generation: 'Generación', noDate: 'Fecha pendiente', unknownDate: 'Sin fecha', birthAxis: 'Nacimiento', hint: 'Arrastrá el lienzo para moverte. Usá la rueda o los botones para acercar y alejar.', cardTitle: 'Click: ver ficha. Doble click: centrar árbol.', siblings: 'Hermanos', partners: 'Parejas', familyGroup: 'Grupo familiar' },
+    card: { birthDate: 'Fecha de nacimiento', familyBranch: 'Rama familiar', sources: 'Fuentes', noBranch: 'Rama pendiente', missingName: 'Nombre pendiente' },
+    profile: { account: 'Cuenta', title: 'Mi perfil', subtitle: 'Accedé a tu perfil y ajustes', localNoEmail: 'Cuenta local sin email', localAccount: 'Cuenta local', visualPreference: 'Preferencia visual', darkActive: 'Interfaz oscura activa', lightActive: 'Interfaz clara activa', language: 'Idioma', esSelected: 'Español seleccionado', enSelected: 'English selected', changeToEnglish: 'Cambiar idioma a inglés', changeToSpanish: 'Cambiar idioma a español', notice: 'Perfil básico local. Para sincronizar y tener cuenta, configurá Supabase.', darkToLight: 'Cambiar a modo claro', lightToDark: 'Cambiar a modo oscuro' },
+    empty: { title: 'Empezá por una pieza', body: 'El árbol se construye alrededor de piezas y vínculos. Podés cargar datos incompletos e ir documentándolos a medida que investigás.', firstPiece: '+ Agregar primera pieza' },
+    drawer: { viewMode: 'Modo vista', editMode: 'Modo edición', personalFile: 'Ficha personal', editPerson: 'Editar persona', editing: 'Editando', view: 'Vista', deletePerson: 'Eliminar persona', editingNotice: 'Estás modificando los datos de esta persona. Guardar actualiza la ficha y vuelve al modo vista.', viewingNotice: 'Estás viendo la ficha. Usá Editar para cambiar datos.', person: 'Persona', datesToResearch: 'Fechas por investigar', family: 'Familia', parents: 'Padres', partners: 'Parejas', children: 'Hijos', addParent: 'Agregar padre/madre', addPartner: 'Agregar pareja', addChild: 'Agregar hijo/a', timeline: 'Línea de tiempo', noEvents: 'Todavía no hay eventos registrados.', noData: 'Sin datos', choosePerson: 'Elegir persona…', removeLink: 'Eliminar vínculo' },
+    facts: { nickname: 'Apodo', email: 'Email', birth: 'Nacimiento', death: 'Fallecimiento', occupation: 'Ocupación', notes: 'Notas' },
+    status: { living: 'Vivo/a', deceased: 'Fallecido/a' },
+    timeline: { intro: 'Eventos de todas las personas, ordenados por fecha conocida. Los eventos sin fecha quedan al final.', all: 'Todos', noEventsTitle: 'No hay eventos para mostrar', noEventsBody: 'Agregá eventos desde la ficha de una persona para construir la cronología familiar.', noPlaceDescription: 'Sin lugar ni descripción.' },
+    data: { jsonTitle: 'Backup completo JSON', jsonBody: 'Guarda piezas, vínculos, eventos, fuentes y configuración.', gedcomBody: 'Intercambio básico con otras aplicaciones genealógicas.', pdfTitle: 'Exportar como PDF', pdfBody: 'Descarga un PDF del lienzo del árbol. Para respetar filtros, escala temporal y fondo, usá también el botón PDF dentro del lienzo.', publishTitle: 'Publicar árbol', publishBody: 'Genera un enlace público de solo lectura con nombres, relaciones, fechas y lugares. Quien lo vea puede aportar una pieza del rompecabezas familiar.', linkCopied: 'El enlace se copió al portapapeles si el navegador lo permitió.', syncTitle: 'Siguiente paso: sincronización', detectiveTitle: 'Activar detective', detectiveBody: 'Analiza el árbol vigente, genera hipótesis, arma búsquedas en actas/censos/registros y deja sugerencias aceptables o rechazables con fuente citada.', investigating: 'Investigando…', importPieceTitle: 'Importar pieza', importPieceBody: 'Importa una sugerencia enviada desde el árbol público para revisarla antes de actualizar tu árbol.', warningTitle: 'Importante sobre esta versión:' },
+    sources: { emptyTitle: 'Todavía no cargaste fuentes', emptyBody: 'Podés registrar actas, censos, libros parroquiales, fotografías, entrevistas y páginas web.', noRepository: 'Repositorio no indicado', openReference: 'Abrir referencia ↗' },
+    detective: { eyebrow: 'Detective genealógico', title: 'Posibles hallazgos', body: 'Revisá cada sugerencia antes de tocar el árbol. Las hipótesis internas se marcan como baja confianza; las búsquedas online quedan citadas como pistas pendientes.', pending: 'pendientes', accepted: 'aceptadas', rejected: 'rechazadas', pendingOne: 'Pendiente', acceptedOne: 'Aceptada', rejectedOne: 'Rechazada', source: 'Fuente:', untitled: 'Sin título', noType: 'Sin tipo', openSearch: 'Abrir búsqueda ↗', emptyTitle: 'Sin sugerencias todavía', emptyBody: 'Activá el detective para generar hipótesis, búsquedas y fuentes candidatas a partir del árbol vigente.' },
+    puzzle: { eyebrow: 'Piezas recibidas', title: 'Aportes del árbol público', body: 'Revisá cada pieza antes de incorporarla. Podés aceptar una edición de ficha o una persona nueva con vínculo sugerido.', piece: 'Pieza', edit: 'Editar {name}', add: 'Agregar {name}', contributor: 'Aporte de {name}.', anonymous: 'Aporte anónimo.', source: 'Fuente / explicación:', noSource: 'Sin fuente indicada.', updatePublicData: 'Actualizar datos públicos de {name} con la información propuesta.', addPerson: 'Agregar persona: {name}.', linkAs: 'Vincular con {name} como {relation}.', relationParent: 'padre/madre de esa persona', relationChild: 'hijo/a de esa persona', relationPartner: 'pareja' },
+    warning: { localStorage: 'al estar pensada como MVP web sin cuenta ni servidor de base de datos, los datos se guardan en localStorage del navegador. Hacé backups JSON periódicos. Si borrás los datos del navegador, también se borra el árbol local.' },
+    errors: { imageLoad: 'No pude cargar esa imagen.', publicLoad: 'No pude abrir este enlace público. Puede estar incompleto o dañado.', jsonRead: 'No pude leer ese backup JSON.', gedcomRead: 'No pude interpretar ese GEDCOM. Esta versión soporta el núcleo GEDCOM 5.5/5.5.1.', pieceRead: 'No pude leer esa pieza. Verificá que sea un JSON generado desde el árbol público.', supabaseConnect: 'No pude conectar con Supabase: {message}', supabaseSave: 'No pude guardar los cambios en Supabase: {message}' },
+    confirms: { deletePerson: '¿Eliminar a {name}? También se eliminarán sus vínculos y eventos.', replaceData: 'Esto reemplazará los datos actuales de este navegador. ¿Continuar?', importGedcom: 'Se importarán {count} personas y se reemplazarán los datos actuales. ¿Continuar?' },
+    sync: { failing: 'Sincronización en la nube falla: {message}', synced: 'Sincronizado con Supabase{suffix}', creating: ' (creando registro remoto)', local: 'Supabase no está configurado. Usa localStorage y agrega las variables NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.' },
+    public: { publicTree: 'Árbol público', readOnly: 'personas publicadas · solo lectura', contribute: '🧩 Aportar pieza', publicView: 'Vista pública', familyTree: 'Árbol familiar', clickToContribute: 'Hacé click en una persona para aportar una pieza sobre esa ficha.', contributionIntro: 'Cada aporte es una pieza del rompecabezas familiar. El dueño del árbol podrá importarla, revisar la fuente y aceptarla o rechazarla.', yourContact: 'Tu nombre o contacto', optional: 'Opcional', suggestEdit: 'Sugerir edición', addPiece: 'Agregar pieza', personToEdit: 'Persona a editar', suggestedRelation: 'Relación sugerida', relatedPerson: 'Persona vinculada', sourceExplanation: 'Fuente o explicación', generatePiece: 'Generar pieza', pieceReady: 'Pieza lista para enviar', pieceReadyBody: 'Descargala y enviasela al dueño del árbol para que la importe en su sección Importar / Exportar.', downloadPiece: 'Descargar pieza', copy: 'Copiar' }
+  },
+  en: {
+    appSubtitle: 'Genealogy web',
+    loading: { openingTree: 'Opening your tree' },
+    nav: { expand: 'Expand menu', collapse: 'Collapse menu', navigation: 'Navigation', rootsShort: 'Roots', timelineShort: 'Time', profileShort: 'Profile' },
+    sections: { tree: 'My roots', people: 'Pieces', timeline: 'Timeline', sources: 'Sources', data: 'Data', profile: 'My profile' },
+    subtitles: { tree: 'View and explore your family tree.', people: 'Manage registered pieces and profiles.', timeline: 'Review events in chronological order.', sources: 'Organize your research sources.', data: 'Import, export and back up your tree.', profile: 'Account and preferences.' },
+    actions: { newPiece: '+ New piece', newSource: '+ New source', cancel: 'Cancel', savePiece: 'Save piece', saveEvent: 'Save event', saveSource: 'Save source', edit: 'Edit', viewInTree: 'View in tree', add: '+ Add', remove: 'Remove', import: 'Import', exportJson: 'Export JSON', exportGedcom: 'Export GEDCOM', exportPdf: 'Export PDF', generateLink: 'Generate link', activateDetective: 'Activate detective', accept: 'Accept', reject: 'Reject', acceptPiece: 'Accept piece', rejectPiece: 'Reject', importPiece: 'Import piece', tools: 'Tools', hideTools: 'Hide tools', allPieces: 'All pieces', focusedBranch: 'Focused branch', uploadImage: 'Upload image', copy: 'Copy', downloadPiece: 'Download piece' },
+    stats: { pieces: 'pieces', links: 'links', events: 'events', sources: 'sources', results: 'results', dated: 'dated', pending: 'pending', accepted: 'accepted', rejected: 'rejected' },
+    forms: { names: 'Given names', surnames: 'Surnames', birthYear: 'Birth year', nickname: 'Nickname', relationship: 'Relationship', noLinkYet: 'No link yet', parentOf: 'Is parent of', childOf: 'Is child of', partnerOf: 'Is partner of', noPiecesToLink: 'No other pieces to link', linkWith: 'Link with', choosePiece: 'Choose piece', moreData: '+ details', profileImage: 'Profile image', email: 'Email', sex: 'Sex', unspecified: 'Unspecified', male: 'Male', female: 'Female', otherGender: 'Other / non-binary', birthPlace: 'Birth place', death: 'Death', deathPlace: 'Death place', occupation: 'Occupation', notes: 'Notes', type: 'Type', date: 'Date', place: 'Place', description: 'Description', title: 'Title', repository: 'File / repository', url: 'URL' },
+    placeholders: { birthYear: 'Ex. 1942', email: 'name@domain.com', birthPlace: 'City, state, country', notes: 'Hypotheses, pending data, surname variants...', search: 'Search by name, nickname, surname, place…', repository: 'FamilySearch, provincial archive, parish…', sourceExplanation: 'Certificate, census, family memory, link, file...' },
+    modalTitles: { newPiece: 'New piece', newSource: 'New source', newEvent: 'New event · {name}' },
+    people: { bioPending: 'Biographical data pending' },
+    tree: { branch: 'Branch', filters: 'Branch filters', tools: 'Canvas tools', scale: 'Scale', temporalScale: 'Timeline scale', background: 'Background', changeBackground: 'Change background', center: 'Center', zoomIn: 'Zoom in', zoomOut: 'Zoom out', maximize: 'Maximize canvas', restore: 'Restore view', ancestry: 'Ancestry', descendants: 'Descendants', generation: 'Generation', noDate: 'Date pending', unknownDate: 'No date', birthAxis: 'Birth', hint: 'Drag the canvas to move. Use the wheel or buttons to zoom.', cardTitle: 'Click: view profile. Double click: focus tree.', siblings: 'Siblings', partners: 'Partners', familyGroup: 'Family group' },
+    card: { birthDate: 'Birth date', familyBranch: 'Family branch', sources: 'Sources', noBranch: 'Branch pending', missingName: 'Name pending' },
+    profile: { account: 'Account', title: 'My profile', subtitle: 'Access your profile and settings', localNoEmail: 'Local account without email', localAccount: 'Local account', visualPreference: 'Visual preference', darkActive: 'Dark interface active', lightActive: 'Light interface active', language: 'Language', esSelected: 'Spanish selected', enSelected: 'English selected', changeToEnglish: 'Switch language to English', changeToSpanish: 'Switch language to Spanish', notice: 'Local basic profile. Configure Supabase to sync and create an account.', darkToLight: 'Switch to light mode', lightToDark: 'Switch to dark mode' },
+    empty: { title: 'Start with one piece', body: 'The tree is built around pieces and links. You can add incomplete data and document it as you research.', firstPiece: '+ Add first piece' },
+    drawer: { viewMode: 'View mode', editMode: 'Edit mode', personalFile: 'Personal profile', editPerson: 'Edit person', editing: 'Editing', view: 'View', deletePerson: 'Delete person', editingNotice: 'You are editing this person. Saving updates the profile and returns to view mode.', viewingNotice: 'You are viewing the profile. Use Edit to change data.', person: 'Person', datesToResearch: 'Dates to research', family: 'Family', parents: 'Parents', partners: 'Partners', children: 'Children', addParent: 'Add parent', addPartner: 'Add partner', addChild: 'Add child', timeline: 'Timeline', noEvents: 'No events registered yet.', noData: 'No data', choosePerson: 'Choose person…', removeLink: 'Remove link' },
+    facts: { nickname: 'Nickname', email: 'Email', birth: 'Birth', death: 'Death', occupation: 'Occupation', notes: 'Notes' },
+    status: { living: 'Living', deceased: 'Deceased' },
+    timeline: { intro: 'Events for all people, sorted by known date. Undated events appear at the end.', all: 'All', noEventsTitle: 'No events to show', noEventsBody: 'Add events from a person profile to build the family timeline.', noPlaceDescription: 'No place or description.' },
+    data: { jsonTitle: 'Full JSON backup', jsonBody: 'Saves pieces, links, events, sources and settings.', gedcomBody: 'Basic exchange with other genealogy apps.', pdfTitle: 'Export as PDF', pdfBody: 'Download a PDF of the tree canvas. To preserve filters, timeline scale and background, also use the PDF button inside the canvas.', publishTitle: 'Publish tree', publishBody: 'Generate a read-only public link with names, relationships, dates and places. Viewers can contribute a family puzzle piece.', linkCopied: 'The link was copied to the clipboard if the browser allowed it.', syncTitle: 'Next step: sync', detectiveTitle: 'Activate detective', detectiveBody: 'Analyzes the current tree, generates hypotheses, searches records and leaves source-backed suggestions to accept or reject.', investigating: 'Investigating…', importPieceTitle: 'Import piece', importPieceBody: 'Import a suggestion sent from the public tree to review it before updating your tree.', warningTitle: 'Important about this version:' },
+    sources: { emptyTitle: 'You have not added sources yet', emptyBody: 'You can register certificates, censuses, parish books, civil records, photos, interviews and websites.', noRepository: 'Repository not specified', openReference: 'Open reference ↗' },
+    detective: { eyebrow: 'Genealogy detective', title: 'Possible findings', body: 'Review each suggestion before changing the tree. Internal hypotheses are marked as low confidence; online searches are cited as pending leads.', pending: 'pending', accepted: 'accepted', rejected: 'rejected', pendingOne: 'Pending', acceptedOne: 'Accepted', rejectedOne: 'Rejected', source: 'Source:', untitled: 'Untitled', noType: 'No type', openSearch: 'Open search ↗', emptyTitle: 'No suggestions yet', emptyBody: 'Activate the detective to generate hypotheses, searches and candidate sources from the current tree.' },
+    puzzle: { eyebrow: 'Received pieces', title: 'Public tree contributions', body: 'Review each piece before adding it. You can accept a profile edit or a new person with a suggested link.', piece: 'Piece', edit: 'Edit {name}', add: 'Add {name}', contributor: 'Contribution from {name}.', anonymous: 'Anonymous contribution.', source: 'Source / explanation:', noSource: 'No source provided.', updatePublicData: 'Update public data for {name} with the proposed information.', addPerson: 'Add person: {name}.', linkAs: 'Link with {name} as {relation}.', relationParent: 'parent of that person', relationChild: 'child of that person', relationPartner: 'partner' },
+    warning: { localStorage: 'this MVP runs without an account or database server, so data is stored in browser localStorage. Make periodic JSON backups. If you clear browser data, the local tree is removed too.' },
+    errors: { imageLoad: 'I could not load that image.', publicLoad: 'I could not open this public link. It may be incomplete or damaged.', jsonRead: 'I could not read that JSON backup.', gedcomRead: 'I could not interpret that GEDCOM. This version supports the GEDCOM 5.5/5.5.1 core.', pieceRead: 'I could not read that piece. Check that it is a JSON generated from the public tree.', supabaseConnect: 'I could not connect to Supabase: {message}', supabaseSave: 'I could not save changes to Supabase: {message}' },
+    confirms: { deletePerson: 'Delete {name}? Their links and events will also be removed.', replaceData: 'This will replace the current data in this browser. Continue?', importGedcom: '{count} people will be imported and current data will be replaced. Continue?' },
+    sync: { failing: 'Cloud sync is failing: {message}', synced: 'Synced with Supabase{suffix}', creating: ' (creating remote record)', local: 'Supabase is not configured. It uses localStorage; add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.' },
+    public: { publicTree: 'Public tree', readOnly: 'published people · read only', contribute: '🧩 Contribute piece', publicView: 'Public view', familyTree: 'Family tree', clickToContribute: 'Click a person to contribute a piece about that profile.', contributionIntro: 'Each contribution is a family puzzle piece. The tree owner can import it, review the source and accept or reject it.', yourContact: 'Your name or contact', optional: 'Optional', suggestEdit: 'Suggest edit', addPiece: 'Add piece', personToEdit: 'Person to edit', suggestedRelation: 'Suggested relationship', relatedPerson: 'Related person', sourceExplanation: 'Source or explanation', generatePiece: 'Generate piece', pieceReady: 'Piece ready to send', pieceReadyBody: 'Download it and send it to the tree owner so they can import it from Import / Export.', downloadPiece: 'Download piece', copy: 'Copy' }
+  }
+};
+
+const LanguageContext = createContext({ language: 'es', t: (key) => key });
+
+const translate = (language, key, vars = {}) => {
+  const parts = key.split('.');
+  let value = I18N[language] || I18N.es;
+  for (const part of parts) value = value?.[part];
+  if (value === undefined && language !== 'es') return translate('es', key, vars);
+  const text = typeof value === 'string' ? value : key;
+  return Object.entries(vars).reduce((acc, [name, replacement]) => acc.replaceAll(`{${name}}`, replacement ?? ''), text);
+};
+
+const useI18n = () => useContext(LanguageContext);
+
 const sections = [
-  ['tree', 'Árbol', IconHome],
-  ['people', 'Piezas', IconPieces],
-  ['timeline', 'Línea de tiempo', IconTimeline],
-  ['sources', 'Fuentes', IconSources],
-  ['data', 'Datos', IconData]
+  ['tree', 'sections.tree', IconHome],
+  ['people', 'sections.people', IconPieces],
+  ['timeline', 'sections.timeline', IconTimeline],
+  ['sources', 'sections.sources', IconSources],
+  ['data', 'sections.data', IconData]
 ];
 
 const sectionHashMap = {
@@ -31,24 +114,6 @@ const sectionHashMap = {
   sources: 'sources',
   data: 'data',
   profile: 'profile'
-};
-
-const sectionTitles = {
-  tree: 'Árbol',
-  people: 'Piezas',
-  timeline: 'Línea de tiempo',
-  sources: 'Fuentes',
-  data: 'Datos',
-  profile: 'Mi perfil'
-};
-
-const sectionSubtitles = {
-  tree: 'Visualiza y navega el árbol familiar.',
-  people: 'Gestiona las piezas registradas y sus perfiles.',
-  timeline: 'Revisa los eventos en orden cronológico.',
-  sources: 'Organiza las fuentes documentales de tu investigación.',
-  data: 'Importa, exporta y respalda tu árbol.',
-  profile: 'Cuenta y preferencias.'
 };
 
 const blankPerson = () => ({
@@ -132,12 +197,18 @@ const readCanvasBackgroundImage = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
-const TREE_CARD_WIDTH = 180;
-const TREE_CARD_HEIGHT = 142;
-const TREE_COLUMN_GAP = 28;
-const TREE_ROW_GAP = 76;
-const TREE_BRANCH_GAP_SLOTS = 0.18;
-const TREE_MIN_CARD_GAP = 18;
+const TREE_CARD_VARIANTS = {
+  landscape: { variant: 'portrait', width: 150, height: 168, columnGap: 22, rowGap: 54 },
+  portrait: { variant: 'portrait', width: 146, height: 164, columnGap: 18, rowGap: 52 }
+};
+const TREE_CARD_DEFAULT = TREE_CARD_VARIANTS.landscape;
+const TREE_CARD_WIDTH = TREE_CARD_DEFAULT.width;
+const TREE_CARD_HEIGHT = TREE_CARD_DEFAULT.height;
+const TREE_COLUMN_GAP = TREE_CARD_DEFAULT.columnGap;
+const TREE_ROW_GAP = TREE_CARD_DEFAULT.rowGap;
+const TREE_BRANCH_GAP_SLOTS = 0.1;
+const TREE_MIN_CARD_GAP = 16;
+const TREE_GROUP_GAP_SLOTS = 0.55;
 const TEMPORAL_AXIS_WIDTH = 96;
 const TEMPORAL_AXIS_GAP = 20;
 const TEMPORAL_TOP_PADDING = 70;
@@ -173,7 +244,7 @@ const comparePeopleByName = (a, b) => displayName(a).localeCompare(displayName(b
 
 const isDeceased = (person) => Boolean(String(person?.deathDate || '').trim());
 const personStatusClass = (person) => isDeceased(person) ? 'deceased' : 'living';
-const personStatusLabel = (person) => isDeceased(person) ? 'Fallecido/a' : 'Vivo/a';
+const personStatusLabel = (person, language = 'es') => isDeceased(person) ? translate(language, 'status.deceased') : translate(language, 'status.living');
 const displayField = (value) => String(value || '-');
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -337,15 +408,16 @@ const buildPdfExportHtml = (db) => {
 </html>`;
 };
 
-const exportPdf = (db) => {
-  const layout = buildAllPeopleLayout(db);
+const exportPdf = (db, language = 'es') => {
+  const layout = buildAllPeopleLayout(db, '', language);
   downloadTreeCanvasPdf({
     db,
     layout,
     filename: 'raices-lienzo.pdf',
     title: db.settings.treeName,
     temporalScale: false,
-    canvasBackground: ''
+    canvasBackground: '',
+    language
   });
 };
 
@@ -438,7 +510,7 @@ const drawCenteredText = (ctx, text, x, y, maxWidth) => {
   ctx.fillText(`${value}...`, x, y);
 };
 
-const drawTreeExportCanvas = async ({ db, layout, title, temporalScale, canvasBackground }) => {
+const drawTreeExportCanvas = async ({ db, layout, title, temporalScale, canvasBackground, language = 'es' }) => {
   const hasTemporalAxis = temporalScale && layout.temporal;
   const xOffset = hasTemporalAxis ? TEMPORAL_AXIS_WIDTH + TEMPORAL_AXIS_GAP : 0;
   const padding = 36;
@@ -498,7 +570,7 @@ const drawTreeExportCanvas = async ({ db, layout, title, temporalScale, canvasBa
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.fillStyle = '#707a72';
-      ctx.fillText('Sin fecha', 18, y - 4);
+      ctx.fillText(translate(language, 'tree.unknownDate'), 18, y - 4);
     }
     ctx.restore();
   }
@@ -538,7 +610,7 @@ const drawTreeExportCanvas = async ({ db, layout, title, temporalScale, canvasBa
     ctx.fillStyle = '#245b4d';
     ctx.font = '800 8px Arial';
     ctx.textAlign = 'center';
-    drawCenteredText(ctx, node.relationLabel || (node.generation === 0 ? 'Persona central' : treeNodeLabel(node)), node.x + TREE_CARD_WIDTH / 2, node.y + 19, TREE_CARD_WIDTH - 18);
+    drawCenteredText(ctx, node.relationLabel || (node.generation === 0 ? kinTerm(language, 'central') : treeNodeLabel(node, language)), node.x + TREE_CARD_WIDTH / 2, node.y + 19, TREE_CARD_WIDTH - 18);
     ctx.beginPath();
     ctx.arc(node.x + TREE_CARD_WIDTH / 2, node.y + 48, 19, 0, Math.PI * 2);
     ctx.fillStyle = status === 'living' ? '#0f7a55' : '#ece4d7';
@@ -552,14 +624,14 @@ const drawTreeExportCanvas = async ({ db, layout, title, temporalScale, canvasBa
     drawCenteredText(ctx, displayName(node.person), node.x + TREE_CARD_WIDTH / 2, node.y + 86, TREE_CARD_WIDTH - 22);
     ctx.fillStyle = '#707a72';
     ctx.font = '10px Arial';
-    drawCenteredText(ctx, node.person.birthDate || 'Fecha pendiente', node.x + TREE_CARD_WIDTH / 2, node.y + 106, TREE_CARD_WIDTH - 22);
+    drawCenteredText(ctx, node.person.birthDate || translate(language, 'tree.noDate'), node.x + TREE_CARD_WIDTH / 2, node.y + 106, TREE_CARD_WIDTH - 22);
   });
   ctx.restore();
   return canvas;
 };
 
-const downloadTreeCanvasPdf = async ({ db, layout, filename, title, temporalScale, canvasBackground }) => {
-  const canvas = await drawTreeExportCanvas({ db, layout, title, temporalScale, canvasBackground });
+const downloadTreeCanvasPdf = async ({ db, layout, filename, title, temporalScale, canvasBackground, language = 'es' }) => {
+  const canvas = await drawTreeExportCanvas({ db, layout, title, temporalScale, canvasBackground, language });
   const pdf = makePdfFromJpeg({ imageBytes: canvasToJpegBytes(canvas), imageWidth: canvas.width, imageHeight: canvas.height });
   const url = URL.createObjectURL(pdf);
   const a = document.createElement('a');
@@ -615,8 +687,10 @@ const buildGlobalTimeline = (db) => {
     });
 };
 
-const positionTreeNodes = (nodes, edgesByKey) => {
+const positionTreeNodes = (nodes, edgesByKey, cardMetrics = TREE_CARD_DEFAULT) => {
   if (!nodes.length) return { nodes: [], edges: [], width: 0, height: 0, generationCount: 0 };
+  const cardWidth = cardMetrics.width;
+  const cardHeight = cardMetrics.height;
 
   const minSlot = Math.min(...nodes.map((node) => node.slot));
   const maxSlot = Math.max(...nodes.map((node) => node.slot));
@@ -624,10 +698,10 @@ const positionTreeNodes = (nodes, edgesByKey) => {
   const maxGeneration = Math.max(...nodes.map((node) => node.generation));
   const paddingX = 64;
   const paddingY = 58;
-  const slotSize = TREE_CARD_WIDTH + TREE_COLUMN_GAP;
-  const rowSize = TREE_CARD_HEIGHT + TREE_ROW_GAP;
-  let width = Math.max(960, (maxSlot - minSlot) * slotSize + TREE_CARD_WIDTH + paddingX * 2);
-  const height = Math.max(520, (maxGeneration - minGeneration) * rowSize + TREE_CARD_HEIGHT + paddingY * 2);
+  const slotSize = cardWidth + cardMetrics.columnGap;
+  const rowSize = cardHeight + cardMetrics.rowGap;
+  let width = Math.max(960, (maxSlot - minSlot) * slotSize + cardWidth + paddingX * 2);
+  const height = Math.max(520, (maxGeneration - minGeneration) * rowSize + cardHeight + paddingY * 2);
 
   const positionedNodes = nodes.map((node) => ({
     ...node,
@@ -646,11 +720,11 @@ const positionTreeNodes = (nodes, edgesByKey) => {
     let nextAvailableX = Number.NEGATIVE_INFINITY;
     row.forEach((node) => {
       if (node.x < nextAvailableX) node.x = nextAvailableX;
-      nextAvailableX = node.x + TREE_CARD_WIDTH + TREE_MIN_CARD_GAP;
+      nextAvailableX = node.x + cardWidth + TREE_MIN_CARD_GAP;
     });
   });
 
-  width = Math.max(width, ...positionedNodes.map((node) => node.x + TREE_CARD_WIDTH + paddingX));
+  width = Math.max(width, ...positionedNodes.map((node) => node.x + cardWidth + paddingX));
   const nodeByKey = new Map(positionedNodes.map((node) => [node.key, node]));
   const positionedEdges = edgesByKey
     .filter((edge) => nodeByKey.has(edge.fromKey) && nodeByKey.has(edge.toKey))
@@ -664,8 +738,8 @@ const positionTreeNodes = (nodes, edgesByKey) => {
           kind: edge.kind,
           fromKey: edge.fromKey,
           toKey: edge.toKey,
-          from: { x: from.x + (fromLeft ? TREE_CARD_WIDTH : 0), y: from.y + TREE_CARD_HEIGHT / 2 },
-          to: { x: to.x + (fromLeft ? 0 : TREE_CARD_WIDTH), y: to.y + TREE_CARD_HEIGHT / 2 }
+          from: { x: from.x + (fromLeft ? cardWidth : 0), y: from.y + cardHeight / 2 },
+          to: { x: to.x + (fromLeft ? 0 : cardWidth), y: to.y + cardHeight / 2 }
         };
       }
       return {
@@ -673,8 +747,8 @@ const positionTreeNodes = (nodes, edgesByKey) => {
         kind: edge.kind || 'parentChild',
         fromKey: edge.fromKey,
         toKey: edge.toKey,
-        from: { x: from.x + TREE_CARD_WIDTH / 2, y: from.y + TREE_CARD_HEIGHT },
-        to: { x: to.x + TREE_CARD_WIDTH / 2, y: to.y }
+        from: { x: from.x + cardWidth / 2, y: from.y + cardHeight },
+        to: { x: to.x + cardWidth / 2, y: to.y }
       };
     });
 
@@ -683,11 +757,53 @@ const positionTreeNodes = (nodes, edgesByKey) => {
     edges: positionedEdges,
     width,
     height,
-    generationCount: maxGeneration - minGeneration + 1
+    generationCount: maxGeneration - minGeneration + 1,
+    cardMetrics
   };
 };
 
-const buildAncestorLayout = (db, rootId, options = {}) => {
+const makeNodeGroups = (positionedNodes, groupNames = {}, cardMetrics = TREE_CARD_DEFAULT) => {
+  const cardWidth = cardMetrics.width;
+  const cardHeight = cardMetrics.height;
+  const grouped = new Map();
+  positionedNodes.forEach((node) => {
+    if (!node.familyGroupId) return;
+    if (!grouped.has(node.familyGroupId)) grouped.set(node.familyGroupId, []);
+    grouped.get(node.familyGroupId).push(node);
+  });
+  return [...grouped.entries()]
+    .map(([id, groupNodes]) => {
+      const minX = Math.min(...groupNodes.map((node) => node.x));
+      const maxX = Math.max(...groupNodes.map((node) => node.x + cardWidth));
+      const minY = Math.min(...groupNodes.map((node) => node.y));
+      const maxY = Math.max(...groupNodes.map((node) => node.y + cardHeight));
+      const kind = groupNodes[0]?.relationGroup || 'family';
+      return {
+        id,
+        kind,
+        label: groupNames[id] || groupNodes[0]?.familyGroupLabel || 'Grupo familiar',
+        x: minX - 16,
+        y: minY - 20,
+        width: maxX - minX + 32,
+        height: maxY - minY + 36
+      };
+    })
+    .filter((group) => group.width > cardWidth + 20 || ['sibling', 'partner', 'collateral'].includes(group.kind));
+};
+
+const relationGroupFromLabel = (label) => {
+  if (!label) return 'family';
+  const normalized = label.toLowerCase();
+  if (normalized.includes('central')) return 'central';
+  if (normalized.includes('pareja') || normalized.includes('partner')) return 'partner';
+  if (normalized.includes('herman') || normalized.includes('sibling') || normalized.includes('brother') || normalized.includes('sister')) return 'sibling';
+  if (normalized.includes('tío') || normalized.includes('tía') || normalized.includes('primo') || normalized.includes('prima') || normalized.includes('sobrino') || normalized.includes('sobrina') || normalized.includes('aunt') || normalized.includes('uncle') || normalized.includes('cousin') || normalized.includes('nephew') || normalized.includes('niece')) return 'collateral';
+  if (normalized.includes('padre') || normalized.includes('madre') || normalized.includes('abuelo') || normalized.includes('abuela') || normalized.includes('ancestro') || normalized.includes('father') || normalized.includes('mother') || normalized.includes('parent') || normalized.includes('grand')) return 'ancestor';
+  if (normalized.includes('hijo') || normalized.includes('hija') || normalized.includes('nieto') || normalized.includes('nieta') || normalized.includes('descendiente') || normalized.includes('son') || normalized.includes('daughter') || normalized.includes('child') || normalized.includes('descendant')) return 'descendant';
+  return 'family';
+};
+
+const buildAncestorLayout = (db, rootId, options = {}, language = 'es', cardMetrics = TREE_CARD_DEFAULT) => {
   const { showAncestors = true, showDescendants = true, showGeneration = false } = options;
   const peopleById = new Map(db.people.map((person) => [person.id, person]));
   const parentsByChild = new Map();
@@ -777,23 +893,45 @@ const buildAncestorLayout = (db, rootId, options = {}) => {
       .filter((rel) => rel.personAId === rootId || rel.personBId === rootId)
       .map((rel) => rel.personAId === rootId ? rel.personBId : rel.personAId))
       .filter((id) => !existingNodeIds.has(id));
-    const generationIds = [...siblingIds, ...partnerIds.filter((id) => !siblingIds.includes(id))];
     const rootSlot = ancestors.rootX;
-    generationIds.forEach((id, index) => {
-      const side = index % 2 === 0 ? -1 : 1;
-      const distance = Math.floor(index / 2) + 1;
+    siblingIds.forEach((id, index) => {
       const key = `generation_${id}`;
-      nodes.push({ key, id, person: peopleById.get(id), generation: 0, slot: rootSlot + side * distance, relationLabel: partnerIds.includes(id) ? 'Pareja' : 'Hermano/a' });
+      nodes.push({
+        key,
+        id,
+        person: peopleById.get(id),
+        generation: 0,
+        slot: rootSlot - siblingIds.length + index,
+        relationLabel: kinTerm(language, 'sibling', peopleById.get(id)),
+        relationGroup: 'sibling',
+        familyGroupId: 'focus_siblings',
+        familyGroupLabel: translate(language, 'tree.siblings')
+      });
       existingNodeIds.add(id);
       parentIds.forEach((parentId) => {
         const parentNode = nodes.find((node) => node.id === parentId);
-        if (parentNode) edgeById.set(`${parentNode.key}_${key}`, { id: `${parentNode.key}_${key}`, fromKey: parentNode.key, toKey: key });
+        if (parentNode) edgeById.set(`${parentNode.key}_${key}`, { id: `${parentNode.key}_${key}`, kind: 'sibling', fromKey: parentNode.key, toKey: key });
       });
+    });
+    partnerIds.filter((id) => !siblingIds.includes(id)).forEach((id, index) => {
+      const key = `generation_${id}`;
+      nodes.push({
+        key,
+        id,
+        person: peopleById.get(id),
+        generation: 0,
+        slot: rootSlot + index + 1,
+        relationLabel: kinTerms[language]?.partner || kinTerms.es.partner,
+        relationGroup: 'partner',
+        familyGroupId: 'focus_partners',
+        familyGroupLabel: translate(language, 'tree.partners')
+      });
+      existingNodeIds.add(id);
       if (partnerIds.includes(id)) edgeById.set(`${rootKey}_${key}_partner`, { id: `${rootKey}_${key}_partner`, kind: 'peer', fromKey: rootKey, toKey: key });
     });
   }
 
-  const positioned = positionTreeNodes(nodes, [...edgeById.values()]);
+  const positioned = positionTreeNodes(nodes, [...edgeById.values()], cardMetrics);
   const uniqueAncestors = new Set(positioned.nodes.filter((node) => node.generation < 0).map((node) => node.id));
   const uniqueDescendants = new Set(positioned.nodes.filter((node) => node.generation > 0).map((node) => node.id));
 
@@ -801,108 +939,306 @@ const buildAncestorLayout = (db, rootId, options = {}) => {
     ...positioned,
     ancestorCount: uniqueAncestors.size,
     descendantCount: uniqueDescendants.size,
-    allPeopleCount: positioned.nodes.length
+    allPeopleCount: positioned.nodes.length,
+    groups: makeNodeGroups(positioned.nodes, {
+      focus_siblings: translate(language, 'tree.siblings'),
+      focus_partners: translate(language, 'tree.partners')
+    }, cardMetrics)
   };
 };
 
-const buildAllPeopleLayout = (db) => {
-  const peopleById = new Map(db.people.map((person) => [person.id, person]));
-  const childIds = new Set(db.parentChild
-    .filter((rel) => peopleById.has(rel.parentId) && peopleById.has(rel.childId))
-    .map((rel) => rel.childId));
-  const childrenByParent = new Map();
-  const indegree = new Map(db.people.map((person) => [person.id, 0]));
+const sexKey = (person) => person?.sex === 'M' ? 'male' : person?.sex === 'F' ? 'female' : 'neutral';
 
+const kinTerms = {
+  es: {
+    ancestor: {
+      1: { male: 'Padre', female: 'Madre', neutral: 'Padre / madre' },
+      2: { male: 'Abuelo', female: 'Abuela', neutral: 'Abuelo/a' },
+      3: { male: 'Bisabuelo', female: 'Bisabuela', neutral: 'Bisabuelo/a' },
+      4: { male: 'Tatarabuelo', female: 'Tatarabuela', neutral: 'Tatarabuelo/a' },
+      5: { male: 'Trastatarabuelo', female: 'Trastatarabuela', neutral: 'Trastatarabuelo/a' },
+      6: { male: 'Pentabuelo', female: 'Pentabuela', neutral: 'Pentabuelo/a' },
+      7: { male: 'Hexabuelo', female: 'Hexabuela', neutral: 'Hexabuelo/a' },
+      8: { male: 'Heptabuelo', female: 'Heptabuela', neutral: 'Heptabuelo/a' }
+    },
+    descendant: {
+      1: { male: 'Hijo', female: 'Hija', neutral: 'Hijo / hija' },
+      2: { male: 'Nieto', female: 'Nieta', neutral: 'Nieto/a' },
+      3: { male: 'Bisnieto', female: 'Bisnieta', neutral: 'Bisnieto/a' },
+      4: { male: 'Tataranieto', female: 'Tataranieta', neutral: 'Tataranieto/a' },
+      5: { male: 'Trastataranieto', female: 'Trastataranieta', neutral: 'Trastataranieto/a' }
+    },
+    sibling: { male: 'Hermano', female: 'Hermana', neutral: 'Hermano/a' },
+    auntUncle: { male: 'Tío', female: 'Tía', neutral: 'Tío/a' },
+    cousin: { male: 'Primo', female: 'Prima', neutral: 'Primo/a' },
+    nephew: { male: 'Sobrino', female: 'Sobrina', neutral: 'Sobrino/a' },
+    partner: 'Pareja',
+    central: 'Persona central',
+    relative: 'Pariente',
+    origin: 'Origen / sin padres',
+    generation: (distance) => `Generación ${distance}`,
+    ancestorFallback: (distance) => `Ancestro/a ${distance} generaciones`,
+    descendantFallback: (distance) => `Descendiente ${distance} generaciones`
+  },
+  en: {
+    ancestor: {
+      1: { male: 'Father', female: 'Mother', neutral: 'Parent' },
+      2: { male: 'Grandfather', female: 'Grandmother', neutral: 'Grandparent' },
+      3: { male: 'Great-grandfather', female: 'Great-grandmother', neutral: 'Great-grandparent' }
+    },
+    descendant: {
+      1: { male: 'Son', female: 'Daughter', neutral: 'Child' },
+      2: { male: 'Grandson', female: 'Granddaughter', neutral: 'Grandchild' },
+      3: { male: 'Great-grandson', female: 'Great-granddaughter', neutral: 'Great-grandchild' }
+    },
+    sibling: { male: 'Brother', female: 'Sister', neutral: 'Sibling' },
+    auntUncle: { male: 'Uncle', female: 'Aunt', neutral: 'Aunt / uncle' },
+    cousin: { male: 'Cousin', female: 'Cousin', neutral: 'Cousin' },
+    nephew: { male: 'Nephew', female: 'Niece', neutral: 'Niece / nephew' },
+    partner: 'Partner',
+    central: 'Central person',
+    relative: 'Relative',
+    origin: 'Origin / no parents',
+    generation: (distance) => `Generation ${distance}`,
+    ancestorFallback: (distance) => `Ancestor ${distance} generations back`,
+    descendantFallback: (distance) => `Descendant ${distance} generations down`
+  }
+};
+
+const kinTerm = (language, key, person) => {
+  const entry = kinTerms[language]?.[key] || kinTerms.es[key];
+  if (typeof entry === 'string') return entry;
+  return entry?.[sexKey(person)] || entry?.neutral || '';
+};
+
+const ancestorGenerationLabel = (distance, person, language = 'es') => {
+  const entry = kinTerms[language]?.ancestor?.[distance] || kinTerms.es.ancestor[distance];
+  return entry?.[sexKey(person)] || entry?.neutral || kinTerms[language]?.ancestorFallback(distance) || kinTerms.es.ancestorFallback(distance);
+};
+
+const descendantGenerationLabel = (distance, person, language = 'es') => {
+  const entry = kinTerms[language]?.descendant?.[distance] || kinTerms.es.descendant[distance];
+  return entry?.[sexKey(person)] || entry?.neutral || kinTerms[language]?.descendantFallback(distance) || kinTerms.es.descendantFallback(distance);
+};
+
+const relationshipMaps = (db, peopleById) => {
+  const parentsByChild = new Map();
+  const childrenByParent = new Map();
+  const partnersById = new Map();
   db.parentChild.forEach((rel) => {
     if (!peopleById.has(rel.parentId) || !peopleById.has(rel.childId)) return;
+    if (!parentsByChild.has(rel.childId)) parentsByChild.set(rel.childId, []);
     if (!childrenByParent.has(rel.parentId)) childrenByParent.set(rel.parentId, []);
+    parentsByChild.get(rel.childId).push(rel.parentId);
     childrenByParent.get(rel.parentId).push(rel.childId);
-    indegree.set(rel.childId, (indegree.get(rel.childId) || 0) + 1);
   });
+  db.partnerships.forEach((rel) => {
+    if (!peopleById.has(rel.personAId) || !peopleById.has(rel.personBId)) return;
+    if (!partnersById.has(rel.personAId)) partnersById.set(rel.personAId, []);
+    if (!partnersById.has(rel.personBId)) partnersById.set(rel.personBId, []);
+    partnersById.get(rel.personAId).push(rel.personBId);
+    partnersById.get(rel.personBId).push(rel.personAId);
+  });
+  return { parentsByChild, childrenByParent, partnersById };
+};
 
-  const roots = db.people
-    .filter((person) => !childIds.has(person.id))
-    .sort(comparePeopleByDate);
-  const queue = roots.length ? roots.map((person) => person.id) : db.people.sort(comparePeopleByDate).map((person) => person.id);
-  const generationById = new Map(queue.map((id) => [id, 0]));
-  const visitedQueue = [...queue];
-
-  for (let index = 0; index < visitedQueue.length; index += 1) {
-    const parentId = visitedQueue[index];
-    const nextGeneration = (generationById.get(parentId) || 0) + 1;
-    (childrenByParent.get(parentId) || []).sort((a, b) => comparePeopleByDate(peopleById.get(a), peopleById.get(b))).forEach((childId) => {
-      if (!generationById.has(childId) || generationById.get(childId) < nextGeneration) generationById.set(childId, nextGeneration);
-      indegree.set(childId, Math.max(0, (indegree.get(childId) || 0) - 1));
-      if (indegree.get(childId) === 0 && !visitedQueue.includes(childId)) visitedQueue.push(childId);
+const distanceThrough = (startId, targetId, nextIds) => {
+  if (!startId || !targetId) return null;
+  const queue = [{ id: startId, distance: 0 }];
+  const seen = new Set([startId]);
+  while (queue.length) {
+    const item = queue.shift();
+    if (item.id === targetId && item.distance > 0) return item.distance;
+    (nextIds(item.id) || []).forEach((id) => {
+      if (seen.has(id)) return;
+      seen.add(id);
+      queue.push({ id, distance: item.distance + 1 });
     });
   }
+  return null;
+};
 
-  db.people.forEach((person) => {
-    if (!generationById.has(person.id)) generationById.set(person.id, 0);
+const kinshipLabel = ({ focusId, targetId, parentsByChild, childrenByParent, partnersById, peopleById, language = 'es' }) => {
+  const target = peopleById?.get(targetId);
+  if (!focusId || focusId === targetId) return focusId === targetId ? (kinTerms[language]?.central || kinTerms.es.central) : '';
+  if ((partnersById.get(focusId) || []).includes(targetId)) return kinTerms[language]?.partner || kinTerms.es.partner;
+
+  const ancestorDistance = distanceThrough(focusId, targetId, (id) => parentsByChild.get(id) || []);
+  if (ancestorDistance) return ancestorGenerationLabel(ancestorDistance, target, language);
+  const descendantDistance = distanceThrough(focusId, targetId, (id) => childrenByParent.get(id) || []);
+  if (descendantDistance) return descendantGenerationLabel(descendantDistance, target, language);
+
+  const focusParents = parentsByChild.get(focusId) || [];
+  const targetParents = parentsByChild.get(targetId) || [];
+  const sharesParent = focusParents.some((id) => targetParents.includes(id));
+  if (sharesParent) return kinTerm(language, 'sibling', target);
+
+  const siblingIds = [...new Set(focusParents.flatMap((parentId) => childrenByParent.get(parentId) || []))]
+    .filter((id) => id !== focusId);
+  const nephewIds = new Set(siblingIds.flatMap((id) => childrenByParent.get(id) || []));
+  if (nephewIds.has(targetId)) return kinTerm(language, 'nephew', target);
+
+  const auntUncleIds = new Set(focusParents.flatMap((parentId) => {
+    const grandparents = parentsByChild.get(parentId) || [];
+    return grandparents.flatMap((grandparentId) => childrenByParent.get(grandparentId) || []).filter((id) => id !== parentId);
+  }));
+  if (auntUncleIds.has(targetId)) return kinTerm(language, 'auntUncle', target);
+  const cousinIds = new Set([...auntUncleIds].flatMap((id) => childrenByParent.get(id) || []));
+  if (cousinIds.has(targetId)) return kinTerm(language, 'cousin', target);
+
+  return kinTerms[language]?.relative || kinTerms.es.relative;
+};
+
+const buildAllPeopleLayout = (db, focusId, language = 'es', cardMetrics = TREE_CARD_DEFAULT) => {
+  const peopleById = new Map(db.people.map((person) => [person.id, person]));
+  const { parentsByChild, childrenByParent, partnersById } = relationshipMaps(db, peopleById);
+  const graph = new Map(db.people.map((person) => [person.id, new Set()]));
+  db.parentChild.forEach((rel) => {
+    if (!peopleById.has(rel.parentId) || !peopleById.has(rel.childId)) return;
+    graph.get(rel.parentId).add(rel.childId);
+    graph.get(rel.childId).add(rel.parentId);
+  });
+  db.partnerships.forEach((rel) => {
+    if (!peopleById.has(rel.personAId) || !peopleById.has(rel.personBId)) return;
+    graph.get(rel.personAId).add(rel.personBId);
+    graph.get(rel.personBId).add(rel.personAId);
   });
 
-  const levels = new Map();
-  db.people.forEach((person) => {
-    const generation = generationById.get(person.id) || 0;
-    if (!levels.has(generation)) levels.set(generation, []);
-    levels.get(generation).push(person);
+  const components = [];
+  const seen = new Set();
+  [...db.people].sort(comparePeopleByDate).forEach((person) => {
+    if (seen.has(person.id)) return;
+    const ids = [];
+    const queue = [person.id];
+    seen.add(person.id);
+    while (queue.length) {
+      const id = queue.shift();
+      ids.push(id);
+      [...(graph.get(id) || [])].sort((a, b) => comparePeopleByDate(peopleById.get(a), peopleById.get(b))).forEach((nextId) => {
+        if (seen.has(nextId)) return;
+        seen.add(nextId);
+        queue.push(nextId);
+      });
+    }
+    components.push(ids);
   });
 
   const nodes = [];
-  [...levels.entries()].sort((a, b) => a[0] - b[0]).forEach(([generation, people]) => {
-    people.sort(comparePeopleByDate).forEach((person, index) => {
-      nodes.push({ key: `all_${person.id}`, id: person.id, person, generation, slot: index });
+  const familyGroupNames = {};
+  let componentOffset = 0;
+
+  components
+    .sort((a, b) => comparePeopleByDate(peopleById.get(a[0]), peopleById.get(b[0])))
+    .forEach((componentIds, componentIndex) => {
+      const componentSet = new Set(componentIds);
+      const roots = componentIds
+        .filter((id) => !(parentsByChild.get(id) || []).some((parentId) => componentSet.has(parentId)))
+        .sort((a, b) => comparePeopleByDate(peopleById.get(a), peopleById.get(b)));
+      const startIds = roots.length ? roots : [...componentIds].sort((a, b) => comparePeopleByDate(peopleById.get(a), peopleById.get(b))).slice(0, 1);
+      const generationById = new Map(startIds.map((id) => [id, 0]));
+      const queue = [...startIds];
+
+      for (let index = 0; index < queue.length; index += 1) {
+        const parentId = queue[index];
+        const nextGeneration = (generationById.get(parentId) || 0) + 1;
+        (childrenByParent.get(parentId) || [])
+          .filter((id) => componentSet.has(id))
+          .sort((a, b) => comparePeopleByDate(peopleById.get(a), peopleById.get(b)))
+          .forEach((childId) => {
+            if (!generationById.has(childId) || generationById.get(childId) < nextGeneration) generationById.set(childId, nextGeneration);
+            if (!queue.includes(childId)) queue.push(childId);
+          });
+      }
+      componentIds.forEach((id) => {
+        if (!generationById.has(id)) generationById.set(id, 0);
+      });
+
+      const levels = new Map();
+      componentIds.forEach((id) => {
+        const generation = generationById.get(id) || 0;
+        if (!levels.has(generation)) levels.set(generation, []);
+        levels.get(generation).push(id);
+      });
+
+      const localSlotById = new Map();
+      let componentWidth = 1;
+      [...levels.entries()].sort((a, b) => a[0] - b[0]).forEach(([generation, ids]) => {
+        const groups = new Map();
+        ids.forEach((id) => {
+          const parents = (parentsByChild.get(id) || []).filter((parentId) => componentSet.has(parentId) && generationById.get(parentId) < generation);
+          const key = parents.length ? parents.sort().join('|') : `origin_${componentIndex}`;
+          if (!groups.has(key)) groups.set(key, { key, parentIds: parents, ids: [] });
+          groups.get(key).ids.push(id);
+        });
+
+        let cursor = 0;
+        [...groups.values()]
+          .map((group) => {
+            group.ids.sort((a, b) => comparePeopleByDate(peopleById.get(a), peopleById.get(b)));
+            const parentSlots = group.parentIds.map((id) => localSlotById.get(id)).filter((slot) => Number.isFinite(slot));
+            const desiredCenter = parentSlots.length ? parentSlots.reduce((sum, slot) => sum + slot, 0) / parentSlots.length : cursor + (group.ids.length - 1) / 2;
+            return { ...group, desiredCenter };
+          })
+          .sort((a, b) => a.desiredCenter - b.desiredCenter || comparePeopleByDate(peopleById.get(a.ids[0]), peopleById.get(b.ids[0])))
+          .forEach((group) => {
+            const groupWidth = Math.max(1, group.ids.length);
+            const start = Math.max(cursor, group.desiredCenter - (groupWidth - 1) / 2);
+            const familyGroupId = group.parentIds.length && group.ids.length > 1 ? `all_family_${componentIndex}_${group.key}` : '';
+            if (familyGroupId) familyGroupNames[familyGroupId] = translate(language, 'tree.siblings');
+            group.ids.forEach((id, index) => {
+              localSlotById.set(id, start + index);
+              const relationLabel = kinshipLabel({ focusId, targetId: id, parentsByChild, childrenByParent, partnersById, peopleById, language });
+              const relationGroup = relationGroupFromLabel(relationLabel);
+              nodes.push({
+                key: `all_${id}`,
+                id,
+                person: peopleById.get(id),
+                generation,
+                slot: componentOffset + start + index,
+                relationLabel: relationLabel || (generation === 0 ? translate(language, 'tree.familyGroup') : kinTerms[language]?.generation(generation + 1)),
+                relationGroup: relationGroup === 'family' && group.parentIds.length ? 'sibling' : relationGroup,
+                familyGroupId,
+                familyGroupLabel: familyGroupId ? translate(language, 'tree.siblings') : ''
+              });
+            });
+            cursor = start + groupWidth + TREE_GROUP_GAP_SLOTS;
+            componentWidth = Math.max(componentWidth, cursor);
+          });
+      });
+
+      componentOffset += componentWidth + 1.4;
     });
-  });
 
-  const edgesByKey = db.parentChild
-    .filter((rel) => peopleById.has(rel.parentId) && peopleById.has(rel.childId))
-    .map((rel) => ({ id: `all_${rel.parentId}_${rel.childId}`, fromKey: `all_${rel.parentId}`, toKey: `all_${rel.childId}` }));
+  const edgesByKey = [
+    ...db.parentChild
+      .filter((rel) => peopleById.has(rel.parentId) && peopleById.has(rel.childId))
+      .map((rel) => ({ id: `all_${rel.parentId}_${rel.childId}`, fromKey: `all_${rel.parentId}`, toKey: `all_${rel.childId}` })),
+    ...db.partnerships
+      .filter((rel) => peopleById.has(rel.personAId) && peopleById.has(rel.personBId))
+      .map((rel) => ({ id: `all_${rel.personAId}_${rel.personBId}_partner`, kind: 'peer', fromKey: `all_${rel.personAId}`, toKey: `all_${rel.personBId}` }))
+  ];
 
-  const positioned = positionTreeNodes(nodes, edgesByKey);
+  const positioned = positionTreeNodes(nodes, edgesByKey, cardMetrics);
   return {
     ...positioned,
     ancestorCount: 0,
     descendantCount: 0,
-    allPeopleCount: db.people.length
+    allPeopleCount: db.people.length,
+    groups: makeNodeGroups(positioned.nodes, familyGroupNames, cardMetrics)
   };
 };
 
-const ancestorGenerationLabel = (distance) => {
-  const labels = {
-    1: 'Padre / madre',
-    2: 'Abuelo/a',
-    3: 'Bisabuelo/a',
-    4: 'Tatarabuelo/a',
-    5: 'Trastatarabuelo/a',
-    6: 'Pentabuelo/a',
-    7: 'Hexabuelo/a',
-    8: 'Heptabuelo/a'
-  };
-  return labels[distance] || `Ancestro/a ${distance} generaciones`;
-};
-
-const descendantGenerationLabel = (distance) => {
-  const labels = {
-    1: 'Hijo / hija',
-    2: 'Nieto/a',
-    3: 'Bisnieto/a',
-    4: 'Tataranieto/a',
-    5: 'Trastataranieto/a'
-  };
-  return labels[distance] || `Descendiente ${distance} generaciones`;
-};
-
-const treeNodeLabel = (node) => {
+const treeNodeLabel = (node, language = 'es') => {
   if (node.relationLabel) return node.relationLabel;
-  if (node.generation === 0) return 'Persona central';
-  if (node.generation < 0) return ancestorGenerationLabel(Math.abs(node.generation));
-  return descendantGenerationLabel(node.generation);
+  if (node.generation === 0) return kinTerms[language]?.central || kinTerms.es.central;
+  if (node.generation < 0) return ancestorGenerationLabel(Math.abs(node.generation), node.person, language);
+  return descendantGenerationLabel(node.generation, node.person, language);
 };
 
-const allPeopleNodeLabel = (node) => {
-  if (node.generation === 0) return 'Origen / sin padres';
-  return `Generación ${node.generation + 1}`;
+const allPeopleNodeLabel = (node, language = 'es') => {
+  if (node.relationLabel) return node.relationLabel;
+  if (node.generation === 0) return kinTerms[language]?.origin || kinTerms.es.origin;
+  return kinTerms[language]?.generation(node.generation + 1) || kinTerms.es.generation(node.generation + 1);
 };
 
 const suggestionSourceTitle = 'Detective genealógico';
@@ -1011,7 +1347,9 @@ const describeSuggestionChange = (change, db) => {
   return 'Aplicar cambio propuesto.';
 };
 
-const buildTemporalLayout = (layout) => {
+const buildTemporalLayout = (layout, cardMetrics = layout.cardMetrics || TREE_CARD_DEFAULT) => {
+  const cardWidth = cardMetrics.width;
+  const cardHeight = cardMetrics.height;
   const datedNodes = layout.nodes
     .map((node) => ({ node, year: birthYearFor(node.person) }))
     .filter((item) => item.year !== null);
@@ -1040,8 +1378,8 @@ const buildTemporalLayout = (layout) => {
       const to = nodeByKey.get(edge.toKey);
       return {
         ...edge,
-        from: { x: from.x + TREE_CARD_WIDTH / 2, y: from.y + TREE_CARD_HEIGHT },
-        to: { x: to.x + TREE_CARD_WIDTH / 2, y: to.y }
+        from: { x: from.x + cardWidth / 2, y: from.y + cardHeight },
+        to: { x: to.x + cardWidth / 2, y: to.y }
       };
     });
 
@@ -1053,13 +1391,14 @@ const buildTemporalLayout = (layout) => {
   const ticks = [...tickYears]
     .sort((a, b) => a - b)
     .map((year) => ({ year, y: TEMPORAL_TOP_PADDING + (year - axisStartYear) * TEMPORAL_PIXELS_PER_YEAR }));
-  const height = Math.max(layout.height, TEMPORAL_TOP_PADDING + rangeHeight + TREE_CARD_HEIGHT + TEMPORAL_BOTTOM_PADDING);
+  const height = Math.max(layout.height, TEMPORAL_TOP_PADDING + rangeHeight + cardHeight + TEMPORAL_BOTTOM_PADDING);
 
   return {
     ...layout,
     nodes,
     edges,
     height,
+    groups: [],
     temporal: {
       minYear,
       maxYear,
@@ -1111,6 +1450,7 @@ function AppLoader({ message = 'Abriendo tu árbol', animated = true }) {
 }
 
 function PersonForm({ initial, people = [], showRelation = false, onCancel, onSave }) {
+  const { t } = useI18n();
   const [form, setForm] = useState({ ...blankPerson(), ...(initial || {}) });
   const [relationKind, setRelationKind] = useState('');
   const [relationPersonId, setRelationPersonId] = useState('');
@@ -1124,7 +1464,7 @@ function PersonForm({ initial, people = [], showRelation = false, onCancel, onSa
       const profileImage = await readProfileImage(file);
       setForm((prev) => ({ ...prev, profileImage }));
     } catch (error) {
-      alert(error.message || 'No pude cargar esa imagen.');
+      alert(error.message || t('errors.imageLoad'));
     } finally {
       event.target.value = '';
     }
@@ -1136,69 +1476,71 @@ function PersonForm({ initial, people = [], showRelation = false, onCancel, onSa
   return (
     <form onSubmit={submit} className="formStack">
       <div className="formGrid two">
-        <label>Nombres<input value={form.givenNames} onChange={set('givenNames')} autoFocus /></label>
-        <label>Apellidos<input value={form.surnames} onChange={set('surnames')} /></label>
+        <label>{t('forms.names')}<input value={form.givenNames} onChange={set('givenNames')} autoFocus /></label>
+        <label>{t('forms.surnames')}<input value={form.surnames} onChange={set('surnames')} /></label>
       </div>
       <div className="formGrid two">
-        <label>Año de nacimiento<input value={form.birthDate} onChange={set('birthDate')} inputMode="numeric" placeholder="Ej. 1942" /></label>
+        <label>{t('forms.birthYear')}<input value={form.birthDate} onChange={set('birthDate')} inputMode="numeric" placeholder={t('placeholders.birthYear')} /></label>
         {showRelation ? (
-          relationOptions.length ? <label>Parentesco<select value={relationKind} onChange={(event) => setRelationKind(event.target.value)}><option value="">Sin vínculo por ahora</option><option value="parent_of">Es padre/madre de</option><option value="child_of">Es hijo/a de</option><option value="partner_of">Es pareja de</option></select></label> : <label>Parentesco<input disabled placeholder="Sin otras piezas para vincular" /></label>
+          relationOptions.length ? <label>{t('forms.relationship')}<select value={relationKind} onChange={(event) => setRelationKind(event.target.value)}><option value="">{t('forms.noLinkYet')}</option><option value="parent_of">{t('forms.parentOf')}</option><option value="child_of">{t('forms.childOf')}</option><option value="partner_of">{t('forms.partnerOf')}</option></select></label> : <label>{t('forms.relationship')}<input disabled placeholder={t('forms.noPiecesToLink')} /></label>
         ) : (
-          <label>Apodo<input value={form.nickname} onChange={set('nickname')} /></label>
+          <label>{t('forms.nickname')}<input value={form.nickname} onChange={set('nickname')} /></label>
         )}
       </div>
-      {showRelation && relationOptions.length > 0 && <label>Vincular con<select value={relationPersonId} onChange={(event) => setRelationPersonId(event.target.value)}><option value="">Elegir pieza</option>{relationOptions.map((person) => <option key={person.id} value={person.id}>{displayName(person)}</option>)}</select></label>}
+      {showRelation && relationOptions.length > 0 && <label>{t('forms.linkWith')}<select value={relationPersonId} onChange={(event) => setRelationPersonId(event.target.value)}><option value="">{t('forms.choosePiece')}</option>{relationOptions.map((person) => <option key={person.id} value={person.id}>{displayName(person)}</option>)}</select></label>}
       <details className="moreData">
-        <summary>+ datos</summary>
+        <summary>{t('forms.moreData')}</summary>
         <div className="moreDataBody">
           <div className="profileImageField">
             <PersonAvatar person={form} large />
             <div>
-              <span>Imagen de perfil</span>
+              <span>{t('forms.profileImage')}</span>
               <div className="buttonRow compact">
-                <button type="button" className="secondaryButton" onClick={() => imageInputRef.current?.click()}>Cargar imagen</button>
-                {form.profileImage && <button type="button" className="textButton" onClick={() => setForm((prev) => ({ ...prev, profileImage: '' }))}>Quitar</button>}
+                <button type="button" className="secondaryButton" onClick={() => imageInputRef.current?.click()}>{t('actions.uploadImage')}</button>
+                {form.profileImage && <button type="button" className="textButton" onClick={() => setForm((prev) => ({ ...prev, profileImage: '' }))}>{t('actions.remove')}</button>}
               </div>
               <input ref={imageInputRef} hidden type="file" accept="image/*" onChange={setProfileImage} />
             </div>
           </div>
-          {showRelation && <label>Apodo<input value={form.nickname} onChange={set('nickname')} /></label>}
-          <label>Email<input type="email" value={form.email} onChange={set('email')} placeholder="nombre@dominio.com" /></label>
+          {showRelation && <label>{t('forms.nickname')}<input value={form.nickname} onChange={set('nickname')} /></label>}
+          <label>{t('forms.email')}<input type="email" value={form.email} onChange={set('email')} placeholder={t('placeholders.email')} /></label>
           <div className="formGrid two">
-            <label>Sexo<select value={form.sex} onChange={set('sex')}><option value="">Sin indicar</option><option value="M">Masculino</option><option value="F">Femenino</option><option value="X">Otro / no binario</option></select></label>
-            <label>Lugar de nacimiento<input value={form.birthPlace} onChange={set('birthPlace')} placeholder="Ciudad, provincia, país" /></label>
+            <label>{t('forms.sex')}<select value={form.sex} onChange={set('sex')}><option value="">{t('forms.unspecified')}</option><option value="M">{t('forms.male')}</option><option value="F">{t('forms.female')}</option><option value="X">{t('forms.otherGender')}</option></select></label>
+            <label>{t('forms.birthPlace')}<input value={form.birthPlace} onChange={set('birthPlace')} placeholder={t('placeholders.birthPlace')} /></label>
           </div>
           <div className="formGrid two">
-            <label>Fallecimiento<input type="date" value={form.deathDate} onChange={set('deathDate')} /></label>
-            <label>Lugar de fallecimiento<input value={form.deathPlace} onChange={set('deathPlace')} /></label>
+            <label>{t('forms.death')}<input type="date" value={form.deathDate} onChange={set('deathDate')} /></label>
+            <label>{t('forms.deathPlace')}<input value={form.deathPlace} onChange={set('deathPlace')} /></label>
           </div>
-          <label>Ocupación<input value={form.occupation} onChange={set('occupation')} /></label>
-          <label>Notas<textarea rows="5" value={form.notes} onChange={set('notes')} placeholder="Hipótesis, datos pendientes, variantes del apellido..." /></label>
+          <label>{t('forms.occupation')}<input value={form.occupation} onChange={set('occupation')} /></label>
+          <label>{t('forms.notes')}<textarea rows="5" value={form.notes} onChange={set('notes')} placeholder={t('placeholders.notes')} /></label>
         </div>
       </details>
-      <div className="modalActions"><button type="button" className="secondaryButton" onClick={onCancel}>Cancelar</button><button className="primaryButton">Guardar pieza</button></div>
+      <div className="modalActions"><button type="button" className="secondaryButton" onClick={onCancel}>{t('actions.cancel')}</button><button className="primaryButton">{t('actions.savePiece')}</button></div>
     </form>
   );
 }
 
 function EmptyState({ onAdd }) {
+  const { t } = useI18n();
   return (
     <div className="emptyState">
       <div className="emptyMark"><img src="/raices-logo.png" alt="" /></div>
-      <h2>Empezá por una pieza</h2>
-      <p>El árbol se construye alrededor de piezas y vínculos. Podés cargar datos incompletos e ir documentándolos a medida que investigás.</p>
-      <button className="primaryButton" onClick={onAdd}>+ Agregar primera pieza</button>
+      <h2>{t('empty.title')}</h2>
+      <p>{t('empty.body')}</p>
+      <button className="primaryButton" onClick={onAdd}>{t('empty.firstPiece')}</button>
     </div>
   );
 }
 
 function PersonPicker({ people, excludeId, onPick, label }) {
+  const { t } = useI18n();
   const [value, setValue] = useState('');
   const options = people.filter((p) => p.id !== excludeId).sort(comparePeopleByName);
   return (
     <div className="pickerRow">
       <select value={value} onChange={(e) => setValue(e.target.value)}>
-        <option value="">Elegir persona…</option>
+        <option value="">{t('drawer.choosePerson')}</option>
         {options.map((p) => <option key={p.id} value={p.id}>{displayName(p)}</option>)}
       </select>
       <button className="secondaryButton" disabled={!value} onClick={() => { onPick(value); setValue(''); }}>{label}</button>
@@ -1207,6 +1549,7 @@ function PersonPicker({ people, excludeId, onPick, label }) {
 }
 
 function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus, onLink, onDelete, onRemoveRelation, onAddEvent }) {
+  const { language, t } = useI18n();
   useEffect(() => {
     const onKey = (event) => event.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -1227,15 +1570,15 @@ function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus
 
   return (
     <div className="drawerBackdrop" onMouseDown={onClose}>
-      <aside className={`personDrawer ${personStatusClass(person)}`} onMouseDown={(event) => event.stopPropagation()} aria-label="Ficha de persona">
+      <aside className={`personDrawer ${personStatusClass(person)}`} onMouseDown={(event) => event.stopPropagation()} aria-label={t('drawer.personalFile')}>
         <div className="drawerHeader">
           <div>
-            <p className="eyebrow">{isEditing ? 'Modo edición' : 'Modo vista'}</p>
-            <h2>{isEditing ? 'Editar persona' : 'Ficha personal'}</h2>
+            <p className="eyebrow">{isEditing ? t('drawer.editMode') : t('drawer.viewMode')}</p>
+            <h2>{isEditing ? t('drawer.editPerson') : t('drawer.personalFile')}</h2>
           </div>
           <div className="drawerHeaderActions">
-            <span className={`modePill ${isEditing ? 'editing' : 'viewing'}`}>{isEditing ? 'Editando' : 'Vista'}</span>
-            <button className="iconButton dangerIcon" type="button" onClick={onDelete} title="Eliminar persona" aria-label="Eliminar persona">
+            <span className={`modePill ${isEditing ? 'editing' : 'viewing'}`}>{isEditing ? t('drawer.editing') : t('drawer.view')}</span>
+            <button className="iconButton dangerIcon" type="button" onClick={onDelete} title={t('drawer.deletePerson')} aria-label={t('drawer.deletePerson')}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 6h18" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 6v14a2 2 0 002 2h4a2 2 0 002-2V6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>
             <button className="iconButton" onClick={onClose}>×</button>
@@ -1243,33 +1586,33 @@ function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus
         </div>
 
         {isEditing ? <div className="drawerEdit">
-          <div className="modeNotice editing">Estás modificando los datos de esta persona. Guardar actualiza la ficha y vuelve al modo vista.</div>
+          <div className="modeNotice editing">{t('drawer.editingNotice')}</div>
           <PersonForm initial={person} onCancel={() => onModeChange('view')} onSave={(form) => onSave(person.id, form)} />
         </div> : <div className="drawerView">
-          <div className="modeNotice viewing">Estás viendo la ficha. Usá Editar para cambiar datos.</div>
+          <div className="modeNotice viewing">{t('drawer.viewingNotice')}</div>
           <div className="detailTop">
             <PersonAvatar person={person} large />
-            <div><p className="eyebrow">Persona</p><h2>{displayName(person)}</h2><p className="muted">{life || 'Fechas por investigar'}</p><span className={`statusPill ${personStatusClass(person)}`}>{personStatusLabel(person)}</span></div>
+            <div><p className="eyebrow">{t('drawer.person')}</p><h2>{displayName(person)}</h2><p className="muted">{life || t('drawer.datesToResearch')}</p><span className={`statusPill ${personStatusClass(person)}`}>{personStatusLabel(person, language)}</span></div>
           </div>
-          <div className="detailActions"><button className="secondaryButton" onClick={() => onModeChange('edit')}>Editar</button><button className="secondaryButton" onClick={() => openInTree()}>Ver en árbol</button></div>
+          <div className="detailActions"><button className="secondaryButton" onClick={() => onModeChange('edit')}>{t('actions.edit')}</button><button className="secondaryButton" onClick={() => openInTree()}>{t('actions.viewInTree')}</button></div>
           <dl className="factList">
-            <div><dt>Apodo</dt><dd>{displayField(person.nickname)}</dd></div>
-            <div><dt>Email</dt><dd>{person.email ? <a href={`mailto:${person.email}`}>{person.email}</a> : '-'}</dd></div>
-            <div><dt>Nacimiento</dt><dd>{[person.birthDate, person.birthPlace].filter(Boolean).join(' · ') || '-'}</dd></div>
-            <div><dt>Fallecimiento</dt><dd>{[person.deathDate, person.deathPlace].filter(Boolean).join(' · ') || '-'}</dd></div>
-            <div><dt>Ocupación</dt><dd>{displayField(person.occupation)}</dd></div>
-            <div><dt>Notas</dt><dd>{displayField(person.notes)}</dd></div>
+            <div><dt>{t('facts.nickname')}</dt><dd>{displayField(person.nickname)}</dd></div>
+            <div><dt>{t('facts.email')}</dt><dd>{person.email ? <a href={`mailto:${person.email}`}>{person.email}</a> : '-'}</dd></div>
+            <div><dt>{t('facts.birth')}</dt><dd>{[person.birthDate, person.birthPlace].filter(Boolean).join(' · ') || '-'}</dd></div>
+            <div><dt>{t('facts.death')}</dt><dd>{[person.deathDate, person.deathPlace].filter(Boolean).join(' · ') || '-'}</dd></div>
+            <div><dt>{t('facts.occupation')}</dt><dd>{displayField(person.occupation)}</dd></div>
+            <div><dt>{t('facts.notes')}</dt><dd>{displayField(person.notes)}</dd></div>
           </dl>
-          <section className="detailSection"><div className="sectionTitle"><h3>Familia</h3></div>
-            <RelationList title="Padres" kind="parent" people={[...rel.parents].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={onRemoveRelation} />
-            <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('parent', id)} label="Agregar padre/madre" />
-            <RelationList title="Parejas" kind="partner" people={[...rel.partners].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={onRemoveRelation} />
-            <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('partner', id)} label="Agregar pareja" />
-            <RelationList title="Hijos" kind="child" people={[...rel.children].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={onRemoveRelation} />
-            <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('child', id)} label="Agregar hijo/a" />
+          <section className="detailSection"><div className="sectionTitle"><h3>{t('drawer.family')}</h3></div>
+            <RelationList title={t('drawer.parents')} kind="parent" people={[...rel.parents].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={onRemoveRelation} />
+            <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('parent', id)} label={t('drawer.addParent')} />
+            <RelationList title={t('drawer.partners')} kind="partner" people={[...rel.partners].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={onRemoveRelation} />
+            <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('partner', id)} label={t('drawer.addPartner')} />
+            <RelationList title={t('drawer.children')} kind="child" people={[...rel.children].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={onRemoveRelation} />
+            <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('child', id)} label={t('drawer.addChild')} />
           </section>
-          <section className="detailSection"><div className="sectionTitle"><h3>Línea de tiempo</h3><button className="textButton" onClick={onAddEvent}>+ Agregar</button></div>
-            {timeline.length ? <ol className="timelineList">{timeline.map((event) => <li key={event.id} className="timelineItem"><span className="timelineDot" /><div><strong>{event.type}</strong><span>{[event.date, event.place].filter(Boolean).join(' · ') || 'Fecha pendiente'}</span>{event.description && <p>{event.description}</p>}</div></li>)}</ol> : <p className="muted small">Todavía no hay eventos registrados.</p>}
+          <section className="detailSection"><div className="sectionTitle"><h3>{t('drawer.timeline')}</h3><button className="textButton" onClick={onAddEvent}>{t('actions.add')}</button></div>
+            {timeline.length ? <ol className="timelineList">{timeline.map((event) => <li key={event.id} className="timelineItem"><span className="timelineDot" /><div><strong>{event.type}</strong><span>{[event.date, event.place].filter(Boolean).join(' · ') || t('tree.noDate')}</span>{event.description && <p>{event.description}</p>}</div></li>)}</ol> : <p className="muted small">{t('drawer.noEvents')}</p>}
           </section>
         </div>}
       </aside>
@@ -1278,7 +1621,8 @@ function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus
 }
 
 function RelationList({ title, people, onOpen, onRemove, kind }) {
-  if (!people.length) return <div className="relationBlock"><span>{title}</span><em>Sin datos</em></div>;
+  const { t } = useI18n();
+  if (!people.length) return <div className="relationBlock"><span>{title}</span><em>{t('drawer.noData')}</em></div>;
   return (
     <div className="relationBlock">
       <span>{title}</span>
@@ -1286,7 +1630,7 @@ function RelationList({ title, people, onOpen, onRemove, kind }) {
         {people.map((p) => (
           <div key={p.id} className={`relationChip ${personStatusClass(p)}`}>
             <button type="button" className="relationChipName" onClick={() => onOpen(p.id)}>{displayName(p)}</button>
-            {onRemove && <button type="button" className="relationChipRemove" onClick={(event) => { event.stopPropagation(); onRemove(kind, p.id); }} title="Eliminar vínculo" aria-label="Eliminar vínculo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 6h18" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 6v14a2 2 0 002 2h4a2 2 0 002-2V6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg></button>}
+            {onRemove && <button type="button" className="relationChipRemove" onClick={(event) => { event.stopPropagation(); onRemove(kind, p.id); }} title={t('drawer.removeLink')} aria-label={t('drawer.removeLink')}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 6h18" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 6v14a2 2 0 002 2h4a2 2 0 002-2V6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg></button>}
           </div>
         ))}
       </div>
@@ -1294,7 +1638,32 @@ function RelationList({ title, people, onOpen, onRemove, kind }) {
   );
 }
 
-function TreeCard({ person, label, onOpen, onFocus, focal = false, style }) {
+const currentTreeCardMetrics = () => {
+  if (typeof window === 'undefined') return TREE_CARD_DEFAULT;
+  return window.matchMedia('(max-width: 760px) and (orientation: portrait)').matches
+    ? TREE_CARD_VARIANTS.portrait
+    : TREE_CARD_VARIANTS.landscape;
+};
+
+function useTreeCardMetrics() {
+  const [metrics, setMetrics] = useState(TREE_CARD_DEFAULT);
+
+  useEffect(() => {
+    const update = () => setMetrics(currentTreeCardMetrics());
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, []);
+
+  return metrics;
+}
+
+function TreeCard({ person, label, relationGroup = 'family', sourceCount = 0, cardVariant = 'landscape', onOpen, onFocus, focal = false, style }) {
+  const { language, t } = useI18n();
   const clickTimerRef = useRef(null);
 
   useEffect(() => () => {
@@ -1302,6 +1671,11 @@ function TreeCard({ person, label, onOpen, onFocus, focal = false, style }) {
   }, []);
 
   if (!person) return null;
+  const hasName = Boolean(String(person.givenNames || person.surnames || person.nickname || '').trim());
+  const hasBirthDate = Boolean(String(person.birthDate || '').trim());
+  const familyBranch = String(person.surnames || '').trim().split(/\s+/)[0] || '';
+  const hasBranch = Boolean(familyBranch);
+  const hasImage = Boolean(person.profileImage);
 
   const handleClick = () => {
     if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
@@ -1321,17 +1695,37 @@ function TreeCard({ person, label, onOpen, onFocus, focal = false, style }) {
   };
 
   return (
-    <button className={`treeCard treeNode ${personStatusClass(person)} ${focal ? 'focal' : ''}`} style={style} onPointerDown={(e) => e.stopPropagation()} onClick={handleClick} onDoubleClick={handleDoubleClick} title="Click: ver ficha. Doble click: centrar árbol.">
-      <span className="treeLabel">{label}</span>
-      <PersonAvatar person={person} />
-      <strong>{displayName(person)}</strong>
-      <small>{person.birthDate || 'Fecha pendiente'}</small>
-      <span className={`lifeDot ${personStatusClass(person)}`} aria-label={personStatusLabel(person)} title={personStatusLabel(person)} />
+    <button className={`treeCard treeNode treeCard-${cardVariant} ${hasImage ? 'hasImage' : 'isEmpty'} ${personStatusClass(person)} ${relationGroup} ${focal ? 'focal' : ''}`} style={style} onPointerDown={(e) => e.stopPropagation()} onClick={handleClick} onDoubleClick={handleDoubleClick} title={t('tree.cardTitle')}>
+      <span className={`lifeDot ${personStatusClass(person)}`} aria-label={personStatusLabel(person, language)} title={personStatusLabel(person, language)} />
+      <span className="treeCardMenu" aria-hidden="true"><MoreHorizontal size={18} strokeWidth={2.4} /></span>
+      <span className="treePortraitFrame">
+        {hasImage ? <img src={person.profileImage} alt="" /> : <span className="treePortraitPlaceholder"><UserCircle size={42} strokeWidth={1.35} aria-hidden="true" /></span>}
+      </span>
+
+      <span className="treeCardBody">
+        <span className="treeCardTopline">
+          <span className="treeLabel"><UsersRound size={12} strokeWidth={2.25} aria-hidden="true" />{label}</span>
+          {sourceCount > 0 && <span className="treeCardSourceBadge" title={t('card.sources')}><BookOpen size={11} strokeWidth={2.2} aria-hidden="true" />{sourceCount}</span>}
+        </span>
+        <strong className="treeCardName">{hasName ? displayName(person) : t('card.missingName')}</strong>
+        <span className="treeCardDetails">
+          <span className="treeCardFact">
+            <CalendarDays size={13} strokeWidth={2.2} aria-hidden="true" />
+            <span><em>{t('card.birthDate')}</em><b>{hasBirthDate ? person.birthDate : t('tree.noDate')}</b></span>
+          </span>
+          <span className="treeCardMetaItem branchMeta">
+            <Sprout size={13} strokeWidth={2.2} aria-hidden="true" />
+            <span><em>{t('card.familyBranch')}</em><b>{hasBranch ? familyBranch : t('card.noBranch')}</b></span>
+          </span>
+        </span>
+      </span>
     </button>
   );
 }
 
 function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
+  const { language, t } = useI18n();
+  const cardMetrics = useTreeCardMetrics();
   const person = db.people.find((p) => p.id === focusedId) || db.people[0];
   const [viewport, setViewport] = useState({ x: 24, y: 18, scale: 0.92 });
   const [showAllPeople, setShowAllPeople] = useState(false);
@@ -1341,10 +1735,58 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
   const [temporalScale, setTemporalScale] = useState(false);
   const [isCanvasMaximized, setCanvasMaximized] = useState(false);
   const [canvasBackground, setCanvasBackground] = useState('');
+  const [toolsOpen, setToolsOpen] = useState(false);
   const dragRef = useRef(null);
+  const canvasRef = useRef(null);
   const backgroundInputRef = useRef(null);
-  const baseLayout = useMemo(() => showAllPeople ? buildAllPeopleLayout(db) : buildAncestorLayout(db, person?.id, { showAncestors, showDescendants, showGeneration }), [db, person?.id, showAllPeople, showAncestors, showDescendants, showGeneration]);
-  const layout = useMemo(() => temporalScale ? buildTemporalLayout(baseLayout) : baseLayout, [baseLayout, temporalScale]);
+  const baseLayout = useMemo(() => showAllPeople ? buildAllPeopleLayout(db, person?.id, language, cardMetrics) : buildAncestorLayout(db, person?.id, { showAncestors, showDescendants, showGeneration }, language, cardMetrics), [db, person?.id, showAllPeople, showAncestors, showDescendants, showGeneration, language, cardMetrics]);
+  const layout = useMemo(() => temporalScale ? buildTemporalLayout(baseLayout, cardMetrics) : baseLayout, [baseLayout, temporalScale, cardMetrics]);
+  const sourceCountByPerson = useMemo(() => {
+    const counts = new Map();
+    db.citations.forEach((citation) => {
+      if (!citation.personId) return;
+      counts.set(citation.personId, (counts.get(citation.personId) || 0) + 1);
+    });
+    return counts;
+  }, [db.citations]);
+
+  const fitActiveCards = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !layout.nodes.length) {
+      setViewport({ x: 24, y: 18, scale: 0.92 });
+      return;
+    }
+
+    const xOffset = temporalScale && layout.temporal ? TEMPORAL_AXIS_WIDTH + TEMPORAL_AXIS_GAP : 0;
+    const bounds = layout.nodes.reduce((acc, node) => ({
+      minX: Math.min(acc.minX, node.x),
+      minY: Math.min(acc.minY, node.y),
+      maxX: Math.max(acc.maxX, node.x + cardMetrics.width),
+      maxY: Math.max(acc.maxY, node.y + cardMetrics.height)
+    }), { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
+
+    const canvasWidth = Math.max(1, canvas.clientWidth - xOffset);
+    const canvasHeight = Math.max(1, canvas.clientHeight);
+    const padding = Math.max(28, Math.min(72, Math.min(canvasWidth, canvasHeight) * 0.08));
+    const availableWidth = Math.max(1, canvasWidth - padding * 2);
+    const availableHeight = Math.max(1, canvasHeight - padding * 2);
+    const contentWidth = Math.max(1, bounds.maxX - bounds.minX);
+    const contentHeight = Math.max(1, bounds.maxY - bounds.minY);
+    const scale = Math.min(
+      1.08,
+      availableWidth / contentWidth,
+      availableHeight / contentHeight
+    );
+    const nextScale = Number.isFinite(scale) && scale > 0 ? scale : 0.92;
+    const contentCenterX = bounds.minX + contentWidth / 2;
+    const contentCenterY = bounds.minY + contentHeight / 2;
+
+    setViewport({
+      x: canvasWidth / 2 - contentCenterX * nextScale,
+      y: canvasHeight / 2 - contentCenterY * nextScale,
+      scale: nextScale
+    });
+  };
 
   useEffect(() => {
     try {
@@ -1364,8 +1806,9 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
   }, [canvasBackground]);
 
   useEffect(() => {
-    setViewport({ x: 24, y: 18, scale: 0.92 });
-  }, [person?.id, showAllPeople, showAncestors, showDescendants, showGeneration, temporalScale]);
+    const frame = requestAnimationFrame(fitActiveCards);
+    return () => cancelAnimationFrame(frame);
+  }, [layout, temporalScale]);
 
   useEffect(() => {
     if (!isCanvasMaximized) return undefined;
@@ -1491,73 +1934,78 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
       db,
       layout,
       filename: `raices-${Date.now()}.pdf`,
-      title: showAllPeople ? `${db.settings.treeName} · Todas las piezas` : `${db.settings.treeName} · ${displayName(person)}`,
+      title: showAllPeople ? `${db.settings.treeName} · ${t('actions.allPieces')}` : `${db.settings.treeName} · ${displayName(person)}`,
       temporalScale,
-      canvasBackground
+      canvasBackground,
+      language
     });
   };
 
   return (
-    <div className={`treeWorkspace ${isCanvasMaximized ? 'canvasMaximized' : ''}`}>
-      <div className="treeToolbar">
+    <div className={`treeWorkspace ${isCanvasMaximized ? 'canvasMaximized' : ''} ${toolsOpen ? 'toolsOpen' : 'toolsCollapsed'}`}>
+      <div className={`treeToolbar ${toolsOpen ? 'toolsOpen' : 'toolsCollapsed'}`}>
+        <button className="canvasToolsToggle secondaryButton iconTextButton" type="button" onClick={() => setToolsOpen((value) => !value)} aria-expanded={toolsOpen} aria-controls="treeCanvasTools">
+          <SlidersHorizontal size={16} strokeWidth={2} aria-hidden="true" />
+          <span>{toolsOpen ? t('actions.hideTools') : t('actions.tools')}</span>
+        </button>
         <div className="treeScope">
           <label>
-            <span>Rama</span>
+            <span>{t('tree.branch')}</span>
             <select value={person.id} onChange={(e) => { setShowAllPeople(false); setFocusedId(e.target.value); }}>{[...db.people].sort(comparePeopleByName).map((p) => <option key={p.id} value={p.id}>{displayName(p)}</option>)}</select>
           </label>
           <button className={`secondaryButton iconTextButton ${showAllPeople ? 'activeToggle' : ''}`} type="button" onClick={() => setShowAllPeople((value) => !value)}>
             <UsersRound size={16} strokeWidth={2} aria-hidden="true" />
-            <span>{showAllPeople ? 'Rama enfocada' : 'Todas las piezas'}</span>
+            <span>{showAllPeople ? t('actions.focusedBranch') : t('actions.allPieces')}</span>
           </button>
         </div>
-        <div className="treeControls">
-          {!showAllPeople && <div className="treeFilterChecks" aria-label="Filtros de rama">
-            <label data-short="Asc."><input type="checkbox" checked={showAncestors} onChange={(event) => setShowAncestors(event.target.checked)} /> Ascendencia</label>
-            <label data-short="Desc."><input type="checkbox" checked={showDescendants} onChange={(event) => setShowDescendants(event.target.checked)} /> Descendencia</label>
-            <label data-short="Gen."><input type="checkbox" checked={showGeneration} onChange={(event) => setShowGeneration(event.target.checked)} /> Generación</label>
+        <div className="treeControls" id="treeCanvasTools">
+          {!showAllPeople && <div className="treeFilterChecks" aria-label={t('tree.filters')}>
+            <label data-short="Asc."><input type="checkbox" checked={showAncestors} onChange={(event) => setShowAncestors(event.target.checked)} /> {t('tree.ancestry')}</label>
+            <label data-short="Desc."><input type="checkbox" checked={showDescendants} onChange={(event) => setShowDescendants(event.target.checked)} /> {t('tree.descendants')}</label>
+            <label data-short="Gen."><input type="checkbox" checked={showGeneration} onChange={(event) => setShowGeneration(event.target.checked)} /> {t('tree.generation')}</label>
           </div>}
-          <div className="zoomControls" aria-label="Herramientas del lienzo">
-            <button className={`secondaryButton iconTextButton ${temporalScale ? 'activeToggle' : ''}`} type="button" onClick={() => setTemporalScale((value) => !value)} title="Escala temporal">
+          <div className="zoomControls" aria-label={t('tree.tools')}>
+            <button className={`secondaryButton iconTextButton ${temporalScale ? 'activeToggle' : ''}`} type="button" onClick={() => setTemporalScale((value) => !value)} title={t('tree.temporalScale')}>
               <Hourglass size={16} strokeWidth={2} aria-hidden="true" />
-              <span>Escala</span>
+              <span>{t('tree.scale')}</span>
             </button>
-            <button className={`iconButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? 'Restaurar vista' : 'Maximizar lienzo'} aria-label={isCanvasMaximized ? 'Restaurar vista' : 'Maximizar lienzo'}>
+            <button className={`iconButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')} aria-label={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')}>
               {isCanvasMaximized ? <Minimize2 size={18} strokeWidth={2} aria-hidden="true" /> : <Maximize2 size={18} strokeWidth={2} aria-hidden="true" />}
             </button>
-            <button className={`iconButton ${canvasBackground ? 'activeToggle' : ''}`} type="button" onClick={() => backgroundInputRef.current?.click()} title="Fondo" aria-label="Cambiar fondo">
+            <button className={`iconButton ${canvasBackground ? 'activeToggle' : ''}`} type="button" onClick={() => backgroundInputRef.current?.click()} title={t('tree.background')} aria-label={t('tree.changeBackground')}>
               <ImageIcon size={18} strokeWidth={2} aria-hidden="true" />
             </button>
-            {canvasBackground && <button className="textButton compactTextButton" type="button" onClick={() => setCanvasBackground('')}>Quitar</button>}
+            {canvasBackground && <button className="textButton compactTextButton" type="button" onClick={() => setCanvasBackground('')}>{t('actions.remove')}</button>}
             <input ref={backgroundInputRef} hidden type="file" accept="image/*" onChange={loadCanvasBackground} />
-            <button className="iconButton" type="button" onClick={exportCurrentCanvasPdf} title="Exportar PDF" aria-label="Exportar PDF">
+            <button className="iconButton" type="button" onClick={exportCurrentCanvasPdf} title={t('actions.exportPdf')} aria-label={t('actions.exportPdf')}>
               <FileDown size={18} strokeWidth={2} aria-hidden="true" />
             </button>
-            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale - 0.12)} title="Alejar" aria-label="Alejar">
+            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale - 0.12)} title={t('tree.zoomOut')} aria-label={t('tree.zoomOut')}>
               <ZoomOut size={18} strokeWidth={2} aria-hidden="true" />
             </button>
             <span>{Math.round(viewport.scale * 100)}%</span>
-            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale + 0.12)} title="Acercar" aria-label="Acercar">
+            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale + 0.12)} title={t('tree.zoomIn')} aria-label={t('tree.zoomIn')}>
               <ZoomIn size={18} strokeWidth={2} aria-hidden="true" />
             </button>
-            <button className="iconButton" type="button" onClick={() => setViewport({ x: 24, y: 18, scale: 0.92 })} title="Centrar" aria-label="Centrar">
+            <button className="iconButton" type="button" onClick={fitActiveCards} title={t('tree.center')} aria-label={t('tree.center')}>
               <LocateFixed size={18} strokeWidth={2} aria-hidden="true" />
             </button>
           </div>
         </div>
       </div>
-      <div className={`treeCanvas ${temporalScale ? 'temporalCanvas' : ''} ${canvasBackground ? 'hasCanvasBackground' : ''}`} style={canvasBackground ? { '--canvas-bg-image': `url(${canvasBackground})` } : undefined} onWheel={(event) => { event.preventDefault(); setZoom(viewport.scale + (event.deltaY > 0 ? -0.08 : 0.08)); }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
+      <div ref={canvasRef} className={`treeCanvas ${temporalScale ? 'temporalCanvas' : ''} ${canvasBackground ? 'hasCanvasBackground' : ''}`} style={canvasBackground ? { '--canvas-bg-image': `url(${canvasBackground})` } : undefined} onWheel={(event) => { event.preventDefault(); setZoom(viewport.scale + (event.deltaY > 0 ? -0.08 : 0.08)); }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
         {temporalScale && layout.temporal && <div className="temporalGuideLayer" aria-hidden="true">
           {layout.temporal.ticks.map((tick, index) => <div key={tick.year} className={`temporalGuideLine ${index % 2 ? 'alternate' : ''}`} style={{ top: viewport.y + tick.y * viewport.scale }} />)}
           {layout.temporal.hasUnknownDates && <div className="temporalGuideLine unknown" style={{ top: viewport.y + layout.temporal.unknownY * viewport.scale }} />}
         </div>}
         {temporalScale && layout.temporal && <div className="temporalAxis" aria-hidden="true">
-          <div className="temporalAxisTitle">Nacimiento</div>
+          <div className="temporalAxisTitle">{t('tree.birthAxis')}</div>
           <div className="temporalAxisLine" />
           {layout.temporal.ticks.map((tick) => <div key={tick.year} className="temporalTick" style={{ top: viewport.y + tick.y * viewport.scale }}><span>{tick.year}</span></div>)}
-          {layout.temporal.hasUnknownDates && <div className="temporalTick unknown" style={{ top: viewport.y + layout.temporal.unknownY * viewport.scale }}><span>Sin fecha</span></div>}
+          {layout.temporal.hasUnknownDates && <div className="temporalTick unknown" style={{ top: viewport.y + layout.temporal.unknownY * viewport.scale }}><span>{t('tree.unknownDate')}</span></div>}
         </div>}
         <div className="canvasFloatingControls">
-          <button className={`iconButton canvasMaximizeButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? 'Restaurar vista' : 'Maximizar lienzo'} aria-label={isCanvasMaximized ? 'Restaurar vista' : 'Maximizar lienzo'}>
+          <button className={`iconButton canvasMaximizeButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')} aria-label={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')}>
                 {isCanvasMaximized ? (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 10v-4h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 14v4h-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 3l-9 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 ) : (
@@ -1566,26 +2014,31 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
               </button>
         </div>
         <div className="treePanLayer" style={{ transform: `translate(${viewport.x + (temporalScale && layout.temporal ? TEMPORAL_AXIS_WIDTH + TEMPORAL_AXIS_GAP : 0)}px, ${viewport.y}px) scale(${viewport.scale})` }}>
-          <div className="treeContent" style={{ width: layout.width, height: layout.height }}>
+          <div className="treeContent" style={{ width: layout.width, height: layout.height, '--tree-card-width': `${cardMetrics.width}px`, '--tree-card-height': `${cardMetrics.height}px` }}>
+            {(layout.groups || []).map((group) => <div key={group.id} className={`familyGroupBand ${group.kind}`} style={{ left: group.x, top: group.y, width: group.width, height: group.height }}><span>{group.label}</span></div>)}
             <svg className="treeLines" viewBox={`0 0 ${layout.width} ${layout.height}`} aria-hidden="true">
               {layout.edges.map((edge) => {
                 if (edge.kind === 'peer') {
                   return <path key={edge.id} className="peerLine" d={`M ${edge.from.x} ${edge.from.y} C ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.from.y}, ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.to.y}, ${edge.to.x} ${edge.to.y}`} />;
                 }
                 const middleY = edge.from.y + (edge.to.y - edge.from.y) / 2;
-                return <path key={edge.id} d={`M ${edge.from.x} ${edge.from.y} C ${edge.from.x} ${middleY}, ${edge.to.x} ${middleY}, ${edge.to.x} ${edge.to.y}`} />;
+                return <path key={edge.id} className={edge.kind === 'sibling' ? 'siblingLine' : 'familyLine'} d={`M ${edge.from.x} ${edge.from.y} C ${edge.from.x} ${middleY}, ${edge.to.x} ${middleY}, ${edge.to.x} ${edge.to.y}`} />;
               })}
             </svg>
-            {layout.nodes.map((node) => <TreeCard key={node.key} person={node.person} label={showAllPeople ? allPeopleNodeLabel(node) : treeNodeLabel(node)} focal={!showAllPeople && node.id === person.id} onOpen={onOpenPerson} onFocus={(id) => { setShowAllPeople(false); setFocusedId(id); }} style={{ left: node.x, top: node.y }} />)}
+            {layout.nodes.map((node) => {
+              const label = showAllPeople ? allPeopleNodeLabel(node, language) : treeNodeLabel(node, language);
+              return <TreeCard key={node.key} person={node.person} label={label} relationGroup={node.relationGroup || relationGroupFromLabel(label)} sourceCount={sourceCountByPerson.get(node.id) || 0} cardVariant={cardMetrics.variant} focal={!showAllPeople && node.id === person.id} onOpen={onOpenPerson} onFocus={(id) => { setShowAllPeople(false); setFocusedId(id); }} style={{ left: node.x, top: node.y }} />;
+            })}
           </div>
         </div>
       </div>
-      <p className="treeHint">Arrastrá el lienzo para moverte. Usá la rueda o los botones para acercar y alejar.</p>
+      <p className="treeHint">{t('tree.hint')}</p>
     </div>
   );
 }
 
 function PublicContributionForm({ db, initialPersonId = '', onClose }) {
+  const { t } = useI18n();
   const [kind, setKind] = useState(initialPersonId ? 'edit_person' : 'add_person');
   const [contributor, setContributor] = useState('');
   const [targetPersonId, setTargetPersonId] = useState(initialPersonId);
@@ -1619,43 +2072,43 @@ function PublicContributionForm({ db, initialPersonId = '', onClose }) {
   };
 
   return (
-    <Modal title="Aportar pieza" onClose={onClose}>
+    <Modal title={t('public.contribute')} onClose={onClose}>
       <form className="formStack puzzleForm" onSubmit={submit}>
-        <div className="modeNotice viewing">Cada aporte es una pieza del rompecabezas familiar. El dueño del árbol podrá importarla, revisar la fuente y aceptarla o rechazarla.</div>
-        <label>Tu nombre o contacto<input value={contributor} onChange={(event) => setContributor(event.target.value)} placeholder="Opcional" /></label>
+        <div className="modeNotice viewing">{t('public.contributionIntro')}</div>
+        <label>{t('public.yourContact')}<input value={contributor} onChange={(event) => setContributor(event.target.value)} placeholder={t('public.optional')} /></label>
         <div className="segmentedControl">
-          <button type="button" className={kind === 'edit_person' ? 'active' : ''} onClick={() => setKind('edit_person')}>Sugerir edición</button>
-          <button type="button" className={kind === 'add_person' ? 'active' : ''} onClick={() => setKind('add_person')}>Agregar pieza</button>
+          <button type="button" className={kind === 'edit_person' ? 'active' : ''} onClick={() => setKind('edit_person')}>{t('public.suggestEdit')}</button>
+          <button type="button" className={kind === 'add_person' ? 'active' : ''} onClick={() => setKind('add_person')}>{t('public.addPiece')}</button>
         </div>
-        {kind === 'edit_person' && <label>Persona a editar<select value={targetPersonId} onChange={(event) => setTargetPersonId(event.target.value)}><option value="">Elegir persona</option>{[...db.people].sort(comparePeopleByName).map((person) => <option key={person.id} value={person.id}>{displayName(person)}</option>)}</select></label>}
+        {kind === 'edit_person' && <label>{t('public.personToEdit')}<select value={targetPersonId} onChange={(event) => setTargetPersonId(event.target.value)}><option value="">{t('forms.choosePiece')}</option>{[...db.people].sort(comparePeopleByName).map((person) => <option key={person.id} value={person.id}>{displayName(person)}</option>)}</select></label>}
         {kind === 'add_person' && <div className="formGrid two">
-          <label>Relación sugerida<select value={relationKind} onChange={(event) => setRelationKind(event.target.value)}><option value="">Sin vínculo por ahora</option><option value="parent_of">Es padre/madre de</option><option value="child_of">Es hijo/a de</option><option value="partner_of">Es pareja de</option></select></label>
-          <label>Persona vinculada<select value={relationPersonId} onChange={(event) => setRelationPersonId(event.target.value)}><option value="">Elegir persona</option>{[...db.people].sort(comparePeopleByName).map((person) => <option key={person.id} value={person.id}>{displayName(person)}</option>)}</select></label>
+          <label>{t('public.suggestedRelation')}<select value={relationKind} onChange={(event) => setRelationKind(event.target.value)}><option value="">{t('forms.noLinkYet')}</option><option value="parent_of">{t('forms.parentOf')}</option><option value="child_of">{t('forms.childOf')}</option><option value="partner_of">{t('forms.partnerOf')}</option></select></label>
+          <label>{t('public.relatedPerson')}<select value={relationPersonId} onChange={(event) => setRelationPersonId(event.target.value)}><option value="">{t('forms.choosePiece')}</option>{[...db.people].sort(comparePeopleByName).map((person) => <option key={person.id} value={person.id}>{displayName(person)}</option>)}</select></label>
         </div>}
         <div className="formGrid two">
-          <label>Nombres<input value={form.givenNames} onChange={set('givenNames')} /></label>
-          <label>Apellidos<input value={form.surnames} onChange={set('surnames')} /></label>
+          <label>{t('forms.names')}<input value={form.givenNames} onChange={set('givenNames')} /></label>
+          <label>{t('forms.surnames')}<input value={form.surnames} onChange={set('surnames')} /></label>
         </div>
         <div className="formGrid two">
-          <label>Año de nacimiento<input value={form.birthDate} onChange={set('birthDate')} inputMode="numeric" placeholder="Ej. 1942" /></label>
+          <label>{t('forms.birthYear')}<input value={form.birthDate} onChange={set('birthDate')} inputMode="numeric" placeholder={t('placeholders.birthYear')} /></label>
         </div>
         <details className="moreData">
-          <summary>+ datos</summary>
+          <summary>{t('forms.moreData')}</summary>
           <div className="moreDataBody">
-            <label>Lugar de nacimiento<input value={form.birthPlace} onChange={set('birthPlace')} /></label>
+            <label>{t('forms.birthPlace')}<input value={form.birthPlace} onChange={set('birthPlace')} /></label>
             <div className="formGrid two">
-              <label>Fallecimiento<input type="date" value={form.deathDate} onChange={set('deathDate')} /></label>
-              <label>Lugar de fallecimiento<input value={form.deathPlace} onChange={set('deathPlace')} /></label>
+              <label>{t('forms.death')}<input type="date" value={form.deathDate} onChange={set('deathDate')} /></label>
+              <label>{t('forms.deathPlace')}<input value={form.deathPlace} onChange={set('deathPlace')} /></label>
             </div>
-            <label>Fuente o explicación<textarea rows="4" value={form.notes} onChange={set('notes')} placeholder="Acta, censo, recuerdo familiar, enlace, archivo..." /></label>
+            <label>{t('public.sourceExplanation')}<textarea rows="4" value={form.notes} onChange={set('notes')} placeholder={t('placeholders.sourceExplanation')} /></label>
           </div>
         </details>
-        <div className="modalActions"><button type="button" className="secondaryButton" onClick={onClose}>Cancelar</button><button className="primaryButton">Generar pieza</button></div>
+        <div className="modalActions"><button type="button" className="secondaryButton" onClick={onClose}>{t('actions.cancel')}</button><button className="primaryButton">{t('public.generatePiece')}</button></div>
         {pieceText && <div className="pieceOutput">
-          <strong>Pieza lista para enviar</strong>
-          <p>Descargala y enviasela al dueño del árbol para que la importe en su sección Importar / Exportar.</p>
+          <strong>{t('public.pieceReady')}</strong>
+          <p>{t('public.pieceReadyBody')}</p>
           <textarea rows="7" readOnly value={pieceText} />
-          <div className="buttonRow compact"><button type="button" className="primaryButton" onClick={downloadPiece}>Descargar pieza</button><button type="button" className="secondaryButton" onClick={() => navigator.clipboard?.writeText(pieceText)}>Copiar</button></div>
+          <div className="buttonRow compact"><button type="button" className="primaryButton" onClick={downloadPiece}>{t('public.downloadPiece')}</button><button type="button" className="secondaryButton" onClick={() => navigator.clipboard?.writeText(pieceText)}>{t('public.copy')}</button></div>
         </div>}
       </form>
     </Modal>
@@ -1663,11 +2116,13 @@ function PublicContributionForm({ db, initialPersonId = '', onClose }) {
 }
 
 function PublicTreePage({ db }) {
+  const { language, t } = useI18n();
+  const cardMetrics = useTreeCardMetrics();
   const [viewport, setViewport] = useState({ x: 24, y: 18, scale: 0.82 });
   const [contributionPersonId, setContributionPersonId] = useState(null);
   const [showContributionForm, setShowContributionForm] = useState(false);
   const dragRef = useRef(null);
-  const layout = useMemo(() => buildAllPeopleLayout(db), [db]);
+  const layout = useMemo(() => buildAllPeopleLayout(db, '', language, cardMetrics), [db, language, cardMetrics]);
 
   // Allow free scaling in public view as well
   const setZoom = (nextScale) => setViewport((prev) => ({ ...prev, scale: nextScale }));
@@ -1756,28 +2211,35 @@ function PublicTreePage({ db }) {
   return (
     <main className="publicShell">
       <header className="publicHeader">
-        <div><p className="eyebrow">Árbol público</p><h1>{db.settings.treeName}</h1><p>{db.people.length} personas publicadas · solo lectura</p></div>
-        <div className="topbarActions"><button className="primaryButton puzzleButton" onClick={() => openContribution('')}>🧩 Aportar pieza</button></div>
+        <div><p className="eyebrow">{t('public.publicTree')}</p><h1>{db.settings.treeName}</h1><p>{db.people.length} {t('public.readOnly')}</p></div>
+        <div className="topbarActions"><button className="primaryButton puzzleButton" onClick={() => openContribution('')}>{t('public.contribute')}</button></div>
       </header>
       <section className="treeWorkspace publicTreeWorkspace">
         <div className="treeToolbar">
-          <div><p className="eyebrow">Vista pública</p><h2>Árbol familiar</h2><p>Hacé click en una persona para aportar una pieza sobre esa ficha.</p></div>
+          <div><p className="eyebrow">{t('public.publicView')}</p><h2>{t('public.familyTree')}</h2><p>{t('public.clickToContribute')}</p></div>
           <div className="zoomControls">
-            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale - 0.12)} title="Alejar">-</button>
+            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale - 0.12)} title={t('tree.zoomOut')}>-</button>
             <span>{Math.round(viewport.scale * 100)}%</span>
-            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale + 0.12)} title="Acercar">+</button>
+            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale + 0.12)} title={t('tree.zoomIn')}>+</button>
           </div>
         </div>
         <div className="treeCanvas publicCanvas" onWheel={(event) => { event.preventDefault(); setZoom(viewport.scale + (event.deltaY > 0 ? -0.08 : 0.08)); }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
           <div className="treePanLayer" style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})` }}>
-            <div className="treeContent" style={{ width: layout.width, height: layout.height }}>
+            <div className="treeContent" style={{ width: layout.width, height: layout.height, '--tree-card-width': `${cardMetrics.width}px`, '--tree-card-height': `${cardMetrics.height}px` }}>
+              {(layout.groups || []).map((group) => <div key={group.id} className={`familyGroupBand ${group.kind}`} style={{ left: group.x, top: group.y, width: group.width, height: group.height }}><span>{group.label}</span></div>)}
               <svg className="treeLines" viewBox={`0 0 ${layout.width} ${layout.height}`} aria-hidden="true">
                 {layout.edges.map((edge) => {
+                  if (edge.kind === 'peer') {
+                    return <path key={edge.id} className="peerLine" d={`M ${edge.from.x} ${edge.from.y} C ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.from.y}, ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.to.y}, ${edge.to.x} ${edge.to.y}`} />;
+                  }
                   const middleY = edge.from.y + (edge.to.y - edge.from.y) / 2;
-                  return <path key={edge.id} d={`M ${edge.from.x} ${edge.from.y} C ${edge.from.x} ${middleY}, ${edge.to.x} ${middleY}, ${edge.to.x} ${edge.to.y}`} />;
+                  return <path key={edge.id} className="familyLine" d={`M ${edge.from.x} ${edge.from.y} C ${edge.from.x} ${middleY}, ${edge.to.x} ${middleY}, ${edge.to.x} ${edge.to.y}`} />;
                 })}
               </svg>
-              {layout.nodes.map((node) => <TreeCard key={node.key} person={node.person} label={allPeopleNodeLabel(node)} onOpen={openContribution} onFocus={openContribution} style={{ left: node.x, top: node.y }} />)}
+              {layout.nodes.map((node) => {
+                const label = allPeopleNodeLabel(node, language);
+                return <TreeCard key={node.key} person={node.person} label={label} relationGroup={node.relationGroup || relationGroupFromLabel(label)} cardVariant={cardMetrics.variant} onOpen={openContribution} onFocus={openContribution} style={{ left: node.x, top: node.y }} />;
+              })}
             </div>
           </div>
         </div>
@@ -1788,6 +2250,7 @@ function PublicTreePage({ db }) {
 }
 
 function TimelineView({ db, onOpenPerson }) {
+  const { t } = useI18n();
   const [typeFilter, setTypeFilter] = useState('all');
   const timeline = useMemo(() => buildGlobalTimeline(db), [db]);
   const eventTypes = useMemo(() => [...new Set(timeline.map((event) => event.type))].sort((a, b) => a.localeCompare(b, 'es')), [timeline]);
@@ -1796,46 +2259,49 @@ function TimelineView({ db, onOpenPerson }) {
 
   return (
     <section className="contentPanel globalTimelinePanel">
-      <div className="sectionIntro"><p>Eventos de todas las personas, ordenados por fecha conocida. Los eventos sin fecha quedan al final.</p></div>
+      <div className="sectionIntro"><p>{t('timeline.intro')}</p></div>
       <div className="timelineSummary">
-        <strong>{timeline.length}</strong><span>eventos</span>
-        <strong>{datedCount}</strong><span>con fecha</span>
+        <strong>{timeline.length}</strong><span>{t('stats.events')}</span>
+        <strong>{datedCount}</strong><span>{t('stats.dated')}</span>
       </div>
       <div className="timelineFilters">
-        <label>Tipo<select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">Todos</option>{eventTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
+        <label>{t('forms.type')}<select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="all">{t('timeline.all')}</option>{eventTypes.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
       </div>
       {visibleEvents.length ? <ol className="globalTimelineList">{visibleEvents.map((event) => <li key={`${event.person.id}_${event.id}`} className="globalTimelineItem">
-        <div className="globalTimelineDate">{event.date || 'Sin fecha'}</div>
+        <div className="globalTimelineDate">{event.date || t('tree.unknownDate')}</div>
         <div className="globalTimelineDot" />
         <article>
           <div className="globalTimelineTop"><span>{event.type}</span><button className="textButton" onClick={() => onOpenPerson(event.person.id)}>{displayName(event.person)}</button></div>
-          {[event.place, event.description].filter(Boolean).length ? <p>{[event.place, event.description].filter(Boolean).join(' · ')}</p> : <p className="muted small">Sin lugar ni descripción.</p>}
+          {[event.place, event.description].filter(Boolean).length ? <p>{[event.place, event.description].filter(Boolean).join(' · ')}</p> : <p className="muted small">{t('timeline.noPlaceDescription')}</p>}
         </article>
-      </li>)}</ol> : <div className="softEmpty"><h3>No hay eventos para mostrar</h3><p>Agregá eventos desde la ficha de una persona para construir la cronología familiar.</p></div>}
+      </li>)}</ol> : <div className="softEmpty"><h3>{t('timeline.noEventsTitle')}</h3><p>{t('timeline.noEventsBody')}</p></div>}
     </section>
   );
 }
 function EventForm({ person, onClose, onSave }) {
+  const { t } = useI18n();
   const [form, setForm] = useState({ type: 'Residencia', date: '', place: '', description: '' });
   const set = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
-  return <Modal title={`Nuevo evento · ${displayName(person)}`} onClose={onClose}><form className="formStack" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
-    <div className="formGrid two"><label>Tipo<select value={form.type} onChange={set('type')}><option>Nacimiento</option><option>Bautismo</option><option>Residencia</option><option>Inmigración</option><option>Emigración</option><option>Matrimonio</option><option>Educación</option><option>Ocupación</option><option>Entierro</option><option>Otro</option></select></label><label>Fecha<input type="date" value={form.date} onChange={set('date')} /></label></div>
-    <label>Lugar<input value={form.place} onChange={set('place')} /></label><label>Descripción<textarea rows="4" value={form.description} onChange={set('description')} /></label>
-    <div className="modalActions"><button type="button" className="secondaryButton" onClick={onClose}>Cancelar</button><button className="primaryButton">Guardar evento</button></div>
+  return <Modal title={t('modalTitles.newEvent', { name: displayName(person) })} onClose={onClose}><form className="formStack" onSubmit={(e) => { e.preventDefault(); onSave(form); }}>
+    <div className="formGrid two"><label>{t('forms.type')}<select value={form.type} onChange={set('type')}><option>Nacimiento</option><option>Bautismo</option><option>Residencia</option><option>Inmigración</option><option>Emigración</option><option>Matrimonio</option><option>Educación</option><option>Ocupación</option><option>Entierro</option><option>Otro</option></select></label><label>{t('forms.date')}<input type="date" value={form.date} onChange={set('date')} /></label></div>
+    <label>{t('forms.place')}<input value={form.place} onChange={set('place')} /></label><label>{t('forms.description')}<textarea rows="4" value={form.description} onChange={set('description')} /></label>
+    <div className="modalActions"><button type="button" className="secondaryButton" onClick={onClose}>{t('actions.cancel')}</button><button className="primaryButton">{t('actions.saveEvent')}</button></div>
   </form></Modal>;
 }
 
 function SourceForm({ onClose, onSave }) {
+  const { t } = useI18n();
   const [form, setForm] = useState({ title: '', type: 'Acta', repository: '', url: '', notes: '' });
   const set = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
-  return <Modal title="Nueva fuente" onClose={onClose}><form className="formStack" onSubmit={(e) => { e.preventDefault(); if (form.title.trim()) onSave(form); }}>
-    <div className="formGrid two"><label>Título<input autoFocus value={form.title} onChange={set('title')} /></label><label>Tipo<select value={form.type} onChange={set('type')}><option>Acta</option><option>Censo</option><option>Libro parroquial</option><option>Registro civil</option><option>Fotografía</option><option>Entrevista</option><option>Web</option><option>Otro</option></select></label></div>
-    <label>Archivo / repositorio<input value={form.repository} onChange={set('repository')} placeholder="FamilySearch, archivo provincial, parroquia…" /></label><label>URL<input value={form.url} onChange={set('url')} /></label><label>Notas<textarea rows="4" value={form.notes} onChange={set('notes')} /></label>
-    <div className="modalActions"><button type="button" className="secondaryButton" onClick={onClose}>Cancelar</button><button className="primaryButton">Guardar fuente</button></div>
+  return <Modal title={t('modalTitles.newSource')} onClose={onClose}><form className="formStack" onSubmit={(e) => { e.preventDefault(); if (form.title.trim()) onSave(form); }}>
+    <div className="formGrid two"><label>{t('forms.title')}<input autoFocus value={form.title} onChange={set('title')} /></label><label>{t('forms.type')}<select value={form.type} onChange={set('type')}><option>Acta</option><option>Censo</option><option>Libro parroquial</option><option>Registro civil</option><option>Fotografía</option><option>Entrevista</option><option>Web</option><option>Otro</option></select></label></div>
+    <label>{t('forms.repository')}<input value={form.repository} onChange={set('repository')} placeholder={t('placeholders.repository')} /></label><label>{t('forms.url')}<input value={form.url} onChange={set('url')} /></label><label>{t('forms.notes')}<textarea rows="4" value={form.notes} onChange={set('notes')} /></label>
+    <div className="modalActions"><button type="button" className="secondaryButton" onClick={onClose}>{t('actions.cancel')}</button><button className="primaryButton">{t('actions.saveSource')}</button></div>
   </form></Modal>;
 }
 
 function DetectivePanel({ suggestions, db, running, onRun, onAccept, onReject }) {
+  const { t } = useI18n();
   const pending = suggestions.filter((suggestion) => suggestion.status === 'pending');
   const reviewed = suggestions.filter((suggestion) => suggestion.status !== 'pending');
 
@@ -1843,74 +2309,75 @@ function DetectivePanel({ suggestions, db, running, onRun, onAccept, onReject })
     <section className="detectivePanel">
       <div className="panelHeader detectiveHeader">
         <div>
-          <p className="eyebrow">Detective genealógico</p>
-          <h2>Posibles hallazgos</h2>
-          <p>Revisá cada sugerencia antes de tocar el árbol. Las hipótesis internas se marcan como baja confianza; las búsquedas online quedan citadas como pistas pendientes.</p>
+          <p className="eyebrow">{t('detective.eyebrow')}</p>
+          <h2>{t('detective.title')}</h2>
+          <p>{t('detective.body')}</p>
         </div>
-        <button className="primaryButton" onClick={onRun} disabled={running}>{running ? 'Investigando…' : 'Activar detective'}</button>
+        <button className="primaryButton" onClick={onRun} disabled={running}>{running ? t('data.investigating') : t('actions.activateDetective')}</button>
       </div>
       <div className="detectiveSummary">
-        <span><strong>{pending.length}</strong> pendientes</span>
-        <span><strong>{reviewed.filter((item) => item.status === 'accepted').length}</strong> aceptadas</span>
-        <span><strong>{reviewed.filter((item) => item.status === 'rejected').length}</strong> rechazadas</span>
+        <span><strong>{pending.length}</strong> {t('detective.pending')}</span>
+        <span><strong>{reviewed.filter((item) => item.status === 'accepted').length}</strong> {t('detective.accepted')}</span>
+        <span><strong>{reviewed.filter((item) => item.status === 'rejected').length}</strong> {t('detective.rejected')}</span>
       </div>
       {suggestions.length ? <div className="detectiveList">
         {suggestions.map((suggestion) => <article key={suggestion.id} className={`detectiveSuggestion ${suggestion.status}`}>
           <div className="suggestionTop">
             <span className="sourceType">{suggestion.confidence}</span>
-            <span className={`suggestionStatus ${suggestion.status}`}>{suggestion.status === 'pending' ? 'Pendiente' : suggestion.status === 'accepted' ? 'Aceptada' : 'Rechazada'}</span>
+            <span className={`suggestionStatus ${suggestion.status}`}>{suggestion.status === 'pending' ? t('detective.pendingOne') : suggestion.status === 'accepted' ? t('detective.acceptedOne') : t('detective.rejectedOne')}</span>
           </div>
           <h3>{suggestion.title}</h3>
           <p>{suggestion.summary}</p>
           <div className="suggestionSource">
-            <strong>Fuente:</strong> {suggestion.source?.title || 'Sin título'} · {suggestion.source?.type || 'Sin tipo'}
-            {suggestion.source?.url && <a href={suggestion.source.url} target="_blank" rel="noreferrer">Abrir búsqueda ↗</a>}
+            <strong>{t('detective.source')}</strong> {suggestion.source?.title || t('detective.untitled')} · {suggestion.source?.type || t('detective.noType')}
+            {suggestion.source?.url && <a href={suggestion.source.url} target="_blank" rel="noreferrer">{t('detective.openSearch')}</a>}
             {suggestion.source?.notes && <small>{suggestion.source.notes}</small>}
           </div>
           <ul className="suggestionChanges">
             {(suggestion.proposedChanges || []).map((change, index) => <li key={`${suggestion.id}_${index}`}>{describeSuggestionChange(change, db)}</li>)}
           </ul>
           {suggestion.status === 'pending' && <div className="buttonRow compact">
-            <button className="primaryButton" onClick={() => onAccept(suggestion.id)}>Aceptar</button>
-            <button className="secondaryButton" onClick={() => onReject(suggestion.id)}>Rechazar</button>
+            <button className="primaryButton" onClick={() => onAccept(suggestion.id)}>{t('actions.accept')}</button>
+            <button className="secondaryButton" onClick={() => onReject(suggestion.id)}>{t('actions.reject')}</button>
           </div>}
         </article>)}
-      </div> : <div className="softEmpty"><h3>Sin sugerencias todavía</h3><p>Activá el detective para generar hipótesis, búsquedas y fuentes candidatas a partir del árbol vigente.</p></div>}
+      </div> : <div className="softEmpty"><h3>{t('detective.emptyTitle')}</h3><p>{t('detective.emptyBody')}</p></div>}
     </section>
   );
 }
 
 function PuzzleSuggestionsPanel({ suggestions, db, onAccept, onReject }) {
+  const { t } = useI18n();
   const pending = suggestions.filter((suggestion) => suggestion.status === 'pending');
   if (!suggestions.length) return null;
   return (
     <section className="detectivePanel puzzlePanel">
       <div className="panelHeader detectiveHeader">
         <div>
-          <p className="eyebrow">Piezas recibidas</p>
-          <h2>Aportes del árbol público</h2>
-          <p>Revisá cada pieza antes de incorporarla. Podés aceptar una edición de ficha o una persona nueva con vínculo sugerido.</p>
+          <p className="eyebrow">{t('puzzle.eyebrow')}</p>
+          <h2>{t('puzzle.title')}</h2>
+          <p>{t('puzzle.body')}</p>
         </div>
-        <div className="timelineSummary"><strong>{pending.length}</strong><span>pendientes</span></div>
+        <div className="timelineSummary"><strong>{pending.length}</strong><span>{t('stats.pending')}</span></div>
       </div>
       <div className="detectiveList">
         {suggestions.map((suggestion) => {
           const person = db.people.find((item) => item.id === suggestion.personId);
           const related = db.people.find((item) => item.id === suggestion.relation?.personId);
           return <article key={suggestion.id} className={`detectiveSuggestion ${suggestion.status}`}>
-            <div className="suggestionTop"><span className="sourceType">🧩 Pieza</span><span className={`suggestionStatus ${suggestion.status}`}>{suggestion.status === 'pending' ? 'Pendiente' : suggestion.status === 'accepted' ? 'Aceptada' : 'Rechazada'}</span></div>
-            <h3>{suggestion.kind === 'edit_person' ? `Editar ${displayName(person)}` : `Agregar ${displayName(suggestion.person)}`}</h3>
-            <p>{suggestion.contributor ? `Aporte de ${suggestion.contributor}.` : 'Aporte anónimo.'}</p>
+            <div className="suggestionTop"><span className="sourceType">🧩 {t('puzzle.piece')}</span><span className={`suggestionStatus ${suggestion.status}`}>{suggestion.status === 'pending' ? t('detective.pendingOne') : suggestion.status === 'accepted' ? t('detective.acceptedOne') : t('detective.rejectedOne')}</span></div>
+            <h3>{suggestion.kind === 'edit_person' ? t('puzzle.edit', { name: displayName(person) }) : t('puzzle.add', { name: displayName(suggestion.person) })}</h3>
+            <p>{suggestion.contributor ? t('puzzle.contributor', { name: suggestion.contributor }) : t('puzzle.anonymous')}</p>
             <div className="suggestionSource">
-              <strong>Fuente / explicación:</strong>
-              <small>{suggestion.person?.notes || 'Sin fuente indicada.'}</small>
+              <strong>{t('puzzle.source')}</strong>
+              <small>{suggestion.person?.notes || t('puzzle.noSource')}</small>
             </div>
             <ul className="suggestionChanges">
-              {suggestion.kind === 'edit_person' && <li>Actualizar datos públicos de {displayName(person)} con la información propuesta.</li>}
-              {suggestion.kind === 'add_person' && <li>Agregar persona: {displayName(suggestion.person)}.</li>}
-              {suggestion.kind === 'add_person' && suggestion.relation?.kind && related && <li>Vincular con {displayName(related)} como {suggestion.relation.kind === 'parent_of' ? 'padre/madre de esa persona' : suggestion.relation.kind === 'child_of' ? 'hijo/a de esa persona' : 'pareja'}.</li>}
+              {suggestion.kind === 'edit_person' && <li>{t('puzzle.updatePublicData', { name: displayName(person) })}</li>}
+              {suggestion.kind === 'add_person' && <li>{t('puzzle.addPerson', { name: displayName(suggestion.person) })}</li>}
+              {suggestion.kind === 'add_person' && suggestion.relation?.kind && related && <li>{t('puzzle.linkAs', { name: displayName(related), relation: suggestion.relation.kind === 'parent_of' ? t('puzzle.relationParent') : suggestion.relation.kind === 'child_of' ? t('puzzle.relationChild') : t('puzzle.relationPartner') })}</li>}
             </ul>
-            {suggestion.status === 'pending' && <div className="buttonRow compact"><button className="primaryButton" onClick={() => onAccept(suggestion.id)}>Aceptar pieza</button><button className="secondaryButton" onClick={() => onReject(suggestion.id)}>Rechazar</button></div>}
+            {suggestion.status === 'pending' && <div className="buttonRow compact"><button className="primaryButton" onClick={() => onAccept(suggestion.id)}>{t('actions.acceptPiece')}</button><button className="secondaryButton" onClick={() => onReject(suggestion.id)}>{t('actions.rejectPiece')}</button></div>}
           </article>;
         })}
       </div>
@@ -1942,18 +2409,22 @@ export default function GenealogyApp() {
   const importRef = useRef(null);
   const gedcomRef = useRef(null);
   const pieceImportRef = useRef(null);
+  const i18n = useMemo(() => ({ language, t: (key, vars) => translate(language, key, vars) }), [language]);
+  const t = i18n.t;
 
   useEffect(() => {
     const initialize = async () => {
+      let savedLanguage = 'es';
       try {
+        setDarkMode(localStorage.getItem(THEME_STORAGE_KEY) === 'dark');
+        savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'es';
+        setLanguage(savedLanguage);
         if (window.location.hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) {
           const payload = window.location.hash.slice(PUBLIC_TREE_HASH_PREFIX.length);
           setPublicDb(normalizeDatabase(decodeSharePayload(payload)));
           setHydrated(true);
           return;
         }
-        setDarkMode(localStorage.getItem(THEME_STORAGE_KEY) === 'dark');
-        setLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'en' ? 'en' : 'es');
         const remoteTreeId = localStorage.getItem(remoteTreeStorageKey);
         setRemoteTreeId(remoteTreeId);
         const saved = localStorage.getItem(STORAGE_KEY);
@@ -1966,7 +2437,7 @@ export default function GenealogyApp() {
         if (isSupabaseConfigured) {
           const { data, error } = await getRemoteTree(remoteTreeId);
           if (error) {
-            setRemoteSyncError(`No pude conectar con Supabase: ${error.message || 'Revisa tus credenciales.'}`);
+            setRemoteSyncError(translate(savedLanguage, 'errors.supabaseConnect', { message: error.message || 'Revisa tus credenciales.' }));
           } else if (data?.data && data.data.people && data.data.people.length > 0) {
             const remoteDb = normalizeDatabase(data.data);
             setDb(remoteDb);
@@ -1983,7 +2454,7 @@ export default function GenealogyApp() {
           }
         }
       } catch {
-        if (window.location.hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) setPublicLoadError('No pude abrir este enlace público. Puede estar incompleto o dañado.');
+        if (window.location.hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) setPublicLoadError(translate(savedLanguage, 'errors.publicLoad'));
         else setDb(defaultDatabase());
       } finally {
         setHydrated(true);
@@ -2046,7 +2517,7 @@ export default function GenealogyApp() {
     const syncRemote = async () => {
       const { data, error } = await saveRemoteTree({ id: remoteTreeId, data: db });
       if (error) {
-        setRemoteSyncError(`No pude guardar los cambios en Supabase: ${error.message || error.details || 'Error desconocido'}`);
+        setRemoteSyncError(t('errors.supabaseSave', { message: error.message || error.details || 'Error desconocido' }));
         return;
       }
       if (data?.id) {
@@ -2056,7 +2527,7 @@ export default function GenealogyApp() {
       setRemoteSyncError('');
     };
     syncRemote();
-  }, [db, hydrated, publicDb, remoteTreeId]);
+  }, [db, hydrated, publicDb, remoteTreeId, t]);
 
   const selected = db.people.find((p) => p.id === selectedId) || null;
   const filteredPeople = useMemo(() => {
@@ -2131,7 +2602,7 @@ export default function GenealogyApp() {
   };
 
   const deleteSelected = () => {
-    if (!selected || !confirm(`¿Eliminar a ${displayName(selected)}? También se eliminarán sus vínculos y eventos.`)) return;
+    if (!selected || !confirm(t('confirms.deletePerson', { name: displayName(selected) }))) return;
     const id = selected.id;
     updateDb((prev) => ({
       ...prev,
@@ -2212,12 +2683,12 @@ export default function GenealogyApp() {
   const importJson = async (file) => {
     try {
       const parsed = normalizeDatabase(JSON.parse(await file.text()));
-      if (!confirm('Esto reemplazará los datos actuales de este navegador. ¿Continuar?')) return;
+      if (!confirm(t('confirms.replaceData'))) return;
       setDb(parsed);
       setSelectedId(parsed.people[0]?.id || null);
       setFocusedId(parsed.settings.rootPersonId || parsed.people[0]?.id || null);
     } catch {
-      alert('No pude leer ese backup JSON.');
+      alert(t('errors.jsonRead'));
     }
   };
 
@@ -2225,13 +2696,13 @@ export default function GenealogyApp() {
     try {
       const imported = importGedcom(await file.text());
       if (!imported.people.length) throw new Error('No people');
-      if (!confirm(`Se importarán ${imported.people.length} personas y se reemplazarán los datos actuales. ¿Continuar?`)) return;
+      if (!confirm(t('confirms.importGedcom', { count: imported.people.length }))) return;
       const next = { ...emptyDatabase(), ...imported, settings: { ...emptyDatabase().settings, rootPersonId: imported.people[0]?.id || null } };
       setDb(next);
       setSelectedId(imported.people[0]?.id || null);
       setFocusedId(imported.people[0]?.id || null);
     } catch {
-      alert('No pude interpretar ese GEDCOM. Esta versión soporta el núcleo GEDCOM 5.5/5.5.1.');
+      alert(t('errors.gedcomRead'));
     }
   };
 
@@ -2254,7 +2725,7 @@ export default function GenealogyApp() {
         return exists ? prev : { ...prev, puzzleSuggestions: [...(prev.puzzleSuggestions || []), { ...parsed, status: parsed.status || 'pending' }] };
       });
     } catch {
-      alert('No pude leer esa pieza. Verificá que sea un JSON generado desde el árbol público.');
+      alert(t('errors.pieceRead'));
     }
   };
 
@@ -2283,40 +2754,44 @@ export default function GenealogyApp() {
     });
   };
 
-  if (!hydrated) return <AppLoader />;
-  if (publicLoadError) return <AppLoader message={publicLoadError} animated={false} />;
+  if (!hydrated) return <LanguageContext.Provider value={i18n}><AppLoader message={t('loading.openingTree')} /></LanguageContext.Provider>;
+  if (publicLoadError) return <LanguageContext.Provider value={i18n}><AppLoader message={publicLoadError} animated={false} /></LanguageContext.Provider>;
 
   const remoteSyncNotice = isSupabaseConfigured
-    ? remoteSyncError ? `Sincronización en la nube falla: ${remoteSyncError}` : `Sincronizado con Supabase${remoteTreeId ? '' : ' (creando registro remoto)'}`
-    : 'Supabase no está configurado. Usa localStorage y agrega las variables NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.';
-  if (publicDb) return <PublicTreePage db={publicDb} />;
+    ? remoteSyncError ? t('sync.failing', { message: remoteSyncError }) : t('sync.synced', { suffix: remoteTreeId ? '' : t('sync.creating') })
+    : t('sync.local');
+  if (publicDb) return <LanguageContext.Provider value={i18n}><PublicTreePage db={publicDb} /></LanguageContext.Provider>;
   const profilePerson = selected || db.people.find((person) => person.id === db.settings.rootPersonId) || db.people[0] || { givenNames: 'Mi', surnames: 'perfil', email: '' };
   const topbarAction = section === 'sources'
-    ? <button className="primaryButton" onClick={() => setSourceModal(true)}>+ Nueva fuente</button>
+    ? <button className="primaryButton" onClick={() => setSourceModal(true)}>{t('actions.newSource')}</button>
     : ['tree', 'people'].includes(section)
-      ? <button className="primaryButton" onClick={() => setPersonModal({ mode: 'new' })}>+ Nueva pieza</button>
+      ? <button className="primaryButton" onClick={() => setPersonModal({ mode: 'new' })}>{t('actions.newPiece')}</button>
       : null;
   const showTopbarStats = section === 'tree';
 
   return (
+    <LanguageContext.Provider value={i18n}>
     <main className={`appShell ${darkMode ? 'darkMode' : ''} ${sidebarCollapsed ? 'sidebarCollapsed' : ''}`}>
       <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="brand">
           <div className="brandMark"><img src="/raices-logo.png" alt="" /></div>
-          <div className="brandText"><strong>Root Puzzle</strong><span>Genealogía web</span></div>
-          <button className="sidebarCollapseButton" type="button" onClick={() => setSidebarCollapsed((value) => !value)} aria-label={sidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'} title={sidebarCollapsed ? 'Expandir menú' : 'Colapsar menú'}>
+          <div className="brandText"><strong>Root Puzzle</strong><span>{t('appSubtitle')}</span></div>
+          <button className="sidebarCollapseButton" type="button" onClick={() => setSidebarCollapsed((value) => !value)} aria-label={sidebarCollapsed ? t('nav.expand') : t('nav.collapse')} title={sidebarCollapsed ? t('nav.expand') : t('nav.collapse')}>
             {sidebarCollapsed ? <ChevronsRight size={18} strokeWidth={1.9} aria-hidden="true" /> : <ChevronsLeft size={18} strokeWidth={1.9} aria-hidden="true" />}
           </button>
         </div>
-        <nav>{sections.map(([id, label, icon]) => <button key={id} title={label} className={section === id ? 'active' : ''} onClick={() => { setSection(id); }}><span className="navIcon">{icon}</span><span className="navLabel">{label}</span></button>)}</nav>
+        <nav>{sections.map(([id, label, icon]) => {
+          const sectionLabel = t(label);
+          return <button key={id} title={sectionLabel} className={section === id ? 'active' : ''} onClick={() => { setSection(id); }}><span className="navIcon">{icon}</span><span className="navLabel">{sectionLabel}</span></button>;
+        })}</nav>
         <div className="sidebarBottom">
           <div className="sidebarProfile">
-            <button type="button" title="Mi perfil" className={`sidebarProfileButton ${section === 'profile' ? 'active' : ''}`} onClick={() => setSection('profile')}>
+            <button type="button" title={t('profile.title')} className={`sidebarProfileButton ${section === 'profile' ? 'active' : ''}`} onClick={() => setSection('profile')}>
               <PersonAvatar person={profilePerson} />
               <div className="sidebarProfileText">
-                <strong>Mi perfil</strong>
+                <strong>{t('profile.title')}</strong>
                 <span>{displayName(profilePerson)}</span>
-                <small>{profilePerson.email || 'Cuenta local'}</small>
+                <small>{profilePerson.email || t('profile.localAccount')}</small>
               </div>
             </button>
           </div>
@@ -2327,15 +2802,15 @@ export default function GenealogyApp() {
         <header className="topbar">
           <div className="topbarTitle">
             <p className="eyebrow">{db.settings.treeName}</p>
-            <h1>{sectionTitles[section] || 'Árbol'}</h1>
-            <p className="topbarSubtitle">{sectionSubtitles[section] || 'Visualiza y navega el árbol familiar.'}</p>
+            <h1>{t(`sections.${section}`)}</h1>
+            <p className="topbarSubtitle">{t(`subtitles.${section}`)}</p>
           </div>
           <div className="topbarActions">
             {showTopbarStats && <div className="topbarStats">
-              <Stat value={db.people.length} label="piezas" />
-              <Stat value={db.parentChild.length + db.partnerships.length} label="vínculos" />
-              <Stat value={db.events.length} label="eventos" />
-              <Stat value={db.sources.length} label="fuentes" />
+              <Stat value={db.people.length} label={t('stats.pieces')} />
+              <Stat value={db.parentChild.length + db.partnerships.length} label={t('stats.links')} />
+              <Stat value={db.events.length} label={t('stats.events')} />
+              <Stat value={db.sources.length} label={t('stats.sources')} />
             </div>}
             {topbarAction}
           </div>
@@ -2347,36 +2822,36 @@ export default function GenealogyApp() {
 
         {section === 'people' && <div className="peopleLayout peopleListOnly">
           <section className="peoplePane">
-            <div className="paneToolbar"><input className="searchInput" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar por nombre, apodo, apellido, lugar…" /><span>{filteredPeople.length} resultados</span></div>
-            {db.people.length === 0 ? <EmptyState onAdd={() => setPersonModal({ mode: 'new' })} /> : <div className="personList">{filteredPeople.map((person) => <button key={person.id} className={`personRow ${personStatusClass(person)} ${selectedId === person.id ? 'selected' : ''}`} onClick={() => openPersonDrawer(person.id, 'view')}><PersonAvatar person={person} /><div><strong>{displayName(person)}</strong><span>{[person.birthDate, person.birthPlace].filter(Boolean).join(' · ') || 'Datos biográficos pendientes'}</span></div><span className="chevron">›</span></button>)}</div>}
+            <div className="paneToolbar"><input className="searchInput" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('placeholders.search')} /><span>{filteredPeople.length} {t('stats.results')}</span></div>
+            {db.people.length === 0 ? <EmptyState onAdd={() => setPersonModal({ mode: 'new' })} /> : <div className="personList">{filteredPeople.map((person) => <button key={person.id} className={`personRow ${personStatusClass(person)} ${selectedId === person.id ? 'selected' : ''}`} onClick={() => openPersonDrawer(person.id, 'view')}><PersonAvatar person={person} /><div><strong>{displayName(person)}</strong><span>{[person.birthDate, person.birthPlace].filter(Boolean).join(' · ') || t('people.bioPending')}</span></div><span className="chevron">›</span></button>)}</div>}
           </section>
         </div>}
 
         {section === 'sources' && <section className="contentPanel">
-          {db.sources.length ? <div className="sourceGrid">{db.sources.map((source) => <article key={source.id} className="sourceCard"><span className="sourceType">{source.type}</span><h3>{source.title}</h3><p>{source.repository || 'Repositorio no indicado'}</p>{source.url && <a href={source.url} target="_blank" rel="noreferrer">Abrir referencia ↗</a>}<small>{source.notes}</small></article>)}</div> : <div className="softEmpty"><h3>Todavía no cargaste fuentes</h3><p>Podés registrar actas, censos, libros parroquiales, fotografías, entrevistas y páginas web.</p></div>}
+          {db.sources.length ? <div className="sourceGrid">{db.sources.map((source) => <article key={source.id} className="sourceCard"><span className="sourceType">{source.type}</span><h3>{source.title}</h3><p>{source.repository || t('sources.noRepository')}</p>{source.url && <a href={source.url} target="_blank" rel="noreferrer">{t('sources.openReference')}</a>}<small>{source.notes}</small></article>)}</div> : <div className="softEmpty"><h3>{t('sources.emptyTitle')}</h3><p>{t('sources.emptyBody')}</p></div>}
         </section>}
 
         {section === 'data' && <section className="contentPanel dataPanel">
           <div className="dataGrid">
-            <article className="dataCard"><div className="dataIcon">{`{ }`}</div><h3>Backup completo JSON</h3><p>Guarda piezas, vínculos, eventos, fuentes y configuración.</p><div className="buttonRow"><button className="secondaryButton" onClick={() => downloadText('raices-backup.json', JSON.stringify(db, null, 2), 'application/json')}>Exportar JSON</button><button className="textButton" onClick={() => importRef.current?.click()}>Importar</button></div><input ref={importRef} hidden type="file" accept="application/json,.json" onChange={(e) => e.target.files?.[0] && importJson(e.target.files[0])} /></article>
-            <article className="dataCard"><div className="dataIcon">GED</div><h3>GEDCOM 5.5.1</h3><p>Intercambio básico con otras aplicaciones genealógicas.</p><div className="buttonRow"><button className="secondaryButton" onClick={() => downloadText('raices.ged', exportGedcom(db), 'text/plain')}>Exportar GEDCOM</button><button className="textButton" onClick={() => gedcomRef.current?.click()}>Importar</button></div><input ref={gedcomRef} hidden type="file" accept=".ged,text/plain" onChange={(e) => e.target.files?.[0] && importGed(e.target.files[0])} /></article>
-            <article className="dataCard"><div className="dataIcon">PDF</div><h3>Exportar como PDF</h3><p>Descarga un PDF del lienzo del árbol. Para respetar filtros, escala temporal y fondo, usá también el botón PDF dentro del lienzo.</p><div className="buttonRow"><button className="secondaryButton" onClick={() => exportPdf(db)}>Exportar PDF</button></div></article>
-            <article className="dataCard publishCard"><div className="dataIcon puzzleIcon">🧩</div><h3>Publicar árbol</h3><p>Genera un enlace público de solo lectura con nombres, relaciones, fechas y lugares. Quien lo vea puede aportar una pieza del rompecabezas familiar.</p><div className="buttonRow"><button className="secondaryButton" onClick={publishTree}>Generar enlace</button></div>{publicTreeUrl && <div className="shareBox"><input readOnly value={publicTreeUrl} onFocus={(event) => event.target.select()} /><small>El enlace se copió al portapapeles si el navegador lo permitió.</small></div>}</article>
-            <article className="dataCard accent"><div className="dataIcon">☁</div><h3>Siguiente paso: sincronización</h3><p>{remoteSyncNotice}</p></article>
-            <article className="dataCard detectiveCard"><div className="dataIcon detectiveIcon">🕵</div><h3>Activar detective</h3><p>Analiza el árbol vigente, genera hipótesis, arma búsquedas en actas/censos/registros y deja sugerencias aceptables o rechazables con fuente citada.</p><div className="buttonRow"><button className="secondaryButton" onClick={runDetective} disabled={detectiveRunning}>{detectiveRunning ? 'Investigando…' : 'Activar detective'}</button></div></article>
-            <article className="dataCard puzzleCard"><div className="dataIcon puzzleIcon">🧩</div><h3>Importar pieza</h3><p>Importa una sugerencia enviada desde el árbol público para revisarla antes de actualizar tu árbol.</p><div className="buttonRow"><button className="secondaryButton" onClick={() => pieceImportRef.current?.click()}>Importar pieza</button></div><input ref={pieceImportRef} hidden type="file" accept="application/json,.json" onChange={(e) => e.target.files?.[0] && importPuzzlePiece(e.target.files[0])} /></article>
+            <article className="dataCard"><div className="dataIcon">{`{ }`}</div><h3>{t('data.jsonTitle')}</h3><p>{t('data.jsonBody')}</p><div className="buttonRow"><button className="secondaryButton" onClick={() => downloadText('raices-backup.json', JSON.stringify(db, null, 2), 'application/json')}>{t('actions.exportJson')}</button><button className="textButton" onClick={() => importRef.current?.click()}>{t('actions.import')}</button></div><input ref={importRef} hidden type="file" accept="application/json,.json" onChange={(e) => e.target.files?.[0] && importJson(e.target.files[0])} /></article>
+            <article className="dataCard"><div className="dataIcon">GED</div><h3>GEDCOM 5.5.1</h3><p>{t('data.gedcomBody')}</p><div className="buttonRow"><button className="secondaryButton" onClick={() => downloadText('raices.ged', exportGedcom(db), 'text/plain')}>{t('actions.exportGedcom')}</button><button className="textButton" onClick={() => gedcomRef.current?.click()}>{t('actions.import')}</button></div><input ref={gedcomRef} hidden type="file" accept=".ged,text/plain" onChange={(e) => e.target.files?.[0] && importGed(e.target.files[0])} /></article>
+            <article className="dataCard"><div className="dataIcon">PDF</div><h3>{t('data.pdfTitle')}</h3><p>{t('data.pdfBody')}</p><div className="buttonRow"><button className="secondaryButton" onClick={() => exportPdf(db, language)}>{t('actions.exportPdf')}</button></div></article>
+            <article className="dataCard publishCard"><div className="dataIcon puzzleIcon">🧩</div><h3>{t('data.publishTitle')}</h3><p>{t('data.publishBody')}</p><div className="buttonRow"><button className="secondaryButton" onClick={publishTree}>{t('actions.generateLink')}</button></div>{publicTreeUrl && <div className="shareBox"><input readOnly value={publicTreeUrl} onFocus={(event) => event.target.select()} /><small>{t('data.linkCopied')}</small></div>}</article>
+            <article className="dataCard accent"><div className="dataIcon">☁</div><h3>{t('data.syncTitle')}</h3><p>{remoteSyncNotice}</p></article>
+            <article className="dataCard detectiveCard"><div className="dataIcon detectiveIcon">🕵</div><h3>{t('data.detectiveTitle')}</h3><p>{t('data.detectiveBody')}</p><div className="buttonRow"><button className="secondaryButton" onClick={runDetective} disabled={detectiveRunning}>{detectiveRunning ? t('data.investigating') : t('actions.activateDetective')}</button></div></article>
+            <article className="dataCard puzzleCard"><div className="dataIcon puzzleIcon">🧩</div><h3>{t('data.importPieceTitle')}</h3><p>{t('data.importPieceBody')}</p><div className="buttonRow"><button className="secondaryButton" onClick={() => pieceImportRef.current?.click()}>{t('actions.importPiece')}</button></div><input ref={pieceImportRef} hidden type="file" accept="application/json,.json" onChange={(e) => e.target.files?.[0] && importPuzzlePiece(e.target.files[0])} /></article>
           </div>
           <PuzzleSuggestionsPanel suggestions={db.puzzleSuggestions || []} db={db} onAccept={acceptPuzzleSuggestion} onReject={rejectPuzzleSuggestion} />
           <DetectivePanel suggestions={db.detectiveSuggestions || []} db={db} running={detectiveRunning} onRun={runDetective} onAccept={acceptDetectiveSuggestion} onReject={(id) => updateDetectiveSuggestionStatus(id, 'rejected')} />
-          <div className="warningBox"><strong>Importante sobre esta versión:</strong> al estar pensada como MVP web sin cuenta ni servidor de base de datos, los datos se guardan en <code>localStorage</code> del navegador. Hacé backups JSON periódicos. Si borrás los datos del navegador, también se borra el árbol local.</div>
+          <div className="warningBox"><strong>{t('data.warningTitle')}</strong> {t('warning.localStorage')}</div>
         </section>}
 
         {section === 'profile' && <section className="contentPanel profilePanel">
           <div className="panelHeader">
             <div>
-              <p className="eyebrow">Cuenta</p>
-              <h2>Mi perfil</h2>
-              <p className="muted">Accedé a tu perfil y ajustes</p>
+              <p className="eyebrow">{t('profile.account')}</p>
+              <h2>{t('profile.title')}</h2>
+              <p className="muted">{t('profile.subtitle')}</p>
             </div>
           </div>
           <div className="profileAccount">
@@ -2384,27 +2859,27 @@ export default function GenealogyApp() {
               <PersonAvatar person={profilePerson} large />
               <div>
                 <strong>{displayName(profilePerson)}</strong>
-                <div className="muted small">{profilePerson.email || 'Cuenta local sin email'}</div>
+                <div className="muted small">{profilePerson.email || t('profile.localNoEmail')}</div>
               </div>
             </div>
             <div className="profileSettings">
               <div className="profileSetting">
-                <div><strong>Preferencia visual</strong><span>{darkMode ? 'Interfaz oscura activa' : 'Interfaz clara activa'}</span></div>
-                <button className={`toggleSwitch iconOnly ${darkMode ? 'on' : 'off'}`} type="button" onClick={() => setDarkMode((v) => !v)} aria-label={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'} aria-pressed={darkMode}>
+                <div><strong>{t('profile.visualPreference')}</strong><span>{darkMode ? t('profile.darkActive') : t('profile.lightActive')}</span></div>
+                <button className={`toggleSwitch iconOnly ${darkMode ? 'on' : 'off'}`} type="button" onClick={() => setDarkMode((v) => !v)} aria-label={darkMode ? t('profile.darkToLight') : t('profile.lightToDark')} aria-pressed={darkMode}>
                   <Sun size={16} strokeWidth={2} aria-hidden="true" />
                   <span className="toggleSwitchTrack" aria-hidden="true"><span /></span>
                   <Moon size={16} strokeWidth={2} aria-hidden="true" />
                 </button>
               </div>
               <div className="profileSetting">
-                <div><strong>Idioma</strong><span>{language === 'es' ? 'Español seleccionado' : 'English selected'}</span></div>
-                <button className={`toggleSwitch languageSwitch ${language === 'en' ? 'on' : 'off'}`} type="button" onClick={() => setLanguage((value) => value === 'es' ? 'en' : 'es')} aria-label={language === 'es' ? 'Cambiar idioma a inglés' : 'Cambiar idioma a español'} aria-pressed={language === 'en'}>
+                <div><strong>{t('profile.language')}</strong><span>{language === 'es' ? t('profile.esSelected') : t('profile.enSelected')}</span></div>
+                <button className={`toggleSwitch languageSwitch ${language === 'en' ? 'on' : 'off'}`} type="button" onClick={() => setLanguage((value) => value === 'es' ? 'en' : 'es')} aria-label={language === 'es' ? t('profile.changeToEnglish') : t('profile.changeToSpanish')} aria-pressed={language === 'en'}>
                   <span>ES</span>
                   <span className="toggleSwitchTrack" aria-hidden="true"><span /></span>
                   <span>EN</span>
                 </button>
               </div>
-              <div className="profileNotice"><small>Perfil básico local. Para sincronizar y tener cuenta, configurá Supabase.</small></div>
+              <div className="profileNotice"><small>{t('profile.notice')}</small></div>
             </div>
           </div>
         </section>}
@@ -2412,37 +2887,38 @@ export default function GenealogyApp() {
       </section>
 
       {/* Mobile bottom navigation (visible on small screens) */}
-      <nav className="mobileBottomNav" role="navigation" aria-label="Navegación">
-        <button className={section === 'tree' ? 'active' : ''} onClick={() => setSection('tree')} aria-label="Inicio" title="Inicio">
+      <nav className="mobileBottomNav" role="navigation" aria-label={t('nav.navigation')}>
+        <button className={section === 'tree' ? 'active' : ''} onClick={() => setSection('tree')} aria-label={t('sections.tree')} title={t('sections.tree')}>
           {IconHome}
-          <small>Inicio</small>
+          <small>{t('nav.rootsShort')}</small>
         </button>
-        <button className={section === 'people' ? 'active' : ''} onClick={() => setSection('people')} aria-label="Piezas" title="Piezas">
+        <button className={section === 'people' ? 'active' : ''} onClick={() => setSection('people')} aria-label={t('sections.people')} title={t('sections.people')}>
           {IconPieces}
-          <small>Piezas</small>
+          <small>{t('sections.people')}</small>
         </button>
-        <button className={section === 'timeline' ? 'active' : ''} onClick={() => setSection('timeline')} aria-label="Tiempo" title="Tiempo">
+        <button className={section === 'timeline' ? 'active' : ''} onClick={() => setSection('timeline')} aria-label={t('sections.timeline')} title={t('sections.timeline')}>
           {IconTimeline}
-          <small>Tiempo</small>
+          <small>{t('nav.timelineShort')}</small>
         </button>
-        <button className={section === 'sources' ? 'active' : ''} onClick={() => setSection('sources')} aria-label="Fuentes" title="Fuentes">
+        <button className={section === 'sources' ? 'active' : ''} onClick={() => setSection('sources')} aria-label={t('sections.sources')} title={t('sections.sources')}>
           {IconSources}
-          <small>Fuentes</small>
+          <small>{t('sections.sources')}</small>
         </button>
-        <button className={section === 'data' ? 'active' : ''} onClick={() => setSection('data')} aria-label="Datos" title="Datos">
+        <button className={section === 'data' ? 'active' : ''} onClick={() => setSection('data')} aria-label={t('sections.data')} title={t('sections.data')}>
           {IconData}
-          <small>Datos</small>
+          <small>{t('sections.data')}</small>
         </button>
-        <button className={section === 'profile' ? 'active' : ''} onClick={() => setSection('profile')} aria-label="Perfil" title="Perfil">
+        <button className={section === 'profile' ? 'active' : ''} onClick={() => setSection('profile')} aria-label={t('profile.title')} title={t('profile.title')}>
           {IconProfile}
-          <small>Perfil</small>
+          <small>{t('nav.profileShort')}</small>
         </button>
       </nav>
 
       {drawerPersonId && <PersonDrawer db={db} person={db.people.find((p) => p.id === drawerPersonId)} mode={drawerMode} onModeChange={setDrawerMode} onClose={() => { setDrawerPersonId(null); setDrawerMode('view'); }} onSave={saveExistingPerson} onFocus={openInTree} onLink={linkPerson} onRemoveRelation={(kind, otherId) => removeRelation(drawerPersonId, kind, otherId)} onDelete={deleteSelected} onAddEvent={() => setEventModal(true)} />}
-      {personModal && <Modal title="Nueva pieza" onClose={() => setPersonModal(null)}><PersonForm initial={personModal.person} people={db.people} showRelation onCancel={() => setPersonModal(null)} onSave={savePerson} /></Modal>}
+      {personModal && <Modal title={t('modalTitles.newPiece')} onClose={() => setPersonModal(null)}><PersonForm initial={personModal.person} people={db.people} showRelation onCancel={() => setPersonModal(null)} onSave={savePerson} /></Modal>}
       {eventModal && selected && <EventForm person={selected} onClose={() => setEventModal(false)} onSave={addEvent} />}
       {sourceModal && <SourceForm onClose={() => setSourceModal(false)} onSave={(source) => { updateDb((prev) => ({ ...prev, sources: [...prev.sources, { id: newId('source'), ...source }] })); setSourceModal(false); }} />}
     </main>
+    </LanguageContext.Provider>
   );
 }

@@ -183,9 +183,16 @@ h1 { font-size: 34px; margin-bottom: 0; } h2 { font-size: 26px; margin-bottom: 6
 .treeCanvas.hasCanvasBackground::before { background-image: var(--canvas-bg-image); background-size: cover; background-position: center; background-repeat: no-repeat; opacity: .24; filter: grayscale(.18) saturate(.58) contrast(.82) brightness(1.12); }
 .treePanLayer { position: absolute; inset: 0 auto auto 0; transform-origin: 0 0; will-change: transform; z-index: 2; }
 .treeContent { position: relative; }
-.treeLines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.familyGroupBand { position: absolute; z-index: 0; border: 1px solid rgba(14,75,80,.1); border-radius: 18px; background: rgba(255,255,255,.38); pointer-events: none; }
+.familyGroupBand span { position: absolute; left: 12px; top: -10px; padding: 3px 7px; border-radius: 999px; background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--muted); font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; box-shadow: 0 3px 10px rgba(14,35,38,.05); }
+.familyGroupBand.sibling { border-color: rgba(14,75,80,.2); background: rgba(14,75,80,.045); }
+.familyGroupBand.partner { border-color: rgba(183,138,59,.28); background: rgba(183,138,59,.06); }
+.familyGroupBand.collateral { border-color: rgba(91,110,137,.2); background: rgba(91,110,137,.055); }
+.treeLines { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .treeLines path { fill: none; stroke: #b6aa9a; stroke-width: 2; stroke-linecap: round; opacity: .78; }
-.treeLines path.peerLine { stroke: var(--accent); stroke-dasharray: 5 5; opacity: .58; }
+.treeLines path.peerLine { stroke: var(--brand-secondary); stroke-dasharray: 7 5; stroke-width: 2.2; opacity: .72; }
+.treeLines path.siblingLine { stroke: var(--accent); stroke-width: 1.45; opacity: .44; }
+.treeLines path.familyLine { stroke: #9aa9a5; }
 .temporalGuideLayer { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
 .temporalGuideLine { position: absolute; left: 0; right: 0; height: 1px; background: rgba(36,91,77,.15); box-shadow: 0 1px 0 rgba(255,255,255,.55); }
 .temporalGuideLine.alternate { background: rgba(199,153,79,.18); }
@@ -198,9 +205,15 @@ h1 { font-size: 34px; margin-bottom: 0; } h2 { font-size: 26px; margin-bottom: 6
 .temporalTick span { position: absolute; right: 25px; top: -9px; padding: 2px 5px; border-radius: 6px; background: rgba(255,254,251,.9); font-size: 10px; font-weight: 850; white-space: nowrap; }
 .temporalTick.unknown { border-top-style: dashed; color: var(--muted); }
 .temporalTick.unknown::after { border-color: var(--muted); }
-.treeNode { position: absolute; width: 180px; min-height: 142px; z-index: 1; }
+.treeNode { position: absolute; width: 180px; min-height: 142px; z-index: 2; }
 .treeNode:hover { border-color: #9bb6aa; box-shadow: 0 12px 28px rgba(44,39,32,.1); }
 .treeCard.focal.treeNode { transform: scale(1.04); transform-origin: center; }
+.treeCard.central { border-color: rgba(14,75,80,.36); box-shadow: 0 18px 38px rgba(14,75,80,.16); }
+.treeCard.partner { border-color: rgba(183,138,59,.55); background: linear-gradient(90deg, rgba(183,138,59,.15), transparent 7px), #ffffff; }
+.treeCard.sibling { border-color: rgba(14,75,80,.22); background: linear-gradient(90deg, rgba(14,75,80,.09), transparent 7px), #ffffff; }
+.treeCard.collateral { border-color: rgba(91,110,137,.28); background: linear-gradient(90deg, rgba(91,110,137,.11), transparent 7px), #ffffff; }
+.treeCard.ancestor { border-top-color: rgba(14,75,80,.42); }
+.treeCard.descendant { border-bottom-color: rgba(14,75,80,.42); }
 
 .treePersonModal { display: grid; gap: 16px; }.treePersonModal .detailSection { margin-top: 6px; }.treePersonModal .detailActions { margin: 4px 0 0; }.treePersonModal .factList dd { max-height: 180px; overflow: auto; }
 
@@ -411,6 +424,7 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .iconButton svg,
 .toggleSwitch svg { flex: 0 0 auto; }
 .compactTextButton { font-size: 11px; white-space: nowrap; }
+.canvasToolsToggle { display: none; }
 
 .topbarActions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .modalBackdrop { z-index: 80; }
@@ -699,7 +713,13 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
   .section-tree .topbarActions { width: auto; flex: 0 0 auto; }
   .section-tree .topbarActions .primaryButton { padding: 8px 10px; font-size: 13px; white-space: nowrap; }
   .section-tree .treeWorkspace { min-height: calc(100dvh - 112px); border-radius: 12px; }
+  .section-tree .treeWorkspace.toolsCollapsed .treeCanvas { height: calc(100dvh - 124px); }
   .section-tree .treeToolbar { padding: 7px; gap: 6px; }
+  .section-tree .canvasToolsToggle { display: inline-flex; width: max-content; min-height: 38px; padding: 8px 10px; }
+  .section-tree .treeToolbar.toolsCollapsed .treeScope,
+  .section-tree .treeToolbar.toolsCollapsed .treeControls { display: none; }
+  .section-tree .treeToolbar.toolsCollapsed { display: flex; align-items: center; border-bottom: 0; }
+  .section-tree .treeToolbar.toolsOpen { display: grid; grid-template-columns: 1fr; align-items: stretch; }
   .section-tree .treeScope { grid-template-columns: 1fr auto; gap: 6px; }
   .section-tree .treeScope label span { display: none; }
   .section-tree .treeScope select { height: 36px; font-size: 11px; }
@@ -716,11 +736,904 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
   .section-tree .treeHint { display: none; }
 }
 
+@media (max-width: 920px) and (orientation: landscape), (max-width: 760px) and (max-height: 520px) {
+  .section-tree.mainArea { padding: 6px 6px 68px; }
+  .section-tree .topbar { display: none; }
+  .section-tree .treeWorkspace { position: relative; min-height: calc(100dvh - 74px); border-radius: 10px; }
+  .section-tree .treeWorkspace.toolsCollapsed .treeCanvas,
+  .section-tree .treeWorkspace.toolsOpen .treeCanvas { height: calc(100dvh - 74px); }
+  .section-tree .treeToolbar { position: absolute; top: 8px; left: 8px; right: 8px; z-index: 9; pointer-events: none; }
+  .section-tree .treeToolbar .canvasToolsToggle,
+  .section-tree .treeToolbar .treeScope,
+  .section-tree .treeToolbar .treeControls { pointer-events: auto; }
+  .section-tree .treeToolbar.toolsCollapsed { background: transparent; }
+  .section-tree .treeToolbar.toolsOpen { padding: 8px; border: 1px solid var(--line); border-radius: 13px; background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: 0 18px 45px rgba(14,35,38,.14); backdrop-filter: blur(12px); }
+  .section-tree .treeToolbar.toolsOpen .treeScope,
+  .section-tree .treeToolbar.toolsOpen .treeControls { width: min(760px, 100%); }
+  .section-tree .treeToolbar.toolsOpen .zoomControls,
+  .section-tree .treeToolbar.toolsOpen .treeFilterChecks { overflow-x: auto; }
+}
+
 @media (max-width: 420px) {
   .section-tree .topbarTitle h1 { font-size: 17px; }
   .section-tree .topbarActions .primaryButton { padding: 8px 9px; font-size: 12px; }
   .section-tree .zoomControls span { min-width: 34px; font-size: 10px; }
   .section-tree .zoomControls .secondaryButton { font-size: 11px; }
+}
+
+/* Relationship readability on the canvas */
+.treeCard.partner { border-color: rgba(183,138,59,.58); background: linear-gradient(90deg, rgba(183,138,59,.17), transparent 8px), #ffffff; }
+.treeCard.sibling { border-color: rgba(14,75,80,.28); background: linear-gradient(90deg, rgba(14,75,80,.1), transparent 8px), #ffffff; }
+.treeCard.collateral { border-color: rgba(91,110,137,.34); background: linear-gradient(90deg, rgba(91,110,137,.12), transparent 8px), #ffffff; }
+.treeCard.central { border-color: rgba(14,75,80,.46); box-shadow: 0 18px 38px rgba(14,75,80,.16); }
+.treeCard.ancestor { border-top-color: rgba(14,75,80,.5); }
+.treeCard.descendant { border-bottom-color: rgba(14,75,80,.5); }
+.appShell.darkMode .familyGroupBand { background: rgba(255,255,255,.025); border-color: rgba(143,213,200,.12); }
+.appShell.darkMode .familyGroupBand span { background: #131a1b; color: var(--muted); }
+.appShell.darkMode .familyGroupBand.partner { border-color: rgba(213,173,101,.32); background: rgba(213,173,101,.06); }
+.appShell.darkMode .familyGroupBand.sibling { border-color: rgba(143,213,200,.2); background: rgba(143,213,200,.045); }
+.appShell.darkMode .familyGroupBand.collateral { border-color: rgba(140,158,190,.22); background: rgba(140,158,190,.05); }
+.appShell.darkMode .treeCard.partner { border-color: rgba(213,173,101,.58); background: linear-gradient(90deg, rgba(213,173,101,.2), transparent 8px), #172122; }
+.appShell.darkMode .treeCard.sibling { border-color: rgba(143,213,200,.3); background: linear-gradient(90deg, rgba(143,213,200,.14), transparent 8px), #172122; }
+.appShell.darkMode .treeCard.collateral { border-color: rgba(140,158,190,.32); background: linear-gradient(90deg, rgba(140,158,190,.14), transparent 8px), #172122; }
+
+/* Rich canvas person cards */
+.treeNode.treeCard {
+  width: var(--tree-card-width, 340px);
+  height: var(--tree-card-height, 218px);
+  min-height: var(--tree-card-height, 218px);
+  padding: 0;
+  overflow: visible;
+  display: grid;
+  justify-items: stretch;
+  align-items: stretch;
+  text-align: left;
+}
+.treeCard {
+  position: absolute;
+  isolation: isolate;
+  border-radius: 30px 30px 30px 12px;
+  border: 1px solid rgba(14,75,80,.17);
+  background:
+    radial-gradient(circle at 88% 72%, rgba(183,138,59,.11), transparent 25%),
+    linear-gradient(135deg, rgba(255,255,255,.98), rgba(250,247,240,.94));
+  box-shadow: 0 20px 44px rgba(14,35,38,.14), inset 0 0 0 1px rgba(255,255,255,.76);
+  color: var(--ink);
+}
+.treeCard.central { border-color: rgba(14,75,80,.48); box-shadow: 0 24px 52px rgba(14,75,80,.18), inset 0 0 0 1px rgba(255,255,255,.76); }
+.treeCard.partner { border-color: rgba(183,138,59,.5); }
+.treeCard.sibling { border-color: rgba(14,75,80,.28); }
+.treeCard.collateral { border-color: rgba(91,110,137,.34); }
+.treeCard.ancestor::before { background: linear-gradient(120deg, #15979b, #8ec3d7 56%, rgba(183,138,59,.76)); }
+.treeCard.descendant::before { background: linear-gradient(120deg, rgba(183,138,59,.82), #75b9c2 52%, #15979b); }
+.treeCard.partner::before { background: linear-gradient(120deg, #b78a3b, #d8b468 46%, #15979b); }
+.treeCard.sibling::before { background: linear-gradient(120deg, #15979b, #65b7ad 50%, #8cb6d8); }
+.treeCard.collateral::before { background: linear-gradient(120deg, #5b6e89, #8cb6d8 50%, #15979b); }
+.treeCard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 3px 3px 0 0;
+  background: linear-gradient(120deg, #15979b, #89badf 45%, #a36ad8 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: .88;
+  z-index: -1;
+}
+.treeCard::after {
+  content: '';
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  width: 92px;
+  height: 92px;
+  background: url('/tree-icon-glow.png') center / contain no-repeat;
+  opacity: .07;
+  pointer-events: none;
+}
+.treeCardRail {
+  position: absolute;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,.96);
+  border: 1px solid rgba(14,75,80,.16);
+  box-shadow: 0 4px 12px rgba(14,35,38,.13);
+  z-index: 3;
+}
+.treeCardRail::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.treeCardRail.top { top: -11px; }
+.treeCardRail.bottom { bottom: -11px; }
+.treeCardMenu {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #233044;
+  background: rgba(255,255,255,.92);
+  box-shadow: 0 8px 20px rgba(14,35,38,.13);
+  z-index: 4;
+}
+.treeCardBloom {
+  position: absolute;
+  left: 36%;
+  color: var(--brand-secondary);
+  font-size: 18px;
+  line-height: 1;
+  z-index: 3;
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,.85));
+}
+.treeCardBloom.top { top: 10px; }
+.treeCardBloom.bottom { bottom: 10px; }
+.treeCardFoliage {
+  position: absolute;
+  left: 10px;
+  bottom: 20px;
+  width: 74px;
+  height: 86px;
+  border-radius: 44% 56% 42% 58%;
+  background:
+    radial-gradient(circle at 48% 72%, rgba(255,147,125,.64) 0 9px, transparent 10px),
+    radial-gradient(circle at 66% 84%, rgba(255,165,143,.62) 0 8px, transparent 9px),
+    radial-gradient(ellipse at 18% 36%, rgba(73,128,103,.42) 0 9px, transparent 10px),
+    radial-gradient(ellipse at 38% 20%, rgba(73,128,103,.34) 0 8px, transparent 9px),
+    radial-gradient(circle at 23% 70%, rgba(126,112,196,.44) 0 4px, transparent 5px);
+  pointer-events: none;
+  opacity: .82;
+  z-index: 2;
+}
+.treePortraitFrame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  border: 2px solid rgba(199,153,79,.7);
+  background: linear-gradient(135deg, #f3ede3, #fffdfa);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,.88), 0 10px 28px rgba(14,35,38,.1);
+  overflow: hidden;
+}
+.treePortraitFrame img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+.treePortraitPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  color: rgba(77,68,56,.18);
+  background: radial-gradient(circle at 50% 38%, rgba(128,116,97,.14), transparent 30%), linear-gradient(135deg, #f0ebe3, #fbf8f1);
+}
+.treeCardBody {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 10px;
+  z-index: 2;
+}
+.treeLabel {
+  width: max-content;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(14,75,80,.18);
+  background: rgba(220,235,232,.78);
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  font-size: 11px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.treeCardName {
+  display: block;
+  min-width: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  color: #1d2b42;
+  font-weight: 800;
+  line-height: .98;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+.treeCardDivider {
+  display: block;
+  width: min(100%, 210px);
+  height: 12px;
+  background:
+    radial-gradient(circle at left center, var(--brand-secondary) 0 3px, transparent 4px),
+    radial-gradient(circle at right center, var(--brand-secondary) 0 3px, transparent 4px),
+    linear-gradient(var(--brand-secondary), var(--brand-secondary)) center / calc(100% - 34px) 1px no-repeat;
+  opacity: .78;
+}
+.treeCardFact,
+.treeCardMeta,
+.treeCardMetaItem {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.treeCardFact { gap: 12px; color: var(--accent); }
+.treeCardFact > svg,
+.treeCardMetaItem > svg {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+.treeCardFact span,
+.treeCardMetaItem span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.treeCardFact em,
+.treeCardMetaItem em {
+  color: #657079;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 650;
+}
+.treeCardFact b,
+.treeCardMetaItem b {
+  min-width: 0;
+  color: var(--accent);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.treeCardMeta {
+  width: min(100%, 230px);
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 18px;
+  background: rgba(255,255,255,.78);
+  box-shadow: 0 8px 20px rgba(14,35,38,.08);
+}
+.treeCardMetaItem { gap: 9px; flex: 1 1 0; }
+.sourceMeta { padding-right: 12px; border-right: 1px solid rgba(14,35,38,.12); }
+.emptyLine {
+  color: transparent !important;
+  position: relative;
+}
+.emptyLine::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: min(100%, 170px);
+  height: .68em;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, rgba(120,120,120,.18), rgba(120,120,120,.28), rgba(120,120,120,.18));
+}
+.treeCard-landscape {
+  grid-template-columns: 42% minmax(0, 1fr);
+  gap: 24px;
+  padding: 22px 26px 20px 20px;
+}
+.treeCard-landscape .treePortraitFrame {
+  align-self: stretch;
+  width: 100%;
+  min-height: 0;
+  border-radius: 48% 48% 48% 18%;
+}
+.treeCard-landscape .treeCardBody { padding-right: 28px; }
+.treeCard-landscape .treeCardName { font-size: 34px; }
+.treeCard-landscape .treeCardMeta { justify-self: end; }
+.treeCard-portrait {
+  grid-template-rows: 154px minmax(0, 1fr);
+  gap: 14px;
+  padding: 18px 18px 20px;
+  text-align: center;
+}
+.treeCard-portrait .treePortraitFrame {
+  width: 100%;
+  height: 154px;
+  border-radius: 34px 34px 34px 10px;
+}
+.treeCard-portrait .treeCardBody {
+  justify-items: center;
+  align-content: start;
+  gap: 9px;
+}
+.treeCard-portrait .treeLabel { max-width: 176px; }
+.treeCard-portrait .treeCardName {
+  font-size: 25px;
+  text-align: center;
+}
+.treeCard-portrait .treeCardDivider { width: 150px; }
+.treeCard-portrait .treeCardFact { align-self: stretch; justify-content: center; }
+.treeCard-portrait .treeCardMeta { width: 100%; }
+.treeCard-portrait .treeCardFoliage { transform: scale(.82); left: 4px; bottom: 112px; }
+.treeCard-portrait .treeCardBloom { left: 50%; transform: translateX(-50%); }
+.treeCard-portrait .treeCardMenu {
+  width: 34px;
+  height: 34px;
+  right: 12px;
+  top: 12px;
+}
+.treeCard.isEmpty .treePortraitFrame { opacity: .92; }
+.treeCard.isEmpty .treeCardFoliage { opacity: .48; }
+.appShell.darkMode .treeCard {
+  background:
+    radial-gradient(circle at 88% 72%, rgba(213,173,101,.08), transparent 25%),
+    linear-gradient(135deg, #172122, #11191b);
+  border-color: rgba(143,213,200,.2);
+  color: var(--ink);
+}
+.appShell.darkMode .treeCardMenu,
+.appShell.darkMode .treeCardRail,
+.appShell.darkMode .treeCardMeta {
+  background: rgba(22,32,33,.92);
+  border-color: rgba(143,213,200,.18);
+}
+.appShell.darkMode .treeCardName { color: #ecf4f1; }
+.appShell.darkMode .treePortraitFrame {
+  background: linear-gradient(135deg, #1d2424, #11191b);
+  border-color: rgba(213,173,101,.55);
+  box-shadow: inset 0 0 0 5px rgba(17,25,27,.82), 0 10px 28px rgba(0,0,0,.22);
+}
+.appShell.darkMode .treePortraitPlaceholder { color: rgba(236,244,241,.2); background: #161f20; }
+.appShell.darkMode .treeCardFact em,
+.appShell.darkMode .treeCardMetaItem em { color: #a8b2ad; }
+.appShell.darkMode .treeCard::after { opacity: .045; }
+
+/* Canvas card readability pass */
+.treeNode.treeCard {
+  width: var(--tree-card-width, 232px);
+  height: var(--tree-card-height, 132px);
+  min-height: var(--tree-card-height, 132px);
+}
+.treeCard {
+  border-radius: 18px 18px 18px 6px;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(250,248,243,.96));
+  box-shadow: 0 12px 28px rgba(14,35,38,.11), inset 0 0 0 1px rgba(255,255,255,.78);
+}
+.treeCard::before {
+  padding: 2px 2px 0 0;
+  opacity: .76;
+}
+.treeCard::after,
+.treeCardRail,
+.treeCardBloom,
+.treeCardFoliage {
+  display: none;
+}
+.treeCardMenu {
+  right: 7px;
+  top: 7px;
+  width: 22px;
+  height: 22px;
+  color: #59636b;
+  background: rgba(255,255,255,.86);
+  box-shadow: 0 5px 12px rgba(14,35,38,.1);
+}
+.treeCardMenu svg {
+  width: 14px;
+  height: 14px;
+}
+.treeCard .lifeDot {
+  left: 8px;
+  right: auto;
+  top: 8px;
+  width: 7px;
+  height: 7px;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.9);
+}
+.treePortraitFrame {
+  border: 1px solid rgba(199,153,79,.58);
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,.85), 0 6px 16px rgba(14,35,38,.08);
+}
+.treePortraitPlaceholder svg {
+  width: 38px;
+  height: 38px;
+}
+.treeCardBody {
+  gap: 6px;
+}
+.treeLabel {
+  max-width: 100%;
+  min-width: 0;
+  padding: 4px 8px;
+  gap: 5px;
+  font-size: 8px;
+  letter-spacing: .08em;
+}
+.treeLabel svg {
+  width: 11px;
+  height: 11px;
+}
+.treeCardName {
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1.02;
+  letter-spacing: 0;
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.treeCardDivider {
+  width: min(100%, 128px);
+  height: 6px;
+  background:
+    radial-gradient(circle at left center, var(--brand-secondary) 0 2px, transparent 3px),
+    radial-gradient(circle at right center, var(--brand-secondary) 0 2px, transparent 3px),
+    linear-gradient(var(--brand-secondary), var(--brand-secondary)) center / calc(100% - 24px) 1px no-repeat;
+}
+.treeCardFact {
+  gap: 7px;
+}
+.treeCardFact > svg,
+.treeCardMetaItem > svg {
+  width: 14px;
+  height: 14px;
+}
+.treeCardFact em,
+.treeCardMetaItem em {
+  font-size: 8px;
+}
+.treeCardFact b,
+.treeCardMetaItem b {
+  font-size: 11px;
+}
+.treeCardMeta {
+  width: 100%;
+  gap: 7px;
+  padding: 5px 7px;
+  border-radius: 11px;
+  box-shadow: 0 5px 12px rgba(14,35,38,.06);
+}
+.treeCardMetaItem {
+  gap: 6px;
+}
+.sourceMeta {
+  padding-right: 7px;
+}
+.treeCard-landscape {
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 11px;
+  padding: 12px 12px 10px;
+}
+.treeCard-landscape .treePortraitFrame {
+  width: 62px;
+  height: 84px;
+  align-self: start;
+  border-radius: 20px 20px 20px 6px;
+}
+.treeCard-landscape .treeCardBody {
+  padding-right: 18px;
+  align-content: start;
+}
+.treeCard-landscape .treeCardName {
+  font-size: 18px;
+}
+.treeCard-landscape .treeCardMeta {
+  grid-column: 1 / -1;
+}
+.treeCard-portrait {
+  grid-template-rows: 88px minmax(0, 1fr);
+  gap: 9px;
+  padding: 12px;
+}
+.treeCard-portrait .treePortraitFrame {
+  width: 100%;
+  height: 88px;
+  border-radius: 22px 22px 22px 7px;
+}
+.treeCard-portrait .treeCardBody {
+  gap: 7px;
+}
+.treeCard-portrait .treeCardName {
+  font-size: 18px;
+}
+.treeCard-portrait .treeCardDivider {
+  width: 112px;
+}
+.treeCard-portrait .treeCardFact {
+  justify-content: center;
+}
+.treeCard-portrait .treeCardMeta {
+  padding-inline: 8px;
+}
+.treeCard-portrait .treeLabel {
+  max-width: 148px;
+}
+.appShell.darkMode .treeCard {
+  background: linear-gradient(135deg, #172122, #11191b);
+}
+
+/* Canvas node card functional pass */
+.treeNode.treeCard {
+  width: var(--tree-card-width, 226px);
+  height: var(--tree-card-height, 88px);
+  min-height: var(--tree-card-height, 88px);
+}
+.treeCard {
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 1px solid rgba(14,75,80,.18);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fffdfa;
+  box-shadow: 0 9px 20px rgba(14,35,38,.1);
+  text-align: left;
+}
+.treeCard::before,
+.treeCard::after,
+.treeCardRail,
+.treeCardBloom,
+.treeCardFoliage,
+.treeCardDivider,
+.treeCardMeta {
+  display: none;
+}
+.treeCard.central { border-color: rgba(14,75,80,.42); box-shadow: 0 12px 28px rgba(14,75,80,.16); }
+.treeCard.partner { border-color: rgba(183,138,59,.42); background: linear-gradient(90deg, rgba(183,138,59,.13), transparent 5px), #fffdfa; }
+.treeCard.sibling { border-color: rgba(14,75,80,.26); background: linear-gradient(90deg, rgba(14,75,80,.08), transparent 5px), #fffdfa; }
+.treeCard.collateral { border-color: rgba(91,110,137,.28); background: linear-gradient(90deg, rgba(91,110,137,.09), transparent 5px), #fffdfa; }
+.treeCard .lifeDot {
+  left: auto;
+  right: 7px;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.9);
+}
+.treeCardMenu {
+  right: 6px;
+  top: 30px;
+  width: 18px;
+  height: 18px;
+  opacity: .52;
+  color: #687276;
+  background: rgba(255,255,255,.72);
+  box-shadow: none;
+}
+.treeCard:hover .treeCardMenu { opacity: 1; }
+.treeCardMenu svg {
+  width: 12px;
+  height: 12px;
+}
+.treePortraitFrame,
+.treeCard-landscape .treePortraitFrame,
+.treeCard-portrait .treePortraitFrame {
+  grid-column: auto;
+  grid-row: auto;
+  width: 44px;
+  height: 44px;
+  min-height: 0;
+  align-self: start;
+  border: 1px solid rgba(199,153,79,.42);
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.82);
+}
+.treePortraitPlaceholder {
+  color: rgba(77,68,56,.2);
+  background: linear-gradient(135deg, #f2eee7, #fffdfa);
+}
+.treePortraitPlaceholder svg {
+  width: 27px;
+  height: 27px;
+}
+.treeCardBody,
+.treeCard-landscape .treeCardBody,
+.treeCard-portrait .treeCardBody {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-content: stretch;
+  align-items: stretch;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 18px 0 0;
+  overflow: hidden;
+}
+.treeCardTopline {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 17px;
+}
+.treeLabel,
+.treeCard-portrait .treeLabel {
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  height: 18px;
+  padding: 2px 7px 2px 6px;
+  gap: 4px;
+  border-radius: 999px;
+  font-size: 8px;
+  letter-spacing: .06em;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.treeLabel svg {
+  width: 10px;
+  height: 10px;
+}
+.treeCardSourceBadge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(14,75,80,.08);
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 850;
+}
+.treeCardName,
+.treeCard-landscape .treeCardName,
+.treeCard-portrait .treeCardName {
+  min-width: 0;
+  color: #182334;
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.04;
+  letter-spacing: 0;
+  overflow: hidden;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  text-align: left;
+}
+.treeCardDetails {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0;
+  overflow: hidden;
+}
+.treeCardFact,
+.treeCardMetaItem {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent);
+}
+.treeCardFact > svg,
+.treeCardMetaItem > svg {
+  flex: 0 0 auto;
+  width: 11px;
+  height: 11px;
+}
+.treeCardFact span,
+.treeCardMetaItem span {
+  min-width: 0;
+  display: block;
+}
+.treeCardFact em,
+.treeCardMetaItem em {
+  display: none;
+}
+.treeCardFact b,
+.treeCardMetaItem b {
+  display: block;
+  min-width: 0;
+  color: #0f565c;
+  font-size: 10px;
+  font-weight: 850;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sourceMeta {
+  padding-right: 0;
+  border-right: 0;
+}
+.treeCard-landscape {
+  grid-template-columns: 44px minmax(0, 1fr);
+}
+.treeCard-portrait {
+  grid-template-columns: 1fr;
+  grid-template-rows: 48px minmax(0, 1fr);
+  gap: 7px;
+  padding: 9px;
+  text-align: center;
+}
+.treeCard-portrait .treePortraitFrame {
+  justify-self: center;
+  width: 48px;
+  height: 48px;
+}
+.treeCard-portrait .treeCardBody {
+  align-items: center;
+  padding: 0;
+  text-align: center;
+}
+.treeCard-portrait .treeCardTopline,
+.treeCard-portrait .treeCardFact,
+.treeCard-portrait .treeCardMetaItem {
+  justify-content: center;
+}
+.treeCard-portrait .treeCardDetails {
+  width: 100%;
+  flex-direction: column;
+  gap: 2px;
+}
+.appShell.darkMode .treeCard {
+  background: #172122;
+  border-color: rgba(143,213,200,.18);
+  box-shadow: 0 10px 24px rgba(0,0,0,.22);
+}
+.appShell.darkMode .treeCard.partner { background: linear-gradient(90deg, rgba(213,173,101,.16), transparent 5px), #172122; }
+.appShell.darkMode .treeCard.sibling { background: linear-gradient(90deg, rgba(143,213,200,.11), transparent 5px), #172122; }
+.appShell.darkMode .treeCard.collateral { background: linear-gradient(90deg, rgba(140,158,190,.12), transparent 5px), #172122; }
+.appShell.darkMode .treeCardName { color: #ecf4f1; }
+.appShell.darkMode .treePortraitFrame {
+  border-color: rgba(213,173,101,.36);
+  box-shadow: inset 0 0 0 2px rgba(17,25,27,.82);
+}
+.appShell.darkMode .treePortraitPlaceholder {
+  background: #11191b;
+  color: rgba(236,244,241,.2);
+}
+.appShell.darkMode .treeCardFact b,
+.appShell.darkMode .treeCardMetaItem b {
+  color: #8fd5c8;
+}
+
+/* Canvas vertical card pass */
+.treeNode.treeCard {
+  width: var(--tree-card-width, 150px);
+  height: var(--tree-card-height, 168px);
+  min-height: var(--tree-card-height, 168px);
+}
+.treeCard,
+.treeCard-landscape,
+.treeCard-portrait {
+  grid-template-columns: 1fr;
+  grid-template-rows: 42px minmax(0, 1fr);
+  justify-items: center;
+  align-items: start;
+  gap: 6px;
+  padding: 9px 9px 8px;
+  border-radius: 16px;
+  text-align: center;
+}
+.treeCard .lifeDot {
+  top: 8px;
+  right: 8px;
+}
+.treeCardMenu {
+  top: 26px;
+  right: 7px;
+}
+.treePortraitFrame,
+.treeCard-landscape .treePortraitFrame,
+.treeCard-portrait .treePortraitFrame {
+  width: 42px;
+  height: 42px;
+  justify-self: center;
+  align-self: start;
+  border-radius: 13px;
+}
+.treePortraitPlaceholder svg {
+  width: 26px;
+  height: 26px;
+}
+.treeCardBody,
+.treeCard-landscape .treeCardBody,
+.treeCard-portrait .treeCardBody {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  align-items: center;
+  justify-content: start;
+  gap: 5px;
+  padding: 0 13px;
+  text-align: center;
+}
+.treeCardTopline {
+  width: 100%;
+  height: 18px;
+  justify-content: center;
+}
+.treeLabel,
+.treeCard-portrait .treeLabel {
+  max-width: 100%;
+  height: 18px;
+  padding: 2px 7px;
+  font-size: 7.5px;
+  letter-spacing: .05em;
+}
+.treeCardSourceBadge {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  height: 16px;
+  padding: 0 5px;
+}
+.treeCardName,
+.treeCard-landscape .treeCardName,
+.treeCard-portrait .treeCardName {
+  width: 100%;
+  min-height: 32px;
+  max-height: 34px;
+  display: -webkit-box;
+  color: #172338;
+  font-size: 14px;
+  line-height: 1.08;
+  text-align: center;
+  text-wrap: balance;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.treeCardDetails,
+.treeCard-portrait .treeCardDetails {
+  width: 100%;
+  display: grid;
+  gap: 3px;
+  margin-top: 0;
+}
+.treeCardFact,
+.treeCardMetaItem,
+.treeCard-portrait .treeCardFact,
+.treeCard-portrait .treeCardMetaItem {
+  width: 100%;
+  justify-content: center;
+  gap: 4px;
+}
+.treeCardFact > svg,
+.treeCardMetaItem > svg {
+  width: 11px;
+  height: 11px;
+}
+.treeCardFact b,
+.treeCardMetaItem b {
+  max-width: 104px;
+  font-size: 10px;
+  line-height: 1.12;
+}
+.treeCard.central {
+  box-shadow: 0 12px 26px rgba(14,75,80,.16);
+}
+.appShell.darkMode .treeCardName {
+  color: #ecf4f1;
 }
 
 /* Mobile bottom navigation (footer) */
