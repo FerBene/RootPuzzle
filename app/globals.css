@@ -1665,3 +1665,211 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
   .personDetail, .formStack { padding-bottom: 16px; }
 }
 
+/* Person card redesign: warm generation tints and clearer hierarchy. */
+.treeNode.treeCard {
+  --card-accent: #b56636;
+  --card-wash: #fbe4d9;
+  width: var(--tree-card-width, 188px);
+  height: var(--tree-card-height, 200px);
+  min-height: var(--tree-card-height, 200px);
+  display: block;
+  position: absolute;
+  padding: 12px 14px 13px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--card-accent) 18%, #d9d1c7);
+  border-top: 4px solid var(--card-accent);
+  border-radius: 18px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--card-wash) 86%, white) 0%, color-mix(in srgb, var(--card-wash) 35%, white) 100%);
+  color: #241d18;
+  text-align: left;
+  box-shadow: 0 9px 20px rgba(57, 43, 31, .09);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.treeNode.treeCard:hover {
+  border-color: color-mix(in srgb, var(--card-accent) 52%, #d9d1c7);
+  box-shadow: 0 16px 30px rgba(57, 43, 31, .15);
+}
+.treeNode.treeCard.focal { transform: scale(1.045); box-shadow: 0 18px 34px color-mix(in srgb, var(--card-accent) 22%, transparent); }
+.treeCard.central { --card-accent: #e45d2c; --card-wash: #ffd8ca; }
+.treeCard.cardTone-mother { --card-accent: #d8676d; --card-wash: #f8d9dc; }
+.treeCard.cardTone-father { --card-accent: #b27628; --card-wash: #efdfcc; }
+.treeCard.cardTone-grandmother { --card-accent: #c85f70; --card-wash: #f5d9df; }
+.treeCard.cardTone-grandfather { --card-accent: #9b7423; --card-wash: #e9e1cf; }
+.treeCard.cardTone-great-grandmother { --card-accent: #b18b52; --card-wash: #eee6d6; }
+.treeCard.cardTone-great-grandfather { --card-accent: #68703a; --card-wash: #e4e4d3; }
+.treeCard.cardTone-daughter { --card-accent: #d4785e; --card-wash: #f7ded2; }
+.treeCard.cardTone-son { --card-accent: #a36b32; --card-wash: #efe0ca; }
+.treeCard.cardTone-family { --card-accent: #39756e; --card-wash: #dcebe6; }
+.treeCard .lifeDot {
+  top: 12px;
+  right: 12px;
+  width: 9px;
+  height: 9px;
+  z-index: 3;
+  background: var(--card-accent);
+  box-shadow: 0 0 0 2px rgba(255,255,255,.85);
+}
+.treeCard .treeCardMenu {
+  top: 8px;
+  right: 7px;
+  width: 24px;
+  height: 24px;
+  color: color-mix(in srgb, var(--card-accent) 48%, #80766b);
+  background: transparent;
+  box-shadow: none;
+  opacity: .85;
+}
+.treeCard .treePortraitFrame {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  width: 54px;
+  height: 54px;
+  border: 2px solid color-mix(in srgb, var(--card-accent) 48%, white);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--card-wash) 48%, white);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.5);
+}
+.treeCard .treePortraitFrame img,
+.treeCard .treePortraitPlaceholder { width: 100%; height: 100%; display: grid; place-items: center; border-radius: inherit; }
+.treeCard .treePortraitPlaceholder { color: color-mix(in srgb, var(--card-accent) 84%, #49372c); background: transparent; }
+.treeCard .treePortraitPlaceholder svg { width: 28px; height: 28px; }
+.treeCard .treeCardBody {
+  width: 100%;
+  height: 100%;
+  padding: 62px 0 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 5px;
+  overflow: hidden;
+}
+.treeCard .treeCardTopline { width: 100%; height: 18px; justify-content: flex-start; }
+.treeCard .treeLabel {
+  max-width: calc(100% - 22px);
+  height: auto;
+  padding: 2px 7px;
+  gap: 4px;
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--card-accent) 85%, #482e25);
+  background: color-mix(in srgb, var(--card-accent) 12%, transparent);
+  font-size: 8px;
+  letter-spacing: .06em;
+  line-height: 1.25;
+}
+.treeCard .treeLabel svg { width: 10px; height: 10px; flex: 0 0 auto; }
+.treeCard .treeCardName {
+  width: 100%;
+  min-height: 34px;
+  max-height: 38px;
+  color: #201914;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 850;
+  line-height: 1.12;
+  letter-spacing: -.02em;
+  text-align: left;
+  text-wrap: balance;
+}
+.treeCard .treeCardDetails { width: 100%; display: grid; gap: 4px; margin-top: 2px; overflow: hidden; }
+.treeCard .treeCardFact,
+.treeCard .treeCardMetaItem { width: 100%; justify-content: flex-start; gap: 7px; color: var(--card-accent); }
+.treeCard .treeCardFact > svg,
+.treeCard .treeCardMetaItem > svg { width: 14px; height: 14px; flex: 0 0 auto; }
+.treeCard .treeCardFact span,
+.treeCard .treeCardMetaItem span { min-width: 0; }
+.treeCard .treeCardFact b,
+.treeCard .treeCardMetaItem b { color: #4c4038; font-size: 11px; font-weight: 500; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.treeCard .treeCardFact em,
+.treeCard .treeCardMetaItem em { display: none; }
+.treeCard .treeCardSourceBadge { position: absolute; left: 14px; top: 72px; height: 16px; padding: 0 5px; border-radius: 999px; color: var(--card-accent); background: color-mix(in srgb, var(--card-accent) 12%, transparent); font-size: 9px; }
+.appShell.darkMode .treeNode.treeCard { color: #f6eee7; background: linear-gradient(180deg, color-mix(in srgb, var(--card-wash) 22%, #172122) 0%, #172122 100%); border-color: color-mix(in srgb, var(--card-accent) 38%, #31403d); }
+.appShell.darkMode .treeCard .treeCardName { color: #f6eee7; }
+.appShell.darkMode .treeCard .treeCardFact b,
+.appShell.darkMode .treeCard .treeCardMetaItem b { color: #cbd4cf; }
+@media (max-width: 760px) {
+  .treeNode.treeCard { width: var(--tree-card-width, 176px); height: var(--tree-card-height, 192px); min-height: var(--tree-card-height, 192px); }
+  .treeCard .treeCardName { font-size: 15px; }
+}
+
+/* Shared visual language for the rest of the app. */
+:root {
+  --bg: #f7f1e8;
+  --surface: #fffaf3;
+  --surface-2: #f2e9dc;
+  --ink: #2c211b;
+  --muted: #806f63;
+  --line: #e5d8c9;
+  --accent: #b56636;
+  --accent-2: #f2ddd0;
+  --shadow: 0 16px 42px rgba(77, 53, 33, .09);
+}
+.sidebar { background: #2b2924; }
+.sidebar nav button { color: #d9cfc5; border-radius: 12px; }
+.sidebar nav button:hover,
+.sidebar nav button.active { background: #493c32; color: #fffaf3; box-shadow: inset 3px 0 0 #e08a5b; }
+.sidebar nav button .navIcon { color: #d9956b; }
+.rootsNavIcon { width: 22px; height: 22px; stroke-width: 1.9; }
+.brandMark { background: #e08a5b; color: #2b2924; box-shadow: inset 0 -10px 18px rgba(75, 34, 17, .14); }
+.brandMark img { mix-blend-mode: multiply; filter: saturate(.8) contrast(1.05); }
+.mainArea { background: transparent; }
+.eyebrow { color: #aa5b32; }
+h1, h2 { color: #2c211b; }
+.primaryButton { background: #b56636; box-shadow: 0 8px 18px rgba(181, 102, 54, .2); }
+.secondaryButton,
+.iconButton { background: #f4eadf; border-color: #e1d1c0; color: #5b4639; }
+.secondaryButton:hover,
+.iconButton:hover { background: #ead9c9; }
+.textButton { color: #a9572e; }
+.topbarStats .stat,
+.statsBar .stat { background: rgba(255, 250, 243, .88); border-color: #e5d8c9; }
+.treeWorkspace,
+.contentPanel,
+.peopleLayout,
+.detectivePanel { border-color: #e5d8c9; box-shadow: var(--shadow); background: #fffaf3; }
+.treeToolbar,
+.paneToolbar,
+.panelHeader { border-color: #eadfd3; }
+.treeToolbar select,
+.searchInput,
+input, select, textarea { background: #fffdf9; border-color: #dfd0c1; color: #2c211b; }
+.treeToolbar select:focus,
+.searchInput:focus,
+input:focus, select:focus, textarea:focus { border-color: #c77a4e; box-shadow: 0 0 0 4px rgba(199, 122, 78, .13); }
+.treeCanvas { background: #fbf6ef; }
+.treeLines path { stroke: #c9a78c; }
+.treeHint { color: #927d6e; }
+.personRow:hover,
+.personRow.selected { background: #fbefe4; }
+.personRow { border-color: #eee2d6; }
+.relationChip { background: #f2ddd0; color: #9b512e; }
+.sourceCard,
+.dataCard,
+.detectiveSuggestion { background: #fffdf9; border-color: #e5d8c9; box-shadow: 0 8px 24px rgba(77, 53, 33, .05); }
+.sourceType { color: #9b512e; background: #f2ddd0; }
+.dataCard.accent { background: #f5eee2; border-color: #dfcdb9; }
+.publishCard, .puzzleCard { background: #f8eee6; border-color: #e4cdbd; }
+.dataIcon { background: #f4eadf; color: #a9572e; }
+.modal { background: #fffaf3; border: 1px solid #e5d8c9; }
+.appShell.darkMode .sidebar { background: #171512; }
+.appShell.darkMode .sidebar nav button:hover,
+.appShell.darkMode .sidebar nav button.active { background: #3a2d25; box-shadow: inset 3px 0 0 #d98555; }
+.appShell.darkMode .treeWorkspace,
+.appShell.darkMode .contentPanel,
+.appShell.darkMode .peopleLayout,
+.appShell.darkMode .detectivePanel,
+.appShell.darkMode .modal { background: #211d19; border-color: #44382f; }
+.appShell.darkMode .treeToolbar select,
+.appShell.darkMode .searchInput,
+.appShell.darkMode input,
+.appShell.darkMode select,
+.appShell.darkMode textarea { background: #29231e; border-color: #504137; color: #f5ede5; }
+.appShell.darkMode .treeCanvas { background: #191613; }
+.appShell.darkMode h1,
+.appShell.darkMode h2,
+.appShell.darkMode .treeToolbar h2 { color: #f5ede5; }
+.appShell.darkMode .secondaryButton,
+.appShell.darkMode .iconButton { background: #302820; border-color: #504137; color: #eadfd4; }
+.appShell.darkMode .personRow:hover,
+.appShell.darkMode .personRow.selected { background: #352a22; }
+

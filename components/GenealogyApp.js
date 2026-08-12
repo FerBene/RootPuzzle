@@ -8,7 +8,7 @@ import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import { BookOpen, CalendarDays, ChevronsLeft, ChevronsRight, Database, FileDown, Hourglass, Image as ImageIcon, LocateFixed, Maximize2, Minimize2, Moon, MoreHorizontal, Puzzle, SlidersHorizontal, Sprout, Sun, UsersRound, ZoomIn, ZoomOut, UserCircle } from 'lucide-react';
 
 const iconProps = { size: 20, strokeWidth: 1.9, 'aria-hidden': true };
-const IconHome = <img className="navImageIcon treeNavIcon" src="/tree-icon-glow.png" alt="" aria-hidden="true" />;
+const IconHome = <Sprout {...iconProps} className="rootsNavIcon" />;
 const IconPieces = <Puzzle {...iconProps} />;
 const IconTimeline = <Hourglass {...iconProps} />;
 const IconSources = <BookOpen {...iconProps} />;
@@ -196,8 +196,8 @@ const readCanvasBackgroundImage = (file) => new Promise((resolve, reject) => {
 });
 
 const TREE_CARD_VARIANTS = {
-  landscape: { variant: 'portrait', width: 150, height: 168, columnGap: 10, rowGap: 42, maxColumnGap: 44 },
-  portrait: { variant: 'portrait', width: 146, height: 164, columnGap: 8, rowGap: 40, maxColumnGap: 40 }
+  landscape: { variant: 'portrait', width: 188, height: 200, columnGap: 18, rowGap: 52, maxColumnGap: 52 },
+  portrait: { variant: 'portrait', width: 176, height: 192, columnGap: 14, rowGap: 48, maxColumnGap: 48 }
 };
 const TREE_CARD_DEFAULT = TREE_CARD_VARIANTS.landscape;
 const TREE_CARD_WIDTH = TREE_CARD_DEFAULT.width;
@@ -1236,6 +1236,20 @@ const treeNodeLabel = (node, language = 'es') => {
   return descendantGenerationLabel(node.generation, node.person, language);
 };
 
+const cardToneFromLabel = (label = '') => {
+  const normalized = String(label).toLowerCase();
+  if (normalized.includes('central')) return 'central';
+  if (normalized.includes('madre') || normalized.includes('mother')) return 'mother';
+  if (normalized.includes('padre') || normalized.includes('father')) return 'father';
+  if (normalized.includes('abuela') || normalized.includes('grandmother')) return 'grandmother';
+  if (normalized.includes('abuelo') || normalized.includes('grandfather')) return 'grandfather';
+  if (normalized.includes('bisabuela') || normalized.includes('great-grandmother')) return 'great-grandmother';
+  if (normalized.includes('bisabuelo') || normalized.includes('great-grandfather')) return 'great-grandfather';
+  if (normalized.includes('hija') || normalized.includes('daughter')) return 'daughter';
+  if (normalized.includes('hijo') || normalized.includes('son')) return 'son';
+  return 'family';
+};
+
 const allPeopleNodeLabel = (node, language = 'es') => {
   if (node.relationLabel) return node.relationLabel;
   if (node.generation === 0) return kinTerms[language]?.origin || kinTerms.es.origin;
@@ -1677,6 +1691,7 @@ function TreeCard({ person, label, relationGroup = 'family', sourceCount = 0, ca
   const familyBranch = String(person.surnames || '').trim().split(/\s+/)[0] || '';
   const hasBranch = Boolean(familyBranch);
   const hasImage = Boolean(person.profileImage);
+  const cardTone = cardToneFromLabel(label);
 
   const handleClick = () => {
     if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
@@ -1696,7 +1711,7 @@ function TreeCard({ person, label, relationGroup = 'family', sourceCount = 0, ca
   };
 
   return (
-    <button className={`treeCard treeNode treeCard-${cardVariant} ${hasImage ? 'hasImage' : 'isEmpty'} ${personStatusClass(person)} ${relationGroup} ${focal ? 'focal' : ''}`} style={style} onPointerDown={(e) => e.stopPropagation()} onClick={handleClick} onDoubleClick={handleDoubleClick} title={t('tree.cardTitle')}>
+    <button className={`treeCard treeNode treeCard-${cardVariant} cardTone-${cardTone} ${hasImage ? 'hasImage' : 'isEmpty'} ${personStatusClass(person)} ${relationGroup} ${focal ? 'focal' : ''}`} style={style} onPointerDown={(e) => e.stopPropagation()} onClick={handleClick} onDoubleClick={handleDoubleClick} title={t('tree.cardTitle')}>
       <span className={`lifeDot ${personStatusClass(person)}`} aria-label={personStatusLabel(person, language)} title={personStatusLabel(person, language)} />
       <span className="treeCardMenu" aria-hidden="true"><MoreHorizontal size={18} strokeWidth={2.4} /></span>
       <span className="treePortraitFrame">
