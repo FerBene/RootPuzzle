@@ -2006,10 +2006,10 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
           {layout.temporal.hasUnknownDates && <div className="temporalTick unknown" style={{ top: viewport.y + layout.temporal.unknownY * viewport.scale }}><span>{t('tree.unknownDate')}</span></div>}
         </div>}
         <div className="canvasFloatingControls">
-          <button className="primaryButton canvasNewPieceButton" type="button" onClick={onAdd}>
+          <button className="primaryButton canvasNewPieceButton" type="button" onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onClick={onAdd}>
             {t('actions.newPiece')}
           </button>
-          <button className={`iconButton canvasMaximizeButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')} aria-label={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')}>
+          <button className={`iconButton canvasMaximizeButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')} aria-label={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')}>
             {isCanvasMaximized ? <Minimize2 size={18} strokeWidth={2} aria-hidden="true" /> : <Maximize2 size={18} strokeWidth={2} aria-hidden="true" />}
           </button>
         </div>

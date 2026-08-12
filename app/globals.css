@@ -172,6 +172,7 @@ h1 { font-size: 34px; margin-bottom: 0; } h2 { font-size: 26px; margin-bottom: 6
 
 /* Floating canvas controls (maximize, etc.) */
 .canvasFloatingControls { position: absolute; top: 12px; right: 12px; z-index: 6; display: flex; gap: 8px; pointer-events: auto; }
+.canvasFloatingControls button { touch-action: manipulation; user-select: auto; }
 .canvasFloatingControls .canvasMaximizeButton { width: 44px; height: 44px; padding: 0; display: inline-grid; place-items: center; background: rgba(255,255,255,.9); border-radius: 9px; box-shadow: 0 8px 22px rgba(31,37,33,.06); }
 .canvasFloatingControls .canvasNewPieceButton { white-space: nowrap; box-shadow: 0 8px 22px rgba(31,37,33,.12); }
 
