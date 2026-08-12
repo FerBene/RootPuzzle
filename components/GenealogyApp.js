@@ -19,8 +19,8 @@ const I18N = {
   es: {
     appSubtitle: 'Genealogía web',
     loading: { openingTree: 'Abriendo tu árbol' },
-    nav: { expand: 'Expandir menú', collapse: 'Colapsar menú', navigation: 'Navegación', rootsShort: 'Raíces', timelineShort: 'Tiempo', profileShort: 'Perfil' },
-    sections: { tree: 'Mis raíces', people: 'Piezas', timeline: 'Línea de tiempo', sources: 'Fuentes', data: 'Datos', profile: 'Mi perfil' },
+    nav: { expand: 'Expandir menú', collapse: 'Colapsar menú', navigation: 'Navegación', rootsShort: 'Raíces', timelineShort: 'Historia', profileShort: 'Perfil' },
+    sections: { tree: 'Mis raíces', people: 'Piezas', timeline: 'Historia', sources: 'Fuentes', data: 'Datos', profile: 'Mi perfil' },
     subtitles: {
       tree: 'Visualiza y navega el árbol familiar.',
       people: 'Gestiona las piezas registradas y sus perfiles.',
@@ -56,8 +56,8 @@ const I18N = {
   en: {
     appSubtitle: 'Genealogy web',
     loading: { openingTree: 'Opening your tree' },
-    nav: { expand: 'Expand menu', collapse: 'Collapse menu', navigation: 'Navigation', rootsShort: 'Roots', timelineShort: 'Time', profileShort: 'Profile' },
-    sections: { tree: 'My roots', people: 'Pieces', timeline: 'Timeline', sources: 'Sources', data: 'Data', profile: 'My profile' },
+    nav: { expand: 'Expand menu', collapse: 'Collapse menu', navigation: 'Navigation', rootsShort: 'Roots', timelineShort: 'History', profileShort: 'Profile' },
+    sections: { tree: 'My roots', people: 'Pieces', timeline: 'History', sources: 'Sources', data: 'Data', profile: 'My profile' },
     subtitles: { tree: 'View and explore your family tree.', people: 'Manage registered pieces and profiles.', timeline: 'Review events in chronological order.', sources: 'Organize your research sources.', data: 'Import, export and back up your tree.', profile: 'Account and preferences.' },
     actions: { newPiece: '+ New piece', newSource: '+ New source', cancel: 'Cancel', savePiece: 'Save piece', saveEvent: 'Save event', saveSource: 'Save source', edit: 'Edit', viewInTree: 'View in tree', add: '+ Add', remove: 'Remove', import: 'Import', exportJson: 'Export JSON', exportGedcom: 'Export GEDCOM', exportPdf: 'Export PDF', generateLink: 'Generate link', activateDetective: 'Activate detective', accept: 'Accept', reject: 'Reject', acceptPiece: 'Accept piece', rejectPiece: 'Reject', importPiece: 'Import piece', tools: 'Tools', hideTools: 'Hide tools', allPieces: 'All pieces', focusedBranch: 'Focused branch', uploadImage: 'Upload image', copy: 'Copy', downloadPiece: 'Download piece' },
     stats: { pieces: 'pieces', links: 'links', events: 'events', sources: 'sources', results: 'results', dated: 'dated', pending: 'pending', accepted: 'accepted', rejected: 'rejected' },
@@ -101,9 +101,7 @@ const useI18n = () => useContext(LanguageContext);
 const sections = [
   ['tree', 'sections.tree', IconHome],
   ['people', 'sections.people', IconPieces],
-  ['timeline', 'sections.timeline', IconTimeline],
-  ['sources', 'sections.sources', IconSources],
-  ['data', 'sections.data', IconData]
+  ['timeline', 'sections.timeline', IconTimeline]
 ];
 
 const sectionHashMap = {
@@ -198,8 +196,8 @@ const readCanvasBackgroundImage = (file) => new Promise((resolve, reject) => {
 });
 
 const TREE_CARD_VARIANTS = {
-  landscape: { variant: 'portrait', width: 150, height: 168, columnGap: 22, rowGap: 54 },
-  portrait: { variant: 'portrait', width: 146, height: 164, columnGap: 18, rowGap: 52 }
+  landscape: { variant: 'portrait', width: 150, height: 168, columnGap: 10, rowGap: 42, maxColumnGap: 44 },
+  portrait: { variant: 'portrait', width: 146, height: 164, columnGap: 8, rowGap: 40, maxColumnGap: 40 }
 };
 const TREE_CARD_DEFAULT = TREE_CARD_VARIANTS.landscape;
 const TREE_CARD_WIDTH = TREE_CARD_DEFAULT.width;
@@ -207,8 +205,11 @@ const TREE_CARD_HEIGHT = TREE_CARD_DEFAULT.height;
 const TREE_COLUMN_GAP = TREE_CARD_DEFAULT.columnGap;
 const TREE_ROW_GAP = TREE_CARD_DEFAULT.rowGap;
 const TREE_BRANCH_GAP_SLOTS = 0.1;
-const TREE_MIN_CARD_GAP = 16;
-const TREE_GROUP_GAP_SLOTS = 0.55;
+const TREE_MIN_CARD_GAP = 8;
+const TREE_GROUP_GAP_SLOTS = 0.35;
+// Keep independent family components visually separated even when cards within
+// each component use the tighter mobile-friendly spacing.
+const TREE_COMPONENT_GAP_SLOTS = 1.4;
 const TEMPORAL_AXIS_WIDTH = 96;
 const TEMPORAL_AXIS_GAP = 20;
 const TEMPORAL_TOP_PADDING = 70;
@@ -696,12 +697,12 @@ const positionTreeNodes = (nodes, edgesByKey, cardMetrics = TREE_CARD_DEFAULT) =
   const maxSlot = Math.max(...nodes.map((node) => node.slot));
   const minGeneration = Math.min(...nodes.map((node) => node.generation));
   const maxGeneration = Math.max(...nodes.map((node) => node.generation));
-  const paddingX = 64;
-  const paddingY = 58;
+  const paddingX = 42;
+  const paddingY = 46;
   const slotSize = cardWidth + cardMetrics.columnGap;
   const rowSize = cardHeight + cardMetrics.rowGap;
-  let width = Math.max(960, (maxSlot - minSlot) * slotSize + cardWidth + paddingX * 2);
-  const height = Math.max(520, (maxGeneration - minGeneration) * rowSize + cardHeight + paddingY * 2);
+  let width = Math.max(760, (maxSlot - minSlot) * slotSize + cardWidth + paddingX * 2);
+  const height = Math.max(460, (maxGeneration - minGeneration) * rowSize + cardHeight + paddingY * 2);
 
   const positionedNodes = nodes.map((node) => ({
     ...node,
@@ -1206,7 +1207,7 @@ const buildAllPeopleLayout = (db, focusId, language = 'es', cardMetrics = TREE_C
           });
       });
 
-      componentOffset += componentWidth + 1.4;
+      componentOffset += componentWidth + TREE_COMPONENT_GAP_SLOTS;
     });
 
   const edgesByKey = [
@@ -1767,7 +1768,7 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
 
     const canvasWidth = Math.max(1, canvas.clientWidth - xOffset);
     const canvasHeight = Math.max(1, canvas.clientHeight);
-    const padding = Math.max(28, Math.min(72, Math.min(canvasWidth, canvasHeight) * 0.08));
+    const padding = Math.max(14, Math.min(42, Math.min(canvasWidth, canvasHeight) * 0.045));
     const availableWidth = Math.max(1, canvasWidth - padding * 2);
     const availableHeight = Math.max(1, canvasHeight - padding * 2);
     const contentWidth = Math.max(1, bounds.maxX - bounds.minX);
@@ -2005,13 +2006,12 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
           {layout.temporal.hasUnknownDates && <div className="temporalTick unknown" style={{ top: viewport.y + layout.temporal.unknownY * viewport.scale }}><span>{t('tree.unknownDate')}</span></div>}
         </div>}
         <div className="canvasFloatingControls">
+          <button className="primaryButton canvasNewPieceButton" type="button" onClick={onAdd}>
+            {t('actions.newPiece')}
+          </button>
           <button className={`iconButton canvasMaximizeButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')} aria-label={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')}>
-                {isCanvasMaximized ? (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 10v-4h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 14v4h-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 3l-9 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M8 8h3M13 13h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                )}
-              </button>
+            {isCanvasMaximized ? <Minimize2 size={18} strokeWidth={2} aria-hidden="true" /> : <Maximize2 size={18} strokeWidth={2} aria-hidden="true" />}
+          </button>
         </div>
         <div className="treePanLayer" style={{ transform: `translate(${viewport.x + (temporalScale && layout.temporal ? TEMPORAL_AXIS_WIDTH + TEMPORAL_AXIS_GAP : 0)}px, ${viewport.y}px) scale(${viewport.scale})` }}>
           <div className="treeContent" style={{ width: layout.width, height: layout.height, '--tree-card-width': `${cardMetrics.width}px`, '--tree-card-height': `${cardMetrics.height}px` }}>
@@ -2122,10 +2122,53 @@ function PublicTreePage({ db }) {
   const [contributionPersonId, setContributionPersonId] = useState(null);
   const [showContributionForm, setShowContributionForm] = useState(false);
   const dragRef = useRef(null);
+  const canvasRef = useRef(null);
   const layout = useMemo(() => buildAllPeopleLayout(db, '', language, cardMetrics), [db, language, cardMetrics]);
 
   // Allow free scaling in public view as well
   const setZoom = (nextScale) => setViewport((prev) => ({ ...prev, scale: nextScale }));
+  const fitActiveCards = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !layout.nodes.length) {
+      setViewport({ x: 24, y: 18, scale: 0.82 });
+      return;
+    }
+
+    const bounds = layout.nodes.reduce((acc, node) => ({
+      minX: Math.min(acc.minX, node.x),
+      minY: Math.min(acc.minY, node.y),
+      maxX: Math.max(acc.maxX, node.x + cardMetrics.width),
+      maxY: Math.max(acc.maxY, node.y + cardMetrics.height)
+    }), { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
+
+    const canvasWidth = Math.max(1, canvas.clientWidth);
+    const canvasHeight = Math.max(1, canvas.clientHeight);
+    const padding = Math.max(14, Math.min(42, Math.min(canvasWidth, canvasHeight) * 0.045));
+    const availableWidth = Math.max(1, canvasWidth - padding * 2);
+    const availableHeight = Math.max(1, canvasHeight - padding * 2);
+    const contentWidth = Math.max(1, bounds.maxX - bounds.minX);
+    const contentHeight = Math.max(1, bounds.maxY - bounds.minY);
+    const scale = Math.min(
+      1.08,
+      availableWidth / contentWidth,
+      availableHeight / contentHeight
+    );
+    const nextScale = Number.isFinite(scale) && scale > 0 ? scale : 0.82;
+    const contentCenterX = bounds.minX + contentWidth / 2;
+    const contentCenterY = bounds.minY + contentHeight / 2;
+
+    setViewport({
+      x: canvasWidth / 2 - contentCenterX * nextScale,
+      y: canvasHeight / 2 - contentCenterY * nextScale,
+      scale: nextScale
+    });
+  };
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(fitActiveCards);
+    return () => cancelAnimationFrame(frame);
+  }, [layout]);
+
   const openContribution = (personId = '') => {
     setContributionPersonId(personId);
     setShowContributionForm(true);
@@ -2223,7 +2266,7 @@ function PublicTreePage({ db }) {
             <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale + 0.12)} title={t('tree.zoomIn')}>+</button>
           </div>
         </div>
-        <div className="treeCanvas publicCanvas" onWheel={(event) => { event.preventDefault(); setZoom(viewport.scale + (event.deltaY > 0 ? -0.08 : 0.08)); }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
+        <div ref={canvasRef} className="treeCanvas publicCanvas" onWheel={(event) => { event.preventDefault(); setZoom(viewport.scale + (event.deltaY > 0 ? -0.08 : 0.08)); }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
           <div className="treePanLayer" style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})` }}>
             <div className="treeContent" style={{ width: layout.width, height: layout.height, '--tree-card-width': `${cardMetrics.width}px`, '--tree-card-height': `${cardMetrics.height}px` }}>
               {(layout.groups || []).map((group) => <div key={group.id} className={`familyGroupBand ${group.kind}`} style={{ left: group.x, top: group.y, width: group.width, height: group.height }}><span>{group.label}</span></div>)}
@@ -2764,7 +2807,7 @@ export default function GenealogyApp() {
   const profilePerson = selected || db.people.find((person) => person.id === db.settings.rootPersonId) || db.people[0] || { givenNames: 'Mi', surnames: 'perfil', email: '' };
   const topbarAction = section === 'sources'
     ? <button className="primaryButton" onClick={() => setSourceModal(true)}>{t('actions.newSource')}</button>
-    : ['tree', 'people'].includes(section)
+    : section === 'people'
       ? <button className="primaryButton" onClick={() => setPersonModal({ mode: 'new' })}>{t('actions.newPiece')}</button>
       : null;
   const showTopbarStats = section === 'tree';
@@ -2802,7 +2845,7 @@ export default function GenealogyApp() {
         <header className="topbar">
           <div className="topbarTitle">
             <p className="eyebrow">{db.settings.treeName}</p>
-            <h1>{t(`sections.${section}`)}</h1>
+            {section !== 'tree' && <h1>{t(`sections.${section}`)}</h1>}
             <p className="topbarSubtitle">{t(`subtitles.${section}`)}</p>
           </div>
           <div className="topbarActions">
@@ -2882,6 +2925,16 @@ export default function GenealogyApp() {
               <div className="profileNotice"><small>{t('profile.notice')}</small></div>
             </div>
           </div>
+          <div className="profileTools">
+            <button className="secondaryButton iconTextButton" type="button" onClick={() => setSection('sources')}>
+              {IconSources}
+              <span>{t('sections.sources')}</span>
+            </button>
+            <button className="secondaryButton iconTextButton" type="button" onClick={() => setSection('data')}>
+              {IconData}
+              <span>{t('sections.data')}</span>
+            </button>
+          </div>
         </section>}
 
       </section>
@@ -2899,14 +2952,6 @@ export default function GenealogyApp() {
         <button className={section === 'timeline' ? 'active' : ''} onClick={() => setSection('timeline')} aria-label={t('sections.timeline')} title={t('sections.timeline')}>
           {IconTimeline}
           <small>{t('nav.timelineShort')}</small>
-        </button>
-        <button className={section === 'sources' ? 'active' : ''} onClick={() => setSection('sources')} aria-label={t('sections.sources')} title={t('sections.sources')}>
-          {IconSources}
-          <small>{t('sections.sources')}</small>
-        </button>
-        <button className={section === 'data' ? 'active' : ''} onClick={() => setSection('data')} aria-label={t('sections.data')} title={t('sections.data')}>
-          {IconData}
-          <small>{t('sections.data')}</small>
         </button>
         <button className={section === 'profile' ? 'active' : ''} onClick={() => setSection('profile')} aria-label={t('profile.title')} title={t('profile.title')}>
           {IconProfile}

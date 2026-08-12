@@ -173,6 +173,7 @@ h1 { font-size: 34px; margin-bottom: 0; } h2 { font-size: 26px; margin-bottom: 6
 /* Floating canvas controls (maximize, etc.) */
 .canvasFloatingControls { position: absolute; top: 12px; right: 12px; z-index: 6; display: flex; gap: 8px; pointer-events: auto; }
 .canvasFloatingControls .canvasMaximizeButton { width: 44px; height: 44px; padding: 0; display: inline-grid; place-items: center; background: rgba(255,255,255,.9); border-radius: 9px; box-shadow: 0 8px 22px rgba(31,37,33,.06); }
+.canvasFloatingControls .canvasNewPieceButton { white-space: nowrap; box-shadow: 0 8px 22px rgba(31,37,33,.12); }
 
 /* Maximized workspace uses fixed positioning to occupy the entire viewport */
 .treeWorkspace.canvasMaximized { position: fixed; inset: 0; z-index: 9999; margin: 0; width: 100%; height: 100%; border-radius: 0; background: var(--surface); display: block; }
@@ -444,6 +445,8 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .profileCard > div { min-width: 0; }
 .profileCard strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(16px, 2vw, 20px); }
 .profileSettings { display: grid; gap: 12px; }
+.profileTools { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 22px 22px; }
+.profileTools .iconTextButton { min-height: 40px; }
 .profileSetting { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, auto); align-items: center; gap: 16px; padding: 14px 16px; }
 .profileSetting > div:first-child { min-width: 0; display: grid; gap: 3px; }
 .profileSetting strong { color: var(--ink); font-size: 13px; font-weight: 900; }
@@ -456,6 +459,7 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 @media (max-width: 720px) {
   .profilePanel { max-width: none; }
   .profileAccount { padding: 16px; }
+  .profileTools { padding: 0 16px 16px; }
   .profileSetting { grid-template-columns: 1fr; align-items: stretch; }
   .profileSetting .toggleSwitch { min-width: 0; width: 100%; }
 }
@@ -705,7 +709,7 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 @media (max-width: 760px) {
   .sidebar { display: none !important; }
   .section-tree.mainArea { padding: 8px 8px 76px; }
-  .section-tree .topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+  .section-tree .topbar { display: none; }
   .section-tree .topbarTitle .eyebrow,
   .section-tree .topbarSubtitle,
   .section-tree .topbarStats { display: none; }
@@ -720,6 +724,7 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
   .section-tree .treeToolbar.toolsCollapsed .treeControls { display: none; }
   .section-tree .treeToolbar.toolsCollapsed { display: flex; align-items: center; border-bottom: 0; }
   .section-tree .treeToolbar.toolsOpen { display: grid; grid-template-columns: 1fr; align-items: stretch; }
+  .section-tree .treeToolbar.toolsOpen .canvasToolsToggle { justify-self: start; }
   .section-tree .treeScope { grid-template-columns: 1fr auto; gap: 6px; }
   .section-tree .treeScope label span { display: none; }
   .section-tree .treeScope select { height: 36px; font-size: 11px; }
