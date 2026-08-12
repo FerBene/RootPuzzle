@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { defaultDatabase, displayName, emptyDatabase, newId, normalizeDatabase, relativesFor, STORAGE_KEY } from '@/lib/model';
 import { exportGedcom, importGedcom } from '@/lib/gedcom';
 import { getRemoteTree, remoteTreeStorageKey, saveRemoteTree } from '@/lib/supabaseStore';
-import { isSupabaseConfigured } from '@/lib/supabaseClient';
+import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
 import { BookOpen, CalendarDays, ChevronsLeft, ChevronsRight, Database, FileDown, Hourglass, Image as ImageIcon, LocateFixed, Maximize2, Minimize2, Moon, MoreHorizontal, Puzzle, SlidersHorizontal, Sprout, Sun, UsersRound, ZoomIn, ZoomOut, UserCircle } from 'lucide-react';
 
 const iconProps = { size: 20, strokeWidth: 1.9, 'aria-hidden': true };
@@ -42,6 +42,7 @@ const I18N = {
     drawer: { viewMode: 'Modo vista', editMode: 'Modo edición', personalFile: 'Ficha personal', editPerson: 'Editar persona', editing: 'Editando', view: 'Vista', deletePerson: 'Eliminar persona', editingNotice: 'Estás modificando los datos de esta persona. Guardar actualiza la ficha y vuelve al modo vista.', viewingNotice: 'Estás viendo la ficha. Usá Editar para cambiar datos.', person: 'Persona', datesToResearch: 'Fechas por investigar', family: 'Familia', parents: 'Padres', partners: 'Parejas', children: 'Hijos', addParent: 'Agregar padre/madre', addPartner: 'Agregar pareja', addChild: 'Agregar hijo/a', timeline: 'Línea de tiempo', noEvents: 'Todavía no hay eventos registrados.', noData: 'Sin datos', choosePerson: 'Elegir persona…', removeLink: 'Eliminar vínculo' },
     facts: { nickname: 'Apodo', email: 'Email', birth: 'Nacimiento', death: 'Fallecimiento', occupation: 'Ocupación', notes: 'Notas' },
     status: { living: 'Vivo/a', deceased: 'Fallecido/a' },
+    auth: { login: 'Iniciar sesión', register: 'Crear cuenta', email: 'Email', password: 'Contraseña', confirmPassword: 'Repetir contraseña', submitLogin: 'Entrar', submitRegister: 'Registrarme', forgot: '¿Olvidaste tu contraseña?', reset: 'Enviar enlace de recuperación', backToLogin: 'Volver al inicio de sesión', noAccount: '¿Todavía no tenés una cuenta?', hasAccount: '¿Ya tenés una cuenta?', signup: 'Registrate', signin: 'Iniciá sesión', welcome: 'Tu historia familiar, protegida', subtitle: 'Ingresá para continuar construyendo y documentando tus raíces.', configured: 'La autenticación está disponible porque el proyecto está conectado a Supabase.', passwordMismatch: 'Las contraseñas no coinciden.', successRegister: 'Cuenta creada. Revisá tu email para confirmar el acceso.', successReset: 'Te enviamos un enlace para restablecer tu contraseña.', genericError: 'No pudimos completar la operación.' },
     timeline: { intro: 'Eventos de todas las personas, ordenados por fecha conocida. Los eventos sin fecha quedan al final.', all: 'Todos', noEventsTitle: 'No hay eventos para mostrar', noEventsBody: 'Agregá eventos desde la ficha de una persona para construir la cronología familiar.', noPlaceDescription: 'Sin lugar ni descripción.' },
     data: { jsonTitle: 'Backup completo JSON', jsonBody: 'Guarda piezas, vínculos, eventos, fuentes y configuración.', gedcomBody: 'Intercambio básico con otras aplicaciones genealógicas.', pdfTitle: 'Exportar como PDF', pdfBody: 'Descarga un PDF del lienzo del árbol. Para respetar filtros, escala temporal y fondo, usá también el botón PDF dentro del lienzo.', publishTitle: 'Publicar árbol', publishBody: 'Genera un enlace público de solo lectura con nombres, relaciones, fechas y lugares. Quien lo vea puede aportar una pieza del rompecabezas familiar.', linkCopied: 'El enlace se copió al portapapeles si el navegador lo permitió.', syncTitle: 'Siguiente paso: sincronización', detectiveTitle: 'Activar detective', detectiveBody: 'Analiza el árbol vigente, genera hipótesis, arma búsquedas en actas/censos/registros y deja sugerencias aceptables o rechazables con fuente citada.', investigating: 'Investigando…', importPieceTitle: 'Importar pieza', importPieceBody: 'Importa una sugerencia enviada desde el árbol público para revisarla antes de actualizar tu árbol.', warningTitle: 'Importante sobre esta versión:' },
     sources: { emptyTitle: 'Todavía no cargaste fuentes', emptyBody: 'Podés registrar actas, censos, libros parroquiales, fotografías, entrevistas y páginas web.', noRepository: 'Repositorio no indicado', openReference: 'Abrir referencia ↗' },
@@ -72,6 +73,7 @@ const I18N = {
     drawer: { viewMode: 'View mode', editMode: 'Edit mode', personalFile: 'Personal profile', editPerson: 'Edit person', editing: 'Editing', view: 'View', deletePerson: 'Delete person', editingNotice: 'You are editing this person. Saving updates the profile and returns to view mode.', viewingNotice: 'You are viewing the profile. Use Edit to change data.', person: 'Person', datesToResearch: 'Dates to research', family: 'Family', parents: 'Parents', partners: 'Partners', children: 'Children', addParent: 'Add parent', addPartner: 'Add partner', addChild: 'Add child', timeline: 'Timeline', noEvents: 'No events registered yet.', noData: 'No data', choosePerson: 'Choose person…', removeLink: 'Remove link' },
     facts: { nickname: 'Nickname', email: 'Email', birth: 'Birth', death: 'Death', occupation: 'Occupation', notes: 'Notes' },
     status: { living: 'Living', deceased: 'Deceased' },
+    auth: { login: 'Sign in', register: 'Create account', email: 'Email', password: 'Password', confirmPassword: 'Repeat password', submitLogin: 'Sign in', submitRegister: 'Create account', forgot: 'Forgot your password?', reset: 'Send recovery link', backToLogin: 'Back to sign in', noAccount: "Don't have an account yet?", hasAccount: 'Already have an account?', signup: 'Sign up', signin: 'Sign in', welcome: 'Your family story, protected', subtitle: 'Sign in to keep building and documenting your roots.', configured: 'Authentication is available because the project is connected to Supabase.', passwordMismatch: 'Passwords do not match.', successRegister: 'Account created. Check your email to confirm access.', successReset: 'We sent you a password recovery link.', genericError: 'We could not complete the operation.' },
     timeline: { intro: 'Events for all people, sorted by known date. Undated events appear at the end.', all: 'All', noEventsTitle: 'No events to show', noEventsBody: 'Add events from a person profile to build the family timeline.', noPlaceDescription: 'No place or description.' },
     data: { jsonTitle: 'Full JSON backup', jsonBody: 'Saves pieces, links, events, sources and settings.', gedcomBody: 'Basic exchange with other genealogy apps.', pdfTitle: 'Export as PDF', pdfBody: 'Download a PDF of the tree canvas. To preserve filters, timeline scale and background, also use the PDF button inside the canvas.', publishTitle: 'Publish tree', publishBody: 'Generate a read-only public link with names, relationships, dates and places. Viewers can contribute a family puzzle piece.', linkCopied: 'The link was copied to the clipboard if the browser allowed it.', syncTitle: 'Next step: sync', detectiveTitle: 'Activate detective', detectiveBody: 'Analyzes the current tree, generates hypotheses, searches records and leaves source-backed suggestions to accept or reject.', investigating: 'Investigating…', importPieceTitle: 'Import piece', importPieceBody: 'Import a suggestion sent from the public tree to review it before updating your tree.', warningTitle: 'Important about this version:' },
     sources: { emptyTitle: 'You have not added sources yet', emptyBody: 'You can register certificates, censuses, parish books, civil records, photos, interviews and websites.', noRepository: 'Repository not specified', openReference: 'Open reference ↗' },
@@ -2443,6 +2445,47 @@ function PuzzleSuggestionsPanel({ suggestions, db, onAccept, onReject }) {
   );
 }
 
+function AuthScreen({ language, onLanguageChange }) {
+  const t = (key) => translate(language, key);
+  const [mode, setMode] = useState('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const submit = async (event) => {
+    event.preventDefault(); setError(''); setMessage('');
+    if (!supabase) return;
+    if (mode === 'register' && password !== confirmPassword) { setError(t('auth.passwordMismatch')); return; }
+    setBusy(true);
+    const result = mode === 'reset'
+      ? await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
+      : mode === 'login' ? await supabase.auth.signInWithPassword({ email, password }) : await supabase.auth.signUp({ email, password });
+    setBusy(false);
+    if (result.error) setError(result.error.message);
+    else if (mode === 'reset') setMessage(t('auth.successReset'));
+    else if (mode === 'register' && !result.data.session) setMessage(t('auth.successRegister'));
+  };
+  const reset = () => { setError(''); setMessage(''); setMode('login'); };
+  return <main className="authShell"><section className="authCard">
+    <div className="authBrand"><div className="authBrandMark"><img src="/raices-logo.png" alt="" /></div><span>Root Puzzle</span></div>
+    <div className="authIntro"><p className="eyebrow">{t('sections.tree')}</p><h1>{t('auth.welcome')}</h1><p>{t('auth.subtitle')}</p></div>
+    {mode !== 'reset' && <div className="authTabs"><button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => { reset(); setMode('login'); }}>{t('auth.login')}</button><button type="button" className={mode === 'register' ? 'active' : ''} onClick={() => { reset(); setMode('register'); }}>{t('auth.register')}</button></div>}
+    <form className="authForm" onSubmit={submit}>
+      <label>{t('auth.email')}<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required /></label>
+      {mode !== 'reset' && <label>{t('auth.password')}<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={6} required /></label>}
+      {mode === 'register' && <label>{t('auth.confirmPassword')}<input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={6} required /></label>}
+      {error && <p className="authMessage error">{error}</p>}{message && <p className="authMessage success">{message}</p>}
+      <button className="primaryButton authSubmit" type="submit" disabled={busy}>{busy ? '…' : mode === 'reset' ? t('auth.reset') : mode === 'login' ? t('auth.submitLogin') : t('auth.submitRegister')}</button>
+    </form>
+    {mode === 'login' && <button type="button" className="textButton authLink" onClick={() => { setMode('reset'); setError(''); setMessage(''); }}>{t('auth.forgot')}</button>}
+    {mode === 'reset' && <button type="button" className="textButton authLink" onClick={reset}>{t('auth.backToLogin')}</button>}
+    {mode !== 'reset' && <p className="authSwitch">{mode === 'login' ? t('auth.noAccount') : t('auth.hasAccount')} <button type="button" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); setMessage(''); }}>{mode === 'login' ? t('auth.signup') : t('auth.signin')}</button></p>}
+    <div className="authFooter"><span>{t('auth.configured')}</span><button type="button" onClick={() => onLanguageChange(language === 'es' ? 'en' : 'es')}>{language === 'es' ? 'EN' : 'ES'}</button></div>
+  </section></main>;
+}
+
 export default function GenealogyApp() {
   const [db, setDb] = useState(emptyDatabase);
   const [publicDb, setPublicDb] = useState(null);
@@ -2463,6 +2506,8 @@ export default function GenealogyApp() {
   const [language, setLanguage] = useState('es');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [detectiveRunning, setDetectiveRunning] = useState(false);
+  const [authUser, setAuthUser] = useState(null);
+  const [authReady, setAuthReady] = useState(!isSupabaseConfigured);
   const [publicTreeUrl, setPublicTreeUrl] = useState('');
   const importRef = useRef(null);
   const gedcomRef = useRef(null);
@@ -2471,7 +2516,23 @@ export default function GenealogyApp() {
   const t = i18n.t;
 
   useEffect(() => {
+    if (!supabase) return undefined;
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setAuthUser(data.session?.user || null);
+      setAuthReady(true);
+    });
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthUser(session?.user || null);
+      setAuthReady(true);
+    });
+    return () => { mounted = false; authListener.subscription.unsubscribe(); };
+  }, []);
+
+  useEffect(() => {
     const initialize = async () => {
+      if (isSupabaseConfigured && !authUser && !window.location.hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) return;
       let savedLanguage = 'es';
       try {
         setDarkMode(localStorage.getItem(THEME_STORAGE_KEY) === 'dark');
@@ -2520,7 +2581,7 @@ export default function GenealogyApp() {
     };
 
     initialize();
-  }, []);
+  }, [authUser]);
 
   useEffect(() => {
     if (!hydrated || publicDb) return;
@@ -2812,6 +2873,8 @@ export default function GenealogyApp() {
     });
   };
 
+  if (!authReady) return <LanguageContext.Provider value={i18n}><AppLoader message={t('loading.openingTree')} /></LanguageContext.Provider>;
+  if (isSupabaseConfigured && !authUser && !publicDb) return <LanguageContext.Provider value={i18n}><AuthScreen language={language} onLanguageChange={setLanguage} /></LanguageContext.Provider>;
   if (!hydrated) return <LanguageContext.Provider value={i18n}><AppLoader message={t('loading.openingTree')} /></LanguageContext.Provider>;
   if (publicLoadError) return <LanguageContext.Provider value={i18n}><AppLoader message={publicLoadError} animated={false} /></LanguageContext.Provider>;
 
@@ -2852,6 +2915,7 @@ export default function GenealogyApp() {
                 <small>{profilePerson.email || t('profile.localAccount')}</small>
               </div>
             </button>
+            {isSupabaseConfigured && <button type="button" className="textButton sidebarSignOut" onClick={() => supabase?.auth.signOut()}>{language === 'es' ? 'Cerrar sesión' : 'Sign out'}</button>}
           </div>
         </div>
       </aside>
