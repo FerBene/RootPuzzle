@@ -2542,6 +2542,7 @@ export default function GenealogyApp() {
   const [publicDb, setPublicDb] = useState(null);
   const [publicLoadError, setPublicLoadError] = useState('');
   const [remoteTreeId, setRemoteTreeId] = useState(null);
+  const [remoteTreeDataReadyId, setRemoteTreeDataReadyId] = useState(null);
   const [accessibleTrees, setAccessibleTrees] = useState([]);
   const [currentTreeRole, setCurrentTreeRole] = useState(null);
   const [remoteSyncError, setRemoteSyncError] = useState('');
@@ -2608,6 +2609,7 @@ export default function GenealogyApp() {
   useEffect(() => {
     const initialize = async () => {
       if (isSupabaseConfigured && !authUser && !window.location.hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) return;
+      setRemoteTreeDataReadyId(null);
       let savedLanguage = 'es';
       try {
         setDarkMode(localStorage.getItem(THEME_STORAGE_KEY) === 'dark');
@@ -2648,6 +2650,7 @@ export default function GenealogyApp() {
           if (remoteTreeId) localStorage.setItem(remoteTreeStorageKey, remoteTreeId);
           const { data, error } = await getRemoteTree(remoteTreeId);
           if (error) {
+            setRemoteTreeDataReadyId(null);
             setRemoteSyncError(translate(savedLanguage, 'errors.supabaseConnect', { message: error.message || 'Revisa tus credenciales.' }));
           } else if (data?.data) {
             const remoteDb = normalizeDatabase(data.data);
@@ -2655,16 +2658,15 @@ export default function GenealogyApp() {
             setSelectedId(remoteDb.settings.rootPersonId || remoteDb.people[0]?.id || null);
             setFocusedId(remoteDb.settings.rootPersonId || remoteDb.people[0]?.id || null);
             setRemoteTreeId(data.id);
+            setRemoteTreeDataReadyId(data.id);
             localStorage.setItem(remoteTreeStorageKey, data.id);
-          } else if (nextDb.people.length > 0 && remoteTreeId) {
-            const { data: savedRemote, error: saveErr } = await saveRemoteTree({ id: remoteTreeId, data: nextDb });
-            if (!saveErr && savedRemote?.id) {
-              setRemoteTreeId(savedRemote.id);
-              localStorage.setItem(remoteTreeStorageKey, savedRemote.id);
-            }
+          } else {
+            setRemoteTreeDataReadyId(null);
+            setRemoteSyncError(translate(savedLanguage, 'errors.supabaseConnect', { message: 'No se pudo cargar el árbol seleccionado.' }));
           }
         }
       } catch {
+        setRemoteTreeDataReadyId(null);
         if (window.location.hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) setPublicLoadError(translate(savedLanguage, 'errors.publicLoad'));
         else setDb(defaultDatabase());
       } finally {
@@ -2724,7 +2726,7 @@ export default function GenealogyApp() {
   }, [section, publicDb]);
 
   useEffect(() => {
-    if (!hydrated || publicDb || !isSupabaseConfigured) return;
+    if (!hydrated || publicDb || !isSupabaseConfigured || !remoteTreeId || remoteTreeDataReadyId !== remoteTreeId) return;
     const syncRemote = async () => {
       const { data, error } = await saveRemoteTree({ id: remoteTreeId, data: db });
       if (error) {
@@ -2738,7 +2740,7 @@ export default function GenealogyApp() {
       setRemoteSyncError('');
     };
     syncRemote();
-  }, [db, hydrated, publicDb, remoteTreeId, t]);
+  }, [db, hydrated, publicDb, remoteTreeId, remoteTreeDataReadyId, t]);
 
   const selected = db.people.find((p) => p.id === selectedId) || null;
   const filteredPeople = useMemo(() => {
