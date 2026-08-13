@@ -57,6 +57,8 @@ a { color: var(--accent); }
 .treeMenu .treeMenuRename { margin-top: 4px; border-top: 1px solid rgba(255,255,255,.1); padding-top: 10px; color: #d8e4df; }
 .treeMenu .treeMenuCreate { margin-top: 4px; border-top: 1px solid rgba(255,255,255,.1); padding-top: 10px; color: #e6c48d; font-weight: 800; }
 .treeMenu .treeMenuDelete { margin-top: 4px; border-top: 1px solid rgba(255,255,255,.1); padding-top: 10px; color: #f0a49a; font-weight: 800; }
+.activeTreeEmpty { display: block; padding: 7px; color: #d9cfc5; font-size: 11px; }
+.standaloneTreeCreate { width: 100%; margin-top: 6px; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; }
 .sidebarSectionLabel { margin: 18px 7px 4px; }
 .sidebarAdminNav { margin-top: 0; }
 .newTreeForm { gap: 18px; }

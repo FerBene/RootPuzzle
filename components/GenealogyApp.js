@@ -2758,6 +2758,7 @@ export default function GenealogyApp() {
 
   const canEdit = !isSupabaseConfigured || currentTreeRole === 'owner' || currentTreeRole === 'editor';
   const isOwner = !isSupabaseConfigured || currentTreeRole === 'owner';
+  const canCreateTree = !isSupabaseConfigured || Boolean(authUser && (!remoteTreeId || currentTreeRole === 'owner'));
 
   useEffect(() => {
     if (!remoteTreeId || !isOwner || !isSupabaseConfigured) {
@@ -3118,13 +3119,18 @@ export default function GenealogyApp() {
             {sidebarCollapsed ? <ChevronsRight size={18} strokeWidth={1.9} aria-hidden="true" /> : <ChevronsLeft size={18} strokeWidth={1.9} aria-hidden="true" />}
           </button>
         </div>
-        {isSupabaseConfigured && remoteTreeId && <div className="sidebarTreeContext">
+        {isSupabaseConfigured && (remoteTreeId || accessibleTrees.length === 0) && <div className="sidebarTreeContext">
           <span className="sidebarContextLabel">ÁRBOL ACTIVO</span>
-          <button type="button" className={`activeTreeButton ${treeMenuOpen ? 'open' : ''}`} aria-expanded={treeMenuOpen} onClick={() => setTreeMenuOpen((value) => !value)}>
-            <span className="activeTreeIcon"><Sprout size={15} strokeWidth={2} /></span><span className="activeTreeName">{activeTree?.name || db.settings.treeName}</span><ChevronDown className="activeTreeChevron" size={15} strokeWidth={2.2} aria-hidden="true" />
-          </button>
-          <small>{currentTreeRole || 'viewer'}</small>
-          {treeMenuOpen && <div className="treeMenu" role="menu">
+          {remoteTreeId ? <>
+            <button type="button" className={`activeTreeButton ${treeMenuOpen ? 'open' : ''}`} aria-expanded={treeMenuOpen} onClick={() => setTreeMenuOpen((value) => !value)}>
+              <span className="activeTreeIcon"><Sprout size={15} strokeWidth={2} /></span><span className="activeTreeName">{activeTree?.name || db.settings.treeName}</span><ChevronDown className="activeTreeChevron" size={15} strokeWidth={2.2} aria-hidden="true" />
+            </button>
+            <small>{currentTreeRole || 'viewer'}</small>
+          </> : <>
+            <span className="activeTreeEmpty">No hay un árbol activo</span>
+            {canCreateTree && <button type="button" className="treeMenuCreate standaloneTreeCreate" onClick={openNewTreeModal}><span>+</span> Crear nuevo árbol</button>}
+          </>}
+          {remoteTreeId && treeMenuOpen && <div className="treeMenu" role="menu">
             <span className="treeMenuLabel">Tus árboles</span>
             {accessibleTrees.map((tree) => <button key={tree.id} type="button" className={tree.id === remoteTreeId ? 'selected' : ''} onClick={() => { setTreeMenuOpen(false); selectRemoteTree(tree.id); }}><span>{tree.id === remoteTreeId ? '✓' : ''}</span>{tree.name}</button>)}
             {isOwner && <button type="button" className="treeMenuRename" onClick={openRenameTreeModal}><span>✎</span> Editar nombre</button>}
