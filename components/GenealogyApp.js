@@ -3,9 +3,9 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { defaultDatabase, displayName, emptyDatabase, newId, normalizeDatabase, relativesFor, STORAGE_KEY } from '@/lib/model';
 import { exportGedcom, importGedcom } from '@/lib/gedcom';
-import { getRemoteTree, remoteTreeStorageKey, saveRemoteTree } from '@/lib/supabaseStore';
+import { acceptTreeInvitation, createRemoteTree, createTreeInvitation, getRemoteTree, listAccessibleTrees, listTreeInvitations, remoteTreeStorageKey, renameRemoteTree, revokeTreeInvitation, saveRemoteTree } from '@/lib/supabaseStore';
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
-import { BookOpen, CalendarDays, ChevronsLeft, ChevronsRight, Database, FileDown, Hourglass, Image as ImageIcon, LocateFixed, Maximize2, Minimize2, Moon, MoreHorizontal, Puzzle, SlidersHorizontal, Sprout, Sun, UsersRound, ZoomIn, ZoomOut, UserCircle } from 'lucide-react';
+import { BookOpen, CalendarDays, ChevronDown, ChevronsLeft, ChevronsRight, Copy, Database, FileDown, Hourglass, Image as ImageIcon, LocateFixed, Maximize2, Minimize2, Moon, MoreHorizontal, Puzzle, RotateCcw, ShieldCheck, SlidersHorizontal, Sprout, Sun, UserCircle, UserPlus, UsersRound, ZoomIn, ZoomOut } from 'lucide-react';
 
 const iconProps = { size: 20, strokeWidth: 1.9, 'aria-hidden': true };
 const IconHome = <Sprout {...iconProps} className="rootsNavIcon" />;
@@ -14,6 +14,7 @@ const IconTimeline = <Hourglass {...iconProps} />;
 const IconSources = <BookOpen {...iconProps} />;
 const IconData = <Database {...iconProps} />;
 const IconProfile = <UserCircle {...iconProps} />;
+const IconCollaborators = <UsersRound {...iconProps} />;
 
 const I18N = {
   es: {
@@ -35,7 +36,7 @@ const I18N = {
     placeholders: { birthYear: 'Ej. 1942', email: 'nombre@dominio.com', birthPlace: 'Ciudad, provincia, país', notes: 'Hipótesis, datos pendientes, variantes del apellido...', search: 'Buscar por nombre, apodo, apellido, lugar…', repository: 'FamilySearch, archivo provincial, parroquia…', sourceExplanation: 'Acta, censo, recuerdo familiar, enlace, archivo...' },
     modalTitles: { newPiece: 'Nueva pieza', newSource: 'Nueva fuente', newEvent: 'Nuevo evento · {name}' },
     people: { bioPending: 'Datos biográficos pendientes' },
-    tree: { branch: 'Rama', filters: 'Filtros de rama', tools: 'Herramientas del lienzo', scale: 'Escala', temporalScale: 'Escala temporal', background: 'Fondo', changeBackground: 'Cambiar fondo', center: 'Centrar', zoomIn: 'Acercar', zoomOut: 'Alejar', maximize: 'Maximizar lienzo', restore: 'Restaurar vista', ancestry: 'Ascendencia', descendants: 'Descendencia', generation: 'Generación', noDate: 'Fecha pendiente', unknownDate: 'Sin fecha', birthAxis: 'Nacimiento', hint: 'Arrastrá el lienzo para moverte. Usá la rueda o los botones para acercar y alejar.', cardTitle: 'Click: ver ficha. Doble click: centrar árbol.', siblings: 'Hermanos', partners: 'Parejas', familyGroup: 'Grupo familiar' },
+    tree: { branch: 'Rama', filters: 'Filtros de rama', tools: 'Herramientas del lienzo', scale: 'Escala', temporalScale: 'Escala temporal', background: 'Fondo', changeBackground: 'Cambiar fondo', center: 'Centrar', zoomIn: 'Acercar', zoomOut: 'Alejar', maximize: 'Maximizar lienzo', restore: 'Restaurar vista', ancestry: 'Ascendencia', descendants: 'Descendencia', generation: 'Generación', noDate: 'Fecha pendiente', unknownDate: 'Sin fecha', birthAxis: 'Nacimiento', hint: 'Arrastrá el lienzo para moverte. Usá la rueda o los botones para acercar y alejar.', cardTitle: 'Click: ver ficha. Doble click: centrar árbol.', siblings: 'Hermanos', partners: 'Parejas', familyGroup: 'Grupo familiar', selectTree: 'Árbol', newTree: 'Nuevo árbol', createTree: 'Crear árbol', role: 'Rol' },
     card: { birthDate: 'Fecha de nacimiento', familyBranch: 'Rama familiar', sources: 'Fuentes', noBranch: 'Rama pendiente', missingName: 'Nombre pendiente' },
     profile: { account: 'Cuenta', title: 'Mi perfil', subtitle: 'Accedé a tu perfil y ajustes', localNoEmail: 'Cuenta local sin email', localAccount: 'Cuenta local', visualPreference: 'Preferencia visual', darkActive: 'Interfaz oscura activa', lightActive: 'Interfaz clara activa', language: 'Idioma', esSelected: 'Español seleccionado', enSelected: 'English selected', changeToEnglish: 'Cambiar idioma a inglés', changeToSpanish: 'Cambiar idioma a español', notice: 'Perfil básico local. Para sincronizar y tener cuenta, configurá Supabase.', darkToLight: 'Cambiar a modo claro', lightToDark: 'Cambiar a modo oscuro' },
     empty: { title: 'Empezá por una pieza', body: 'El árbol se construye alrededor de piezas y vínculos. Podés cargar datos incompletos e ir documentándolos a medida que investigás.', firstPiece: '+ Agregar primera pieza' },
@@ -66,7 +67,7 @@ const I18N = {
     placeholders: { birthYear: 'Ex. 1942', email: 'name@domain.com', birthPlace: 'City, state, country', notes: 'Hypotheses, pending data, surname variants...', search: 'Search by name, nickname, surname, place…', repository: 'FamilySearch, provincial archive, parish…', sourceExplanation: 'Certificate, census, family memory, link, file...' },
     modalTitles: { newPiece: 'New piece', newSource: 'New source', newEvent: 'New event · {name}' },
     people: { bioPending: 'Biographical data pending' },
-    tree: { branch: 'Branch', filters: 'Branch filters', tools: 'Canvas tools', scale: 'Scale', temporalScale: 'Timeline scale', background: 'Background', changeBackground: 'Change background', center: 'Center', zoomIn: 'Zoom in', zoomOut: 'Zoom out', maximize: 'Maximize canvas', restore: 'Restore view', ancestry: 'Ancestry', descendants: 'Descendants', generation: 'Generation', noDate: 'Date pending', unknownDate: 'No date', birthAxis: 'Birth', hint: 'Drag the canvas to move. Use the wheel or buttons to zoom.', cardTitle: 'Click: view profile. Double click: focus tree.', siblings: 'Siblings', partners: 'Partners', familyGroup: 'Family group' },
+    tree: { branch: 'Branch', filters: 'Branch filters', tools: 'Canvas tools', scale: 'Scale', temporalScale: 'Timeline scale', background: 'Background', changeBackground: 'Change background', center: 'Center', zoomIn: 'Zoom in', zoomOut: 'Zoom out', maximize: 'Maximize canvas', restore: 'Restore view', ancestry: 'Ancestry', descendants: 'Descendants', generation: 'Generation', noDate: 'Date pending', unknownDate: 'No date', birthAxis: 'Birth', hint: 'Drag the canvas to move. Use the wheel or buttons to zoom.', cardTitle: 'Click: view profile. Double click: focus tree.', siblings: 'Siblings', partners: 'Partners', familyGroup: 'Family group', selectTree: 'Tree', newTree: 'New tree', createTree: 'Create tree', role: 'Role' },
     card: { birthDate: 'Birth date', familyBranch: 'Family branch', sources: 'Sources', noBranch: 'Branch pending', missingName: 'Name pending' },
     profile: { account: 'Account', title: 'My profile', subtitle: 'Access your profile and settings', localNoEmail: 'Local account without email', localAccount: 'Local account', visualPreference: 'Visual preference', darkActive: 'Dark interface active', lightActive: 'Light interface active', language: 'Language', esSelected: 'Spanish selected', enSelected: 'English selected', changeToEnglish: 'Switch language to English', changeToSpanish: 'Switch language to Spanish', notice: 'Local basic profile. Configure Supabase to sync and create an account.', darkToLight: 'Switch to light mode', lightToDark: 'Switch to dark mode' },
     empty: { title: 'Start with one piece', body: 'The tree is built around pieces and links. You can add incomplete data and document it as you research.', firstPiece: '+ Add first piece' },
@@ -103,7 +104,8 @@ const useI18n = () => useContext(LanguageContext);
 const sections = [
   ['tree', 'sections.tree', IconHome],
   ['people', 'sections.people', IconPieces],
-  ['timeline', 'sections.timeline', IconTimeline]
+  ['timeline', 'sections.timeline', IconTimeline],
+  ['collaborators', 'sections.collaborators', IconCollaborators]
 ];
 
 const sectionHashMap = {
@@ -111,6 +113,7 @@ const sectionHashMap = {
   tree: 'tree',
   people: 'people',
   timeline: 'timeline',
+  collaborators: 'collaborators',
   sources: 'sources',
   data: 'data',
   profile: 'profile'
@@ -1545,7 +1548,7 @@ function EmptyState({ onAdd }) {
       <div className="emptyMark"><img src="/raices-logo.png" alt="" /></div>
       <h2>{t('empty.title')}</h2>
       <p>{t('empty.body')}</p>
-      <button className="primaryButton" onClick={onAdd}>{t('empty.firstPiece')}</button>
+      {onAdd && <button className="primaryButton" onClick={onAdd}>{t('empty.firstPiece')}</button>}
     </div>
   );
 }
@@ -1565,7 +1568,7 @@ function PersonPicker({ people, excludeId, onPick, label }) {
   );
 }
 
-function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus, onLink, onDelete, onRemoveRelation, onAddEvent }) {
+function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus, onLink, onDelete, onRemoveRelation, onAddEvent, canEdit = true }) {
   const { language, t } = useI18n();
   useEffect(() => {
     const onKey = (event) => event.key === 'Escape' && onClose();
@@ -1595,9 +1598,9 @@ function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus
           </div>
           <div className="drawerHeaderActions">
             <span className={`modePill ${isEditing ? 'editing' : 'viewing'}`}>{isEditing ? t('drawer.editing') : t('drawer.view')}</span>
-            <button className="iconButton dangerIcon" type="button" onClick={onDelete} title={t('drawer.deletePerson')} aria-label={t('drawer.deletePerson')}>
+            {canEdit && <button className="iconButton dangerIcon" type="button" onClick={onDelete} title={t('drawer.deletePerson')} aria-label={t('drawer.deletePerson')}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 6h18" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 6v14a2 2 0 002 2h4a2 2 0 002-2V6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
+            </button>}
             <button className="iconButton" onClick={onClose}>×</button>
           </div>
         </div>
@@ -1611,7 +1614,7 @@ function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus
             <PersonAvatar person={person} large />
             <div><p className="eyebrow">{t('drawer.person')}</p><h2>{displayName(person)}</h2><p className="muted">{life || t('drawer.datesToResearch')}</p><span className={`statusPill ${personStatusClass(person)}`}>{personStatusLabel(person, language)}</span></div>
           </div>
-          <div className="detailActions"><button className="secondaryButton" onClick={() => onModeChange('edit')}>{t('actions.edit')}</button><button className="secondaryButton" onClick={() => openInTree()}>{t('actions.viewInTree')}</button></div>
+          <div className="detailActions">{canEdit && <button className="secondaryButton" onClick={() => onModeChange('edit')}>{t('actions.edit')}</button>}<button className="secondaryButton" onClick={() => openInTree()}>{t('actions.viewInTree')}</button></div>
           <dl className="factList">
             <div><dt>{t('facts.nickname')}</dt><dd>{displayField(person.nickname)}</dd></div>
             <div><dt>{t('facts.email')}</dt><dd>{person.email ? <a href={`mailto:${person.email}`}>{person.email}</a> : '-'}</dd></div>
@@ -1621,14 +1624,14 @@ function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus
             <div><dt>{t('facts.notes')}</dt><dd>{displayField(person.notes)}</dd></div>
           </dl>
           <section className="detailSection"><div className="sectionTitle"><h3>{t('drawer.family')}</h3></div>
-            <RelationList title={t('drawer.parents')} kind="parent" people={[...rel.parents].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={onRemoveRelation} />
-            <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('parent', id)} label={t('drawer.addParent')} />
-            <RelationList title={t('drawer.partners')} kind="partner" people={[...rel.partners].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={onRemoveRelation} />
-            <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('partner', id)} label={t('drawer.addPartner')} />
-            <RelationList title={t('drawer.children')} kind="child" people={[...rel.children].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={onRemoveRelation} />
-            <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('child', id)} label={t('drawer.addChild')} />
+            <RelationList title={t('drawer.parents')} kind="parent" people={[...rel.parents].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={canEdit ? onRemoveRelation : undefined} />
+            {canEdit && <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('parent', id)} label={t('drawer.addParent')} />}
+            <RelationList title={t('drawer.partners')} kind="partner" people={[...rel.partners].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={canEdit ? onRemoveRelation : undefined} />
+            {canEdit && <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('partner', id)} label={t('drawer.addPartner')} />}
+            <RelationList title={t('drawer.children')} kind="child" people={[...rel.children].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={canEdit ? onRemoveRelation : undefined} />
+            {canEdit && <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('child', id)} label={t('drawer.addChild')} />}
           </section>
-          <section className="detailSection"><div className="sectionTitle"><h3>{t('drawer.timeline')}</h3><button className="textButton" onClick={onAddEvent}>{t('actions.add')}</button></div>
+          <section className="detailSection"><div className="sectionTitle"><h3>{t('drawer.timeline')}</h3>{canEdit && <button className="textButton" onClick={onAddEvent}>{t('actions.add')}</button>}</div>
             {timeline.length ? <ol className="timelineList">{timeline.map((event) => <li key={event.id} className="timelineItem"><span className="timelineDot" /><div><strong>{event.type}</strong><span>{[event.date, event.place].filter(Boolean).join(' · ') || t('tree.noDate')}</span>{event.description && <p>{event.description}</p>}</div></li>)}</ol> : <p className="muted small">{t('drawer.noEvents')}</p>}
           </section>
         </div>}
@@ -2023,9 +2026,9 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
           {layout.temporal.hasUnknownDates && <div className="temporalTick unknown" style={{ top: viewport.y + layout.temporal.unknownY * viewport.scale }}><span>{t('tree.unknownDate')}</span></div>}
         </div>}
         <div className="canvasFloatingControls">
-          <button className="primaryButton canvasNewPieceButton" type="button" onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onClick={onAdd}>
+          {onAdd && <button className="primaryButton canvasNewPieceButton" type="button" onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onClick={onAdd}>
             {t('actions.newPiece')}
-          </button>
+          </button>}
           <button className={`iconButton canvasMaximizeButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')} aria-label={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')}>
             {isCanvasMaximized ? <Minimize2 size={18} strokeWidth={2} aria-hidden="true" /> : <Maximize2 size={18} strokeWidth={2} aria-hidden="true" />}
           </button>
@@ -2486,12 +2489,68 @@ function AuthScreen({ language, onLanguageChange }) {
   </section></main>;
 }
 
+function CollaboratorsPanel({ invitations, inviteLink, onInvite, onRevoke, isOwner = false }) {
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState('editor');
+  const [message, setMessage] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      await onInvite({ email, role, message });
+      setEmail('');
+      setMessage('');
+    } catch (inviteError) {
+      setError(inviteError.message || 'No se pudo crear la invitación.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copy = async () => {
+    await navigator.clipboard?.writeText(inviteLink);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  };
+
+  return <section className="collaboratorsPanel">
+    <div className="panelHeader">
+      <div><p className="eyebrow">Colaboración</p><h2><UsersRound size={21} /> Personas con acceso</h2><p className="muted">Invitá colaboradores y viewers a este árbol. El enlace funciona una sola vez y vence en 7 días.</p></div>
+    </div>
+    {!isOwner && <div className="collaboratorNotice"><ShieldCheck size={19} /><span>La administración de colaboradores está reservada al owner de este árbol.</span></div>}
+    {isOwner && <form className="inviteForm" onSubmit={submit}>
+      <div className="formField"><label htmlFor="invite-email">Email</label><input id="invite-email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="nombre@dominio.com" /></div>
+      <div className="formField"><label htmlFor="invite-role">Permiso</label><select id="invite-role" value={role} onChange={(event) => setRole(event.target.value)}><option value="editor">Editor · puede modificar datos</option><option value="viewer">Viewer · solo lectura</option></select></div>
+      <div className="formField inviteMessage"><label htmlFor="invite-message">Mensaje opcional</label><input id="invite-message" value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Te invito a colaborar en este árbol…" /></div>
+      <button className="primaryButton inviteSubmit" type="submit" disabled={busy}><UserPlus size={16} />{busy ? 'Generando…' : 'Generar invitación'}</button>
+    </form>}
+    {isOwner && error && <p className="formError">{error}</p>}
+    {isOwner && inviteLink && <div className="inviteLinkBox"><strong>Enlace listo para enviar</strong><div><input readOnly value={inviteLink} onFocus={(event) => event.target.select()} /><button className="secondaryButton" type="button" onClick={copy}><Copy size={15} />{copied ? 'Copiado' : 'Copiar'}</button></div><small>Copialo y envialo por email o mensajería. El destinatario debe registrarse con ese mismo email.</small></div>}
+    {isOwner && <div className="membersList">
+      {invitations.length === 0 ? <div className="softEmpty compact"><ShieldCheck size={24} /><p>Todavía no hay invitaciones.</p></div> : invitations.map((invitation) => <div className="memberRow" key={invitation.id}><div><strong>{invitation.email}</strong><small>{invitation.status === 'pending' ? `Pendiente · vence ${new Date(invitation.expires_at).toLocaleDateString('es-AR')}` : invitation.status === 'accepted' ? 'Aceptada' : invitation.status === 'revoked' ? 'Revocada' : 'Vencida'}</small></div><span className={`roleBadge ${invitation.role}`}>{invitation.role}</span>{invitation.status === 'pending' && <button className="iconButton" type="button" title="Revocar invitación" onClick={() => onRevoke(invitation.id)}><RotateCcw size={15} /></button>}</div>)}
+    </div>}
+  </section>;
+}
+
 export default function GenealogyApp() {
   const [db, setDb] = useState(emptyDatabase);
   const [publicDb, setPublicDb] = useState(null);
   const [publicLoadError, setPublicLoadError] = useState('');
   const [remoteTreeId, setRemoteTreeId] = useState(null);
+  const [accessibleTrees, setAccessibleTrees] = useState([]);
+  const [currentTreeRole, setCurrentTreeRole] = useState(null);
   const [remoteSyncError, setRemoteSyncError] = useState('');
+  const [treeInvitations, setTreeInvitations] = useState([]);
+  const [inviteLink, setInviteLink] = useState('');
+  const [treeMenuOpen, setTreeMenuOpen] = useState(false);
+  const [newTreeModalOpen, setNewTreeModalOpen] = useState(false);
+  const [newTreeName, setNewTreeName] = useState('');
+  const [treeNameModalMode, setTreeNameModalMode] = useState('create');
   const [hydrated, setHydrated] = useState(false);
   const [section, setSection] = useState('tree');
   const [selectedId, setSelectedId] = useState(null);
@@ -2531,6 +2590,22 @@ export default function GenealogyApp() {
   }, []);
 
   useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get('invite');
+    if (!authUser || !token || !supabase) return;
+    window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+    acceptTreeInvitation(token).then(({ data, error }) => {
+      if (error) {
+        window.alert(error.message || 'No se pudo aceptar la invitación.');
+        return;
+      }
+      if (data?.tree_id) {
+        localStorage.setItem(remoteTreeStorageKey, data.tree_id);
+        window.location.reload();
+      }
+    });
+  }, [authUser]);
+
+  useEffect(() => {
     const initialize = async () => {
       if (isSupabaseConfigured && !authUser && !window.location.hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) return;
       let savedLanguage = 'es';
@@ -2544,8 +2619,7 @@ export default function GenealogyApp() {
           setHydrated(true);
           return;
         }
-        const remoteTreeId = localStorage.getItem(remoteTreeStorageKey);
-        setRemoteTreeId(remoteTreeId);
+        let remoteTreeId = localStorage.getItem(remoteTreeStorageKey);
         const saved = localStorage.getItem(STORAGE_KEY);
         const parsed = saved ? normalizeDatabase(JSON.parse(saved)) : defaultDatabase();
         const nextDb = parsed.people.length ? parsed : defaultDatabase();
@@ -2554,17 +2628,35 @@ export default function GenealogyApp() {
         setFocusedId(nextDb.settings.rootPersonId || nextDb.people[0]?.id || null);
 
         if (isSupabaseConfigured) {
+          const { data: trees, error: treesError } = await listAccessibleTrees();
+          if (treesError) throw treesError;
+          setAccessibleTrees(trees || []);
+          const selectedTree = (trees || []).find((tree) => tree.id === remoteTreeId) || trees?.[0];
+          if (!selectedTree) {
+            const { data: createdTree, error: createError } = await createRemoteTree({ name: nextDb.settings.treeName });
+            if (createError) throw createError;
+            remoteTreeId = createdTree?.id;
+            if (createdTree) {
+              setAccessibleTrees([createdTree]);
+              setCurrentTreeRole(createdTree.role || 'owner');
+            }
+          } else {
+            remoteTreeId = selectedTree.id;
+            setCurrentTreeRole(selectedTree.role);
+          }
+          setRemoteTreeId(remoteTreeId || null);
+          if (remoteTreeId) localStorage.setItem(remoteTreeStorageKey, remoteTreeId);
           const { data, error } = await getRemoteTree(remoteTreeId);
           if (error) {
             setRemoteSyncError(translate(savedLanguage, 'errors.supabaseConnect', { message: error.message || 'Revisa tus credenciales.' }));
-          } else if (data?.data && data.data.people && data.data.people.length > 0) {
+          } else if (data?.data) {
             const remoteDb = normalizeDatabase(data.data);
             setDb(remoteDb);
             setSelectedId(remoteDb.settings.rootPersonId || remoteDb.people[0]?.id || null);
             setFocusedId(remoteDb.settings.rootPersonId || remoteDb.people[0]?.id || null);
             setRemoteTreeId(data.id);
             localStorage.setItem(remoteTreeStorageKey, data.id);
-          } else if (nextDb.people.length > 0) {
+          } else if (nextDb.people.length > 0 && remoteTreeId) {
             const { data: savedRemote, error: saveErr } = await saveRemoteTree({ id: remoteTreeId, data: nextDb });
             if (!saveErr && savedRemote?.id) {
               setRemoteTreeId(savedRemote.id);
@@ -2656,6 +2748,90 @@ export default function GenealogyApp() {
   }, [db.people, query]);
 
   const updateDb = (fn) => setDb((prev) => normalizeDatabase(fn(prev)));
+
+  const canEdit = !isSupabaseConfigured || currentTreeRole === 'owner' || currentTreeRole === 'editor';
+  const isOwner = !isSupabaseConfigured || currentTreeRole === 'owner';
+
+  useEffect(() => {
+    if (!remoteTreeId || !isOwner || !isSupabaseConfigured) {
+      setTreeInvitations([]);
+      return;
+    }
+    listTreeInvitations(remoteTreeId).then(({ data, error }) => {
+      if (!error) setTreeInvitations(data || []);
+    });
+  }, [remoteTreeId, isOwner]);
+
+  const inviteCollaborator = async ({ email, role, message }) => {
+    const { data, error } = await createTreeInvitation({ treeId: remoteTreeId, email, role, message });
+    if (error) throw error;
+    const url = `${window.location.origin}${window.location.pathname}?invite=${encodeURIComponent(data.token)}`;
+    setInviteLink(url);
+    const { data: refreshed } = await listTreeInvitations(remoteTreeId);
+    setTreeInvitations(refreshed || []);
+    return url;
+  };
+
+  const revokeInvitation = async (invitationId) => {
+    const { error } = await revokeTreeInvitation(invitationId);
+    if (error) {
+      window.alert(error.message || 'No se pudo revocar la invitación.');
+      return;
+    }
+    setTreeInvitations((items) => items.map((item) => item.id === invitationId ? { ...item, status: 'revoked', revoked_at: new Date().toISOString() } : item));
+  };
+
+  const selectRemoteTree = (treeId) => {
+    const tree = accessibleTrees.find((item) => item.id === treeId);
+    if (!tree || tree.id === remoteTreeId) return;
+    localStorage.setItem(remoteTreeStorageKey, tree.id);
+    window.location.reload();
+  };
+
+  const createTree = async (name) => {
+    if (!name?.trim()) return false;
+    const { data, error } = await createRemoteTree({ name: name.trim() });
+    if (error || !data?.id) {
+      setRemoteSyncError(error?.message || t('errors.supabaseConnect', { message: 'No se pudo crear el árbol.' }));
+      return false;
+    }
+    setNewTreeModalOpen(false);
+    setNewTreeName('');
+    localStorage.setItem(remoteTreeStorageKey, data.id);
+    window.location.reload();
+    return true;
+  };
+
+  const openNewTreeModal = () => {
+    setTreeMenuOpen(false);
+    setTreeNameModalMode('create');
+    setNewTreeName(language === 'es' ? 'Mi árbol familiar' : 'My family tree');
+    setNewTreeModalOpen(true);
+  };
+
+  const openRenameTreeModal = () => {
+    setTreeMenuOpen(false);
+    setTreeNameModalMode('rename');
+    setNewTreeName(activeTree?.name || db.settings.treeName || '');
+    setNewTreeModalOpen(true);
+  };
+
+  const saveTreeName = async (name) => {
+    if (!name?.trim() || !remoteTreeId) return;
+    if (treeNameModalMode === 'create') {
+      await createTree(name);
+      return;
+    }
+    const { data, error } = await renameRemoteTree({ treeId: remoteTreeId, name: name.trim() });
+    if (error || !data?.id) {
+      setRemoteSyncError(error?.message || 'No se pudo renombrar el árbol.');
+      return;
+    }
+    setAccessibleTrees((trees) => trees.map((tree) => tree.id === remoteTreeId ? { ...tree, name: data.name } : tree));
+    setDb((previous) => normalizeDatabase({ ...previous, settings: { ...previous.settings, treeName: data.name } }));
+    setNewTreeModalOpen(false);
+    setNewTreeName('');
+  };
 
   const savePerson = (form, relation) => {
     const now = new Date().toISOString();
@@ -2883,7 +3059,8 @@ export default function GenealogyApp() {
     : t('sync.local');
   if (publicDb) return <LanguageContext.Provider value={i18n}><PublicTreePage db={publicDb} /></LanguageContext.Provider>;
   const profilePerson = selected || db.people.find((person) => person.id === db.settings.rootPersonId) || db.people[0] || { givenNames: 'Mi', surnames: 'perfil', email: '' };
-  const topbarAction = section === 'sources'
+  const activeTree = accessibleTrees.find((tree) => tree.id === remoteTreeId);
+  const topbarAction = !canEdit ? null : section === 'sources'
     ? <button className="primaryButton" onClick={() => setSourceModal(true)}>{t('actions.newSource')}</button>
     : section === 'people'
       ? <button className="primaryButton" onClick={() => setPersonModal({ mode: 'new' })}>{t('actions.newPiece')}</button>
@@ -2901,9 +3078,27 @@ export default function GenealogyApp() {
             {sidebarCollapsed ? <ChevronsRight size={18} strokeWidth={1.9} aria-hidden="true" /> : <ChevronsLeft size={18} strokeWidth={1.9} aria-hidden="true" />}
           </button>
         </div>
-        <nav>{sections.map(([id, label, icon]) => {
-          const sectionLabel = t(label);
+        {isSupabaseConfigured && remoteTreeId && <div className="sidebarTreeContext">
+          <span className="sidebarContextLabel">ÁRBOL ACTIVO</span>
+          <button type="button" className={`activeTreeButton ${treeMenuOpen ? 'open' : ''}`} aria-expanded={treeMenuOpen} onClick={() => setTreeMenuOpen((value) => !value)}>
+            <span className="activeTreeIcon"><Sprout size={15} strokeWidth={2} /></span><span className="activeTreeName">{activeTree?.name || db.settings.treeName}</span><ChevronDown className="activeTreeChevron" size={15} strokeWidth={2.2} aria-hidden="true" />
+          </button>
+          <small>{currentTreeRole || 'viewer'}</small>
+          {treeMenuOpen && <div className="treeMenu" role="menu">
+            <span className="treeMenuLabel">Tus árboles</span>
+            {accessibleTrees.map((tree) => <button key={tree.id} type="button" className={tree.id === remoteTreeId ? 'selected' : ''} onClick={() => { setTreeMenuOpen(false); selectRemoteTree(tree.id); }}><span>{tree.id === remoteTreeId ? '✓' : ''}</span>{tree.name}</button>)}
+            {isOwner && <button type="button" className="treeMenuRename" onClick={openRenameTreeModal}><span>✎</span> Editar nombre</button>}
+            {isOwner && <button type="button" className="treeMenuCreate" onClick={openNewTreeModal}><span>+</span> Crear nuevo árbol</button>}
+          </div>}
+        </div>}
+        <nav>{sections.filter(([id]) => id !== 'collaborators').map(([id, label, icon]) => {
+          const sectionLabel = id === 'collaborators' ? 'Colaboradores' : t(label);
           return <button key={id} title={sectionLabel} className={section === id ? 'active' : ''} onClick={() => { setSection(id); }}><span className="navIcon">{icon}</span><span className="navLabel">{sectionLabel}</span></button>;
+        })}</nav>
+        <div className="sidebarSectionLabel">ADMINISTRACIÓN</div>
+        <nav className="sidebarAdminNav">{sections.filter(([id]) => id === 'collaborators').map(([id, label, icon]) => {
+          const sectionLabel = 'Colaboradores';
+          return <button key={id} title={sectionLabel} className={section === id ? 'active' : ''} onClick={() => setSection(id)}><span className="navIcon">{icon}</span><span className="navLabel">{sectionLabel}</span></button>;
         })}</nav>
         <div className="sidebarBottom">
           <div className="sidebarProfile">
@@ -2924,8 +3119,8 @@ export default function GenealogyApp() {
         <header className="topbar">
           <div className="topbarTitle">
             <p className="eyebrow">{db.settings.treeName}</p>
-            {section !== 'tree' && <h1>{t(`sections.${section}`)}</h1>}
-            <p className="topbarSubtitle">{t(`subtitles.${section}`)}</p>
+            {section !== 'tree' && <h1>{section === 'collaborators' ? 'Colaboradores' : t(`sections.${section}`)}</h1>}
+            <p className="topbarSubtitle">{section === 'collaborators' ? 'Administrá el acceso al árbol activo.' : t(`subtitles.${section}`)}</p>
           </div>
           <div className="topbarActions">
             {showTopbarStats && <div className="topbarStats">
@@ -2938,14 +3133,14 @@ export default function GenealogyApp() {
           </div>
         </header>
 
-        {section === 'tree' && <TreeView db={db} focusedId={focusedId} setFocusedId={(id) => { setFocusedId(id); setSelectedId(id); }} onOpenPerson={(id) => openPersonDrawer(id, 'view')} onAdd={() => setPersonModal({ mode: 'new' })} />}
+        {section === 'tree' && <TreeView db={db} focusedId={focusedId} setFocusedId={(id) => { setFocusedId(id); setSelectedId(id); }} onOpenPerson={(id) => openPersonDrawer(id, 'view')} onAdd={canEdit ? () => setPersonModal({ mode: 'new' }) : undefined} />}
 
         {section === 'timeline' && <TimelineView db={db} onOpenPerson={(id) => { setSelectedId(id); setFocusedId(id); setSection('people'); }} />}
 
         {section === 'people' && <div className="peopleLayout peopleListOnly">
           <section className="peoplePane">
             <div className="paneToolbar"><input className="searchInput" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('placeholders.search')} /><span>{filteredPeople.length} {t('stats.results')}</span></div>
-            {db.people.length === 0 ? <EmptyState onAdd={() => setPersonModal({ mode: 'new' })} /> : <div className="personList">{filteredPeople.map((person) => <button key={person.id} className={`personRow ${personStatusClass(person)} ${selectedId === person.id ? 'selected' : ''}`} onClick={() => openPersonDrawer(person.id, 'view')}><PersonAvatar person={person} /><div><strong>{displayName(person)}</strong><span>{[person.birthDate, person.birthPlace].filter(Boolean).join(' · ') || t('people.bioPending')}</span></div><span className="chevron">›</span></button>)}</div>}
+            {db.people.length === 0 ? <EmptyState onAdd={canEdit ? () => setPersonModal({ mode: 'new' }) : undefined} /> : <div className="personList">{filteredPeople.map((person) => <button key={person.id} className={`personRow ${personStatusClass(person)} ${selectedId === person.id ? 'selected' : ''}`} onClick={() => openPersonDrawer(person.id, 'view')}><PersonAvatar person={person} /><div><strong>{displayName(person)}</strong><span>{[person.birthDate, person.birthPlace].filter(Boolean).join(' · ') || t('people.bioPending')}</span></div><span className="chevron">›</span></button>)}</div>}
           </section>
         </div>}
 
@@ -3016,6 +3211,10 @@ export default function GenealogyApp() {
           </div>
         </section>}
 
+        {section === 'collaborators' && <section className="contentPanel collaboratorsPage">
+          <CollaboratorsPanel invitations={treeInvitations} inviteLink={inviteLink} onInvite={inviteCollaborator} onRevoke={revokeInvitation} isOwner={isOwner} />
+        </section>}
+
       </section>
 
       {/* Mobile bottom navigation (visible on small screens) */}
@@ -3038,10 +3237,17 @@ export default function GenealogyApp() {
         </button>
       </nav>
 
-      {drawerPersonId && <PersonDrawer db={db} person={db.people.find((p) => p.id === drawerPersonId)} mode={drawerMode} onModeChange={setDrawerMode} onClose={() => { setDrawerPersonId(null); setDrawerMode('view'); }} onSave={saveExistingPerson} onFocus={openInTree} onLink={linkPerson} onRemoveRelation={(kind, otherId) => removeRelation(drawerPersonId, kind, otherId)} onDelete={deleteSelected} onAddEvent={() => setEventModal(true)} />}
+      {drawerPersonId && <PersonDrawer db={db} person={db.people.find((p) => p.id === drawerPersonId)} mode={drawerMode} onModeChange={setDrawerMode} onClose={() => { setDrawerPersonId(null); setDrawerMode('view'); }} onSave={saveExistingPerson} onFocus={openInTree} onLink={linkPerson} onRemoveRelation={(kind, otherId) => removeRelation(drawerPersonId, kind, otherId)} onDelete={deleteSelected} onAddEvent={() => setEventModal(true)} canEdit={canEdit} />}
       {personModal && <Modal title={t('modalTitles.newPiece')} onClose={() => setPersonModal(null)}><PersonForm initial={personModal.person} people={db.people} showRelation onCancel={() => setPersonModal(null)} onSave={savePerson} /></Modal>}
       {eventModal && selected && <EventForm person={selected} onClose={() => setEventModal(false)} onSave={addEvent} />}
       {sourceModal && <SourceForm onClose={() => setSourceModal(false)} onSave={(source) => { updateDb((prev) => ({ ...prev, sources: [...prev.sources, { id: newId('source'), ...source }] })); setSourceModal(false); }} />}
+      {newTreeModalOpen && <Modal title={treeNameModalMode === 'rename' ? (language === 'es' ? 'Editar nombre del árbol' : 'Edit tree name') : (language === 'es' ? 'Crear nuevo árbol' : 'Create new tree')} onClose={() => setNewTreeModalOpen(false)}>
+        <form className="formStack newTreeForm" onSubmit={(event) => { event.preventDefault(); saveTreeName(newTreeName); }}>
+          <div className="newTreeIntro"><span className="newTreeIntroIcon"><Sprout size={22} strokeWidth={1.8} /></span><div><strong>{treeNameModalMode === 'rename' ? (language === 'es' ? 'Elegí un nombre claro para identificarlo' : 'Choose a clear name to identify it') : (language === 'es' ? 'Un nuevo espacio para tu historia familiar' : 'A new space for your family story')}</strong><p>{treeNameModalMode === 'rename' ? (language === 'es' ? 'El cambio se aplica solo a este árbol y no modifica sus registros.' : 'This only changes this tree name and does not modify its records.') : (language === 'es' ? 'Podrás invitar colaboradores y administrar este árbol por separado.' : 'You can invite collaborators and manage this tree separately.')}</p></div></div>
+          <label htmlFor="new-tree-name">{language === 'es' ? 'Nombre del árbol' : 'Tree name'}<input id="new-tree-name" autoFocus required maxLength={80} value={newTreeName} onChange={(event) => setNewTreeName(event.target.value)} placeholder={language === 'es' ? 'Ej. Familia Benítez' : 'Ex. Benitez family'} /></label>
+          <div className="modalActions"><button className="secondaryButton" type="button" onClick={() => setNewTreeModalOpen(false)}>{t('actions.cancel')}</button><button className="primaryButton" type="submit">{treeNameModalMode === 'rename' ? (language === 'es' ? 'Guardar nombre' : 'Save name') : (language === 'es' ? 'Crear árbol' : 'Create tree')}</button></div>
+        </form>
+      </Modal>}
     </main>
     </LanguageContext.Provider>
   );
