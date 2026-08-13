@@ -3089,19 +3089,16 @@ export default function GenealogyApp() {
     ? remoteSyncError ? t('sync.failing', { message: remoteSyncError }) : t('sync.synced', { suffix: remoteTreeId ? '' : t('sync.creating') })
     : t('sync.local');
   if (publicDb) return <LanguageContext.Provider value={i18n}><PublicTreePage db={publicDb} /></LanguageContext.Provider>;
-  const accountProfile = useMemo(() => {
-    const metadata = authUser?.user_metadata || {};
-    const email = authUser?.email || '';
-    const displayNameFromMetadata = metadata.full_name || metadata.name || '';
-    const emailName = email.split('@')[0] || '';
-    return {
-      id: authUser?.id || 'local-account',
-      givenNames: displayNameFromMetadata || emailName || (language === 'es' ? 'Mi cuenta' : 'My account'),
-      surnames: '',
-      email,
-      profileImage: metadata.avatar_url || metadata.picture || ''
-    };
-  }, [authUser, language]);
+  const accountMetadata = authUser?.user_metadata || {};
+  const accountEmail = authUser?.email || '';
+  const accountName = accountMetadata.full_name || accountMetadata.name || accountEmail.split('@')[0] || (language === 'es' ? 'Mi cuenta' : 'My account');
+  const accountProfile = {
+    id: authUser?.id || 'local-account',
+    givenNames: accountName,
+    surnames: '',
+    email: accountEmail,
+    profileImage: accountMetadata.avatar_url || accountMetadata.picture || ''
+  };
   const activeTree = accessibleTrees.find((tree) => tree.id === remoteTreeId);
   const topbarAction = !canEdit ? null : section === 'sources'
     ? <button className="primaryButton" onClick={() => setSourceModal(true)}>{t('actions.newSource')}</button>
