@@ -56,6 +56,7 @@ a { color: var(--accent); }
 .treeMenu button span { width: 11px; color: #e3ae75; font-weight: 900; }
 .treeMenu .treeMenuRename { margin-top: 4px; border-top: 1px solid rgba(255,255,255,.1); padding-top: 10px; color: #d8e4df; }
 .treeMenu .treeMenuCreate { margin-top: 4px; border-top: 1px solid rgba(255,255,255,.1); padding-top: 10px; color: #e6c48d; font-weight: 800; }
+.treeMenu .treeMenuDelete { margin-top: 4px; border-top: 1px solid rgba(255,255,255,.1); padding-top: 10px; color: #f0a49a; font-weight: 800; }
 .sidebarSectionLabel { margin: 18px 7px 4px; }
 .sidebarAdminNav { margin-top: 0; }
 .newTreeForm { gap: 18px; }
@@ -1911,6 +1912,14 @@ input:focus, select:focus, textarea:focus { border-color: #c77a4e; box-shadow: 0
 .publishCard, .puzzleCard { background: #f8eee6; border-color: #e4cdbd; }
 .dataIcon { background: #f4eadf; color: #a9572e; }
 .modal { background: #fffaf3; border: 1px solid #e5d8c9; }
+.destructiveModal { display: grid; gap: 12px; }
+.destructiveModalIcon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 15px; color: #a43c35; background: #f9e4df; }
+.destructiveModalLead, .destructiveModalQuestion { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.destructiveModalQuestion { color: var(--ink); font-weight: 800; }
+.destructiveModalError { color: #a43c35; font-size: 11px; font-weight: 700; }
+.dangerButton { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #a43c35; border-radius: 9px; padding: 9px 13px; color: #fffaf3; background: #a43c35; font-weight: 800; cursor: pointer; }
+.dangerButton:hover { background: #8e302b; }
+.dangerButton:disabled { opacity: .45; cursor: not-allowed; }
 .appShell.darkMode .sidebar { background: #171512; }
 .appShell.darkMode .sidebar nav button:hover,
 .appShell.darkMode .sidebar nav button.active { background: #3a2d25; box-shadow: inset 3px 0 0 #d98555; }

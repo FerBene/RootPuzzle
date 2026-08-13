@@ -3,9 +3,9 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { defaultDatabase, displayName, emptyDatabase, newId, normalizeDatabase, relativesFor, STORAGE_KEY } from '@/lib/model';
 import { exportGedcom, importGedcom } from '@/lib/gedcom';
-import { acceptTreeInvitation, createRemoteTree, createTreeInvitation, getRemoteTree, listAccessibleTrees, listTreeInvitations, remoteTreeStorageKey, renameRemoteTree, revokeTreeInvitation, saveRemoteTree } from '@/lib/supabaseStore';
+import { acceptTreeInvitation, createRemoteTree, createTreeInvitation, deleteRemoteTree, getRemoteTree, listAccessibleTrees, listTreeInvitations, remoteTreeStorageKey, renameRemoteTree, revokeTreeInvitation, saveRemoteTree } from '@/lib/supabaseStore';
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
-import { BookOpen, CalendarDays, ChevronDown, ChevronsLeft, ChevronsRight, Copy, Database, FileDown, Hourglass, Image as ImageIcon, LocateFixed, Maximize2, Minimize2, Moon, MoreHorizontal, Puzzle, RotateCcw, ShieldCheck, SlidersHorizontal, Sprout, Sun, UserCircle, UserPlus, UsersRound, ZoomIn, ZoomOut } from 'lucide-react';
+import { AlertTriangle, BookOpen, CalendarDays, ChevronDown, ChevronsLeft, ChevronsRight, Copy, Database, FileDown, Hourglass, Image as ImageIcon, LocateFixed, Maximize2, Minimize2, Moon, MoreHorizontal, Puzzle, RotateCcw, ShieldCheck, SlidersHorizontal, Sprout, Sun, Trash2, UserCircle, UserPlus, UsersRound, ZoomIn, ZoomOut } from 'lucide-react';
 
 const iconProps = { size: 20, strokeWidth: 1.9, 'aria-hidden': true };
 const IconHome = <Sprout {...iconProps} className="rootsNavIcon" />;
@@ -52,6 +52,7 @@ const I18N = {
     warning: { localStorage: 'al estar pensada como MVP web sin cuenta ni servidor de base de datos, los datos se guardan en localStorage del navegador. Hacé backups JSON periódicos. Si borrás los datos del navegador, también se borra el árbol local.' },
     errors: { imageLoad: 'No pude cargar esa imagen.', publicLoad: 'No pude abrir este enlace público. Puede estar incompleto o dañado.', jsonRead: 'No pude leer ese backup JSON.', gedcomRead: 'No pude interpretar ese GEDCOM. Esta versión soporta el núcleo GEDCOM 5.5/5.5.1.', pieceRead: 'No pude leer esa pieza. Verificá que sea un JSON generado desde el árbol público.', supabaseConnect: 'No pude conectar con Supabase: {message}', supabaseSave: 'No pude guardar los cambios en Supabase: {message}' },
     confirms: { deletePerson: '¿Eliminar a {name}? También se eliminarán sus vínculos y eventos.', replaceData: 'Esto reemplazará los datos actuales de este navegador. ¿Continuar?', importGedcom: 'Se importarán {count} personas y se reemplazarán los datos actuales. ¿Continuar?' },
+    deletion: { personTitle: 'Eliminar persona', personLead: 'Esta acción quitará la ficha y sus vínculos del árbol.', personConfirm: '¿Querés eliminar a {name}?', treeTitle: 'Eliminar árbol', treeLead: 'El árbol se ocultará y sus datos quedarán conservados como borrado lógico.', treeConfirm: 'Para confirmar, escribí el nombre exacto del árbol.', treeAction: 'Eliminar árbol', typeName: 'Nombre del árbol', mismatch: 'El nombre no coincide.', cancel: 'Conservar árbol' },
     sync: { failing: 'Sincronización en la nube falla: {message}', synced: 'Sincronizado con Supabase{suffix}', creating: ' (creando registro remoto)', local: 'Supabase no está configurado. Usa localStorage y agrega las variables NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.' },
     public: { publicTree: 'Árbol público', readOnly: 'personas publicadas · solo lectura', contribute: '🧩 Aportar pieza', publicView: 'Vista pública', familyTree: 'Árbol familiar', clickToContribute: 'Hacé click en una persona para aportar una pieza sobre esa ficha.', contributionIntro: 'Cada aporte es una pieza del rompecabezas familiar. El dueño del árbol podrá importarla, revisar la fuente y aceptarla o rechazarla.', yourContact: 'Tu nombre o contacto', optional: 'Opcional', suggestEdit: 'Sugerir edición', addPiece: 'Agregar pieza', personToEdit: 'Persona a editar', suggestedRelation: 'Relación sugerida', relatedPerson: 'Persona vinculada', sourceExplanation: 'Fuente o explicación', generatePiece: 'Generar pieza', pieceReady: 'Pieza lista para enviar', pieceReadyBody: 'Descargala y enviasela al dueño del árbol para que la importe en su sección Importar / Exportar.', downloadPiece: 'Descargar pieza', copy: 'Copiar' }
   },
@@ -83,6 +84,7 @@ const I18N = {
     warning: { localStorage: 'this MVP runs without an account or database server, so data is stored in browser localStorage. Make periodic JSON backups. If you clear browser data, the local tree is removed too.' },
     errors: { imageLoad: 'I could not load that image.', publicLoad: 'I could not open this public link. It may be incomplete or damaged.', jsonRead: 'I could not read that JSON backup.', gedcomRead: 'I could not interpret that GEDCOM. This version supports the GEDCOM 5.5/5.5.1 core.', pieceRead: 'I could not read that piece. Check that it is a JSON generated from the public tree.', supabaseConnect: 'I could not connect to Supabase: {message}', supabaseSave: 'I could not save changes to Supabase: {message}' },
     confirms: { deletePerson: 'Delete {name}? Their links and events will also be removed.', replaceData: 'This will replace the current data in this browser. Continue?', importGedcom: '{count} people will be imported and current data will be replaced. Continue?' },
+    deletion: { personTitle: 'Delete person', personLead: 'This removes the profile and its links from the tree.', personConfirm: 'Delete {name}?', treeTitle: 'Delete tree', treeLead: 'The tree will be hidden and its data kept as a soft delete.', treeConfirm: 'To confirm, type the tree name exactly.', treeAction: 'Delete tree', typeName: 'Tree name', mismatch: 'The name does not match.', cancel: 'Keep tree' },
     sync: { failing: 'Cloud sync is failing: {message}', synced: 'Synced with Supabase{suffix}', creating: ' (creating remote record)', local: 'Supabase is not configured. It uses localStorage; add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.' },
     public: { publicTree: 'Public tree', readOnly: 'published people · read only', contribute: '🧩 Contribute piece', publicView: 'Public view', familyTree: 'Family tree', clickToContribute: 'Click a person to contribute a piece about that profile.', contributionIntro: 'Each contribution is a family puzzle piece. The tree owner can import it, review the source and accept or reject it.', yourContact: 'Your name or contact', optional: 'Optional', suggestEdit: 'Suggest edit', addPiece: 'Add piece', personToEdit: 'Person to edit', suggestedRelation: 'Suggested relationship', relatedPerson: 'Related person', sourceExplanation: 'Source or explanation', generatePiece: 'Generate piece', pieceReady: 'Piece ready to send', pieceReadyBody: 'Download it and send it to the tree owner so they can import it from Import / Export.', downloadPiece: 'Download piece', copy: 'Copy' }
   }
@@ -2552,6 +2554,9 @@ export default function GenealogyApp() {
   const [newTreeModalOpen, setNewTreeModalOpen] = useState(false);
   const [newTreeName, setNewTreeName] = useState('');
   const [treeNameModalMode, setTreeNameModalMode] = useState('create');
+  const [treeDeleteModalOpen, setTreeDeleteModalOpen] = useState(false);
+  const [treeDeleteName, setTreeDeleteName] = useState('');
+  const [personDeleteModalOpen, setPersonDeleteModalOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [section, setSection] = useState('tree');
   const [selectedId, setSelectedId] = useState(null);
@@ -2818,6 +2823,24 @@ export default function GenealogyApp() {
     setNewTreeModalOpen(true);
   };
 
+  const openDeleteTreeModal = () => {
+    setTreeMenuOpen(false);
+    setTreeDeleteName('');
+    setTreeDeleteModalOpen(true);
+  };
+
+  const confirmDeleteTree = async () => {
+    if (!activeTree || treeDeleteName !== activeTree.name) return;
+    const { error } = await deleteRemoteTree({ treeId: remoteTreeId });
+    if (error) {
+      setRemoteSyncError(error.message || 'No se pudo eliminar el árbol.');
+      return;
+    }
+    setTreeDeleteModalOpen(false);
+    localStorage.removeItem(remoteTreeStorageKey);
+    window.location.reload();
+  };
+
   const saveTreeName = async (name) => {
     if (!name?.trim() || !remoteTreeId) return;
     if (treeNameModalMode === 'create') {
@@ -2899,7 +2922,13 @@ export default function GenealogyApp() {
   };
 
   const deleteSelected = () => {
-    if (!selected || !confirm(t('confirms.deletePerson', { name: displayName(selected) }))) return;
+    if (!selected) return;
+    setPersonDeleteModalOpen(true);
+  };
+
+  const confirmDeleteSelected = () => {
+    if (!selected) return;
+    setPersonDeleteModalOpen(false);
     const id = selected.id;
     updateDb((prev) => ({
       ...prev,
@@ -3060,7 +3089,19 @@ export default function GenealogyApp() {
     ? remoteSyncError ? t('sync.failing', { message: remoteSyncError }) : t('sync.synced', { suffix: remoteTreeId ? '' : t('sync.creating') })
     : t('sync.local');
   if (publicDb) return <LanguageContext.Provider value={i18n}><PublicTreePage db={publicDb} /></LanguageContext.Provider>;
-  const profilePerson = selected || db.people.find((person) => person.id === db.settings.rootPersonId) || db.people[0] || { givenNames: 'Mi', surnames: 'perfil', email: '' };
+  const accountProfile = useMemo(() => {
+    const metadata = authUser?.user_metadata || {};
+    const email = authUser?.email || '';
+    const displayNameFromMetadata = metadata.full_name || metadata.name || '';
+    const emailName = email.split('@')[0] || '';
+    return {
+      id: authUser?.id || 'local-account',
+      givenNames: displayNameFromMetadata || emailName || (language === 'es' ? 'Mi cuenta' : 'My account'),
+      surnames: '',
+      email,
+      profileImage: metadata.avatar_url || metadata.picture || ''
+    };
+  }, [authUser, language]);
   const activeTree = accessibleTrees.find((tree) => tree.id === remoteTreeId);
   const topbarAction = !canEdit ? null : section === 'sources'
     ? <button className="primaryButton" onClick={() => setSourceModal(true)}>{t('actions.newSource')}</button>
@@ -3091,6 +3132,7 @@ export default function GenealogyApp() {
             {accessibleTrees.map((tree) => <button key={tree.id} type="button" className={tree.id === remoteTreeId ? 'selected' : ''} onClick={() => { setTreeMenuOpen(false); selectRemoteTree(tree.id); }}><span>{tree.id === remoteTreeId ? '✓' : ''}</span>{tree.name}</button>)}
             {isOwner && <button type="button" className="treeMenuRename" onClick={openRenameTreeModal}><span>✎</span> Editar nombre</button>}
             {isOwner && <button type="button" className="treeMenuCreate" onClick={openNewTreeModal}><span>+</span> Crear nuevo árbol</button>}
+            {isOwner && <button type="button" className="treeMenuDelete" onClick={openDeleteTreeModal}><Trash2 size={13} /> Eliminar árbol</button>}
           </div>}
         </div>}
         <nav>{sections.filter(([id]) => id !== 'collaborators').map(([id, label, icon]) => {
@@ -3105,11 +3147,11 @@ export default function GenealogyApp() {
         <div className="sidebarBottom">
           <div className="sidebarProfile">
             <button type="button" title={t('profile.title')} className={`sidebarProfileButton ${section === 'profile' ? 'active' : ''}`} onClick={() => setSection('profile')}>
-              <PersonAvatar person={profilePerson} />
+              <PersonAvatar person={accountProfile} />
               <div className="sidebarProfileText">
                 <strong>{t('profile.title')}</strong>
-                <span>{displayName(profilePerson)}</span>
-                <small>{profilePerson.email || t('profile.localAccount')}</small>
+                <span>{displayName(accountProfile)}</span>
+                <small>{accountProfile.email || t('profile.localAccount')}</small>
               </div>
             </button>
             {isSupabaseConfigured && <button type="button" className="textButton sidebarSignOut" onClick={() => supabase?.auth.signOut()}>{language === 'es' ? 'Cerrar sesión' : 'Sign out'}</button>}
@@ -3175,10 +3217,10 @@ export default function GenealogyApp() {
           </div>
           <div className="profileAccount">
             <div className="profileCard">
-              <PersonAvatar person={profilePerson} large />
+              <PersonAvatar person={accountProfile} large />
               <div>
-                <strong>{displayName(profilePerson)}</strong>
-                <div className="muted small">{profilePerson.email || t('profile.localNoEmail')}</div>
+                <strong>{displayName(accountProfile)}</strong>
+                <div className="muted small">{accountProfile.email || t('profile.localNoEmail')}</div>
               </div>
             </div>
             <div className="profileSettings">
@@ -3243,6 +3285,24 @@ export default function GenealogyApp() {
       {personModal && <Modal title={t('modalTitles.newPiece')} onClose={() => setPersonModal(null)}><PersonForm initial={personModal.person} people={db.people} showRelation onCancel={() => setPersonModal(null)} onSave={savePerson} /></Modal>}
       {eventModal && selected && <EventForm person={selected} onClose={() => setEventModal(false)} onSave={addEvent} />}
       {sourceModal && <SourceForm onClose={() => setSourceModal(false)} onSave={(source) => { updateDb((prev) => ({ ...prev, sources: [...prev.sources, { id: newId('source'), ...source }] })); setSourceModal(false); }} />}
+      {personDeleteModalOpen && selected && <Modal title={t('deletion.personTitle')} onClose={() => setPersonDeleteModalOpen(false)}>
+        <div className="destructiveModal">
+          <div className="destructiveModalIcon"><AlertTriangle size={24} /></div>
+          <p className="destructiveModalLead">{t('deletion.personLead')}</p>
+          <p className="destructiveModalQuestion">{translate(language, 'deletion.personConfirm', { name: displayName(selected) })}</p>
+          <div className="modalActions"><button className="secondaryButton" type="button" onClick={() => setPersonDeleteModalOpen(false)}>{t('actions.cancel')}</button><button className="dangerButton" type="button" onClick={confirmDeleteSelected}><Trash2 size={15} /> {t('drawer.deletePerson')}</button></div>
+        </div>
+      </Modal>}
+      {treeDeleteModalOpen && activeTree && <Modal title={t('deletion.treeTitle')} onClose={() => setTreeDeleteModalOpen(false)}>
+        <form className="formStack destructiveModal" onSubmit={(event) => { event.preventDefault(); confirmDeleteTree(); }}>
+          <div className="destructiveModalIcon"><AlertTriangle size={24} /></div>
+          <p className="destructiveModalLead">{t('deletion.treeLead')}</p>
+          <p className="destructiveModalQuestion">{t('deletion.treeConfirm')}</p>
+          <label htmlFor="delete-tree-name">{t('deletion.typeName')}<input id="delete-tree-name" autoFocus value={treeDeleteName} onChange={(event) => setTreeDeleteName(event.target.value)} /></label>
+          {treeDeleteName && treeDeleteName !== activeTree.name && <small className="destructiveModalError">{t('deletion.mismatch')}</small>}
+          <div className="modalActions"><button className="secondaryButton" type="button" onClick={() => setTreeDeleteModalOpen(false)}>{t('deletion.cancel')}</button><button className="dangerButton" type="submit" disabled={treeDeleteName !== activeTree.name}><Trash2 size={15} /> {t('deletion.treeAction')}</button></div>
+        </form>
+      </Modal>}
       {newTreeModalOpen && <Modal title={treeNameModalMode === 'rename' ? (language === 'es' ? 'Editar nombre del árbol' : 'Edit tree name') : (language === 'es' ? 'Crear nuevo árbol' : 'Create new tree')} onClose={() => setNewTreeModalOpen(false)}>
         <form className="formStack newTreeForm" onSubmit={(event) => { event.preventDefault(); saveTreeName(newTreeName); }}>
           <div className="newTreeIntro"><span className="newTreeIntroIcon"><Sprout size={22} strokeWidth={1.8} /></span><div><strong>{treeNameModalMode === 'rename' ? (language === 'es' ? 'Elegí un nombre claro para identificarlo' : 'Choose a clear name to identify it') : (language === 'es' ? 'Un nuevo espacio para tu historia familiar' : 'A new space for your family story')}</strong><p>{treeNameModalMode === 'rename' ? (language === 'es' ? 'El cambio se aplica solo a este árbol y no modifica sus registros.' : 'This only changes this tree name and does not modify its records.') : (language === 'es' ? 'Podrás invitar colaboradores y administrar este árbol por separado.' : 'You can invite collaborators and manage this tree separately.')}</p></div></div>

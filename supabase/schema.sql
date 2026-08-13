@@ -16,9 +16,14 @@ create table public.trees (
   name text not null default 'Arbol familiar Raíces',
   description text not null default '',
   root_person_id uuid,
+  is_deleted boolean not null default false,
+  deleted_at timestamp with time zone,
+  deleted_by uuid references auth.users(id) on delete set null,
   created_at timestamp with time zone not null default now(),
   updated_at timestamp with time zone not null default now()
 );
+
+create index idx_trees_active_updated_at on public.trees (updated_at desc) where is_deleted = false;
 
 -- 3. Tabla: people (Personas asociadas a un árbol)
 create table public.people (
