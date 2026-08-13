@@ -2834,7 +2834,8 @@ export default function GenealogyApp() {
     if (!activeTree || treeDeleteName !== activeTree.name) return;
     const { error } = await deleteRemoteTree({ treeId: remoteTreeId });
     if (error) {
-      setRemoteSyncError(error.message || 'No se pudo eliminar el árbol.');
+      const detail = [error.message, error.details, error.hint, error.code && `(${error.code})`].filter(Boolean).join(' · ');
+      setRemoteSyncError(detail || 'No se pudo eliminar el árbol.');
       return;
     }
     setTreeDeleteModalOpen(false);
