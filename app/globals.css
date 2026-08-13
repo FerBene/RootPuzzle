@@ -1918,10 +1918,15 @@ input:focus, select:focus, textarea:focus { border-color: #c77a4e; box-shadow: 0
 .destructiveModalIcon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 15px; color: #a43c35; background: #f9e4df; }
 .destructiveModalLead, .destructiveModalQuestion { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .destructiveModalQuestion { color: var(--ink); font-weight: 800; }
+.treeDeleteTarget { display: grid; gap: 4px; padding: 11px 12px; border: 1px solid #e5d8c9; border-radius: 11px; background: #f2e9dc; }
+.treeDeleteTarget span { color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.treeDeleteTarget strong { color: var(--ink); font-size: 15px; overflow-wrap: anywhere; }
 .destructiveModalError { color: #a43c35; font-size: 11px; font-weight: 700; }
 .dangerButton { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #a43c35; border-radius: 9px; padding: 9px 13px; color: #fffaf3; background: #a43c35; font-weight: 800; cursor: pointer; }
 .dangerButton:hover { background: #8e302b; }
 .dangerButton:disabled { opacity: .45; cursor: not-allowed; }
+.appShell.darkMode .treeDeleteTarget { border-color: #504137; background: #302820; }
+.appShell.darkMode .treeDeleteTarget strong { color: #f5ede5; }
 .appShell.darkMode .sidebar { background: #171512; }
 .appShell.darkMode .sidebar nav button:hover,
 .appShell.darkMode .sidebar nav button.active { background: #3a2d25; box-shadow: inset 3px 0 0 #d98555; }

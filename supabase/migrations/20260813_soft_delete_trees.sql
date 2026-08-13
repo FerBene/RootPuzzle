@@ -9,25 +9,29 @@ create index if not exists trees_active_updated_at_idx
   on public.trees (updated_at desc)
   where is_deleted = false;
 
-create or replace function public.soft_delete_tree(tree_id uuid)
+drop function if exists public.soft_delete_tree(uuid);
+
+create function public.soft_delete_tree(target_tree_id uuid)
 returns table (id uuid, is_deleted boolean, deleted_at timestamptz)
 language plpgsql security definer set search_path = public
 as $$
+declare
+  deleted_tree public.trees;
 begin
   if auth.uid() is null then
     raise exception 'Authentication required';
   end if;
-  if not public.is_tree_owner(tree_id) then
+  if not public.is_tree_owner(target_tree_id) then
     raise exception 'Only the tree owner can delete this tree';
   end if;
 
   update public.trees
   set is_deleted = true, deleted_at = coalesce(deleted_at, now()), deleted_by = auth.uid(), updated_at = now()
-  where public.trees.id = tree_id and public.trees.is_deleted = false
-  returning public.trees.id, public.trees.is_deleted, public.trees.deleted_at;
+  where public.trees.id = target_tree_id and public.trees.is_deleted = false
+  returning * into deleted_tree;
 
   if not found then raise exception 'Tree not found or already deleted'; end if;
-  return next;
+  return query select deleted_tree.id, deleted_tree.is_deleted, deleted_tree.deleted_at;
 end;
 $$;
 
