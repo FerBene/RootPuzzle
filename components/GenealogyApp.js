@@ -1,11 +1,12 @@
 'use client';
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { achievementCategories, calculateCompleteAncestors, calculateCountries, calculateGenerations, calculateOldestYear, getTotalUnlockedAchievements, resolveAchievementProgress } from '@/lib/hallazgos';
 import { defaultDatabase, displayName, emptyDatabase, newId, normalizeDatabase, relativesFor, STORAGE_KEY } from '@/lib/model';
 import { exportGedcom, importGedcom } from '@/lib/gedcom';
 import { acceptTreeInvitation, createRemoteTree, createTreeInvitation, deleteRemoteTree, getRemoteTree, listAccessibleTrees, listTreeInvitations, remoteTreeStorageKey, renameRemoteTree, revokeTreeInvitation, saveRemoteTree } from '@/lib/supabaseStore';
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
-import { AlertTriangle, BookOpen, CalendarDays, ChevronDown, ChevronsLeft, ChevronsRight, Copy, Database, FileDown, Hourglass, Image as ImageIcon, LocateFixed, Maximize2, Minimize2, Moon, MoreHorizontal, Puzzle, RotateCcw, ShieldCheck, SlidersHorizontal, Sprout, Sun, Trash2, UserCircle, UserPlus, UsersRound, ZoomIn, ZoomOut } from 'lucide-react';
+import { AlertTriangle, Award, BookOpen, CalendarDays, Check, ChevronDown, ChevronsLeft, ChevronsRight, Clock3, Compass, Copy, Database, FileDown, Globe2, Hourglass, Image as ImageIcon, Layers3, LocateFixed, LockKeyhole, Maximize2, Minimize2, Moon, MoreHorizontal, Puzzle, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sprout, Sun, Trash2, TreePine, UserCircle, UserPlus, UsersRound, Waypoints, ZoomIn, ZoomOut } from 'lucide-react';
 
 const iconProps = { size: 20, strokeWidth: 1.9, 'aria-hidden': true };
 const IconHome = <Sprout {...iconProps} className="rootsNavIcon" />;
@@ -15,13 +16,14 @@ const IconSources = <BookOpen {...iconProps} />;
 const IconData = <Database {...iconProps} />;
 const IconProfile = <UserCircle {...iconProps} />;
 const IconCollaborators = <UsersRound {...iconProps} />;
+const IconFindings = <Award {...iconProps} />;
 
 const I18N = {
   es: {
     appSubtitle: 'Genealogía web',
     loading: { openingTree: 'Abriendo tu árbol' },
     nav: { expand: 'Expandir menú', collapse: 'Colapsar menú', navigation: 'Navegación', rootsShort: 'Raíces', timelineShort: 'Historia', profileShort: 'Perfil' },
-    sections: { tree: 'Mis raíces', people: 'Piezas', timeline: 'Historia', sources: 'Fuentes', data: 'Datos', profile: 'Mi perfil' },
+    sections: { tree: 'Mis raíces', people: 'Piezas', timeline: 'Historia', findings: 'Hallazgos', sources: 'Fuentes', data: 'Datos', profile: 'Mi perfil' },
     subtitles: {
       tree: 'Visualiza y navega el árbol familiar.',
       people: 'Gestiona las piezas registradas y sus perfiles.',
@@ -60,7 +62,7 @@ const I18N = {
     appSubtitle: 'Genealogy web',
     loading: { openingTree: 'Opening your tree' },
     nav: { expand: 'Expand menu', collapse: 'Collapse menu', navigation: 'Navigation', rootsShort: 'Roots', timelineShort: 'History', profileShort: 'Profile' },
-    sections: { tree: 'My roots', people: 'Pieces', timeline: 'History', sources: 'Sources', data: 'Data', profile: 'My profile' },
+    sections: { tree: 'My roots', people: 'Pieces', timeline: 'History', findings: 'Findings', sources: 'Sources', data: 'Data', profile: 'My profile' },
     subtitles: { tree: 'View and explore your family tree.', people: 'Manage registered pieces and profiles.', timeline: 'Review events in chronological order.', sources: 'Organize your research sources.', data: 'Import, export and back up your tree.', profile: 'Account and preferences.' },
     actions: { newPiece: '+ New piece', newSource: '+ New source', cancel: 'Cancel', savePiece: 'Save piece', saveEvent: 'Save event', saveSource: 'Save source', edit: 'Edit', viewInTree: 'View in tree', add: '+ Add', remove: 'Remove', import: 'Import', exportJson: 'Export JSON', exportGedcom: 'Export GEDCOM', exportPdf: 'Export PDF', generateLink: 'Generate link', activateDetective: 'Activate detective', accept: 'Accept', reject: 'Reject', acceptPiece: 'Accept piece', rejectPiece: 'Reject', importPiece: 'Import piece', tools: 'Tools', hideTools: 'Hide tools', allPieces: 'All pieces', focusedBranch: 'Focused branch', uploadImage: 'Upload image', copy: 'Copy', downloadPiece: 'Download piece' },
     stats: { pieces: 'pieces', links: 'links', events: 'events', sources: 'sources', results: 'results', dated: 'dated', pending: 'pending', accepted: 'accepted', rejected: 'rejected' },
@@ -107,6 +109,7 @@ const sections = [
   ['tree', 'sections.tree', IconHome],
   ['people', 'sections.people', IconPieces],
   ['timeline', 'sections.timeline', IconTimeline],
+  ['findings', 'sections.findings', <Award {...iconProps} />],
   ['collaborators', 'sections.collaborators', IconCollaborators]
 ];
 
@@ -118,6 +121,7 @@ const sectionHashMap = {
   collaborators: 'collaborators',
   sources: 'sources',
   data: 'data',
+  findings: 'findings',
   profile: 'profile'
 };
 
@@ -2780,6 +2784,67 @@ function CollaboratorsPanel({ invitations, inviteLink, onInvite, onRevoke, isOwn
   </section>;
 }
 
+const hallazgosAssets = {
+  emblem: '/hallazgos/01_emblema_hallazgos.png',
+  specialConquest: '/hallazgos/02_conquista_especial.png',
+  heroes: {
+    construccion_del_arbol: '/hallazgos/03_hero_construccion_del_arbol.png',
+    generaciones_descubiertas: '/hallazgos/04_hero_generaciones_descubiertas.png',
+    viaje_en_el_tiempo: '/hallazgos/05_hero_viaje_en_el_tiempo.png',
+    generaciones_completas: '/hallazgos/06_hero_generaciones_completas.png',
+    linaje_sin_fronteras: '/hallazgos/07_hero_linaje_sin_fronteras.png'
+  },
+  overlays: {
+    halo: '/hallazgos/08_overlay_halo_desbloqueo.png',
+    laurels: '/hallazgos/09_overlay_corona_laureles.png',
+    ribbon: '/hallazgos/10_overlay_cinta_pergamino.png'
+  }
+};
+
+function AchievementBadge({ category, level, state = 'inactive', size = 'medium', className = '' }) {
+  const badge = category?.badgeCategory?.badges?.find((item) => item.level === level);
+  if (!badge) return null;
+  const path = badge[state] || badge.inactive;
+  return <img className={`achievementBadge achievementBadge-${size} ${className}`} src={`/hallazgos/${path}`} alt={`${category.title} · ${badge.name}`} />;
+}
+
+function HallazgosCelebration({ category, badge, special = false, unlocked = true }) {
+  return <div className={`hallazgosCelebration ${special ? 'special' : ''}`}>
+    <img className="celebrationHalo" src={hallazgosAssets.overlays.halo} alt="" aria-hidden="true" />
+    <img className="celebrationLaurels" src={hallazgosAssets.overlays.laurels} alt="" aria-hidden="true" />
+    {special ? <img className="celebrationBadge" src={hallazgosAssets.specialConquest} alt="Conquista especial" /> : <AchievementBadge category={category} level={badge.level} state="active" size="celebration" className="celebrationBadge" />}
+    <div className="celebrationRibbon"><img src={hallazgosAssets.overlays.ribbon} alt="" aria-hidden="true" /><div><strong>{special ? 'CONQUISTA ESPECIAL' : 'NUEVO HALLAZGO'}</strong><span>{special ? 'Ocho raíces reunidas' : badge.name}</span><small>{special ? (unlocked ? 'Conquista obtenida' : 'Desafío especial') : `Nivel ${badge.level} · ${category.title}`}</small></div></div>
+  </div>;
+}
+
+function FindingsView({ db }) {
+  const [activeId, setActiveId] = useState('construccion_del_arbol');
+  const people = db.people || [];
+  const oldestYear = calculateOldestYear(people);
+  const yearsBack = oldestYear ? Math.max(0, new Date().getFullYear() - oldestYear) : 0;
+  const currentValues = { construccion_del_arbol: people.length, generaciones_descubiertas: calculateGenerations(db), viaje_en_el_tiempo: yearsBack, generaciones_completas: calculateCompleteAncestors(db), linaje_sin_fronteras: calculateCountries(people) };
+  const iconByCategory = { construccion_del_arbol: TreePine, generaciones_descubiertas: Layers3, viaje_en_el_tiempo: Clock3, generaciones_completas: Waypoints, linaje_sin_fronteras: Globe2 };
+  const configuredCategories = achievementCategories.map((category) => {
+    const resolved = resolveAchievementProgress(category, currentValues[category.id]);
+    return { ...category, title: category.name, current: resolved.currentValue, icon: iconByCategory[category.id], badgeCategory: category, resolved, currentLevel: resolved.currentLevel?.level || 0, currentName: resolved.currentLevel?.name || 'Aún por descubrir', next: resolved.nextTarget, nextName: resolved.nextLevel?.name || 'Nivel máximo alcanzado' };
+  });
+  const totalUnlocked = getTotalUnlockedAchievements(configuredCategories.map((category) => category.resolved));
+  const conquestUnlocked = currentValues.generaciones_completas >= 8;
+  const active = configuredCategories.find((category) => category.id === activeId) || configuredCategories[0];
+  const progress = active.resolved.progress;
+  return <div className="findingsPage">
+    <div className="findingsIntro">
+      <div className="findingsIdentity"><img src={hallazgosAssets.emblem} alt="" /><div><p className="eyebrow">Tu mapa de descubrimientos</p><h2>Hallazgos</h2><p>Descubrí hasta dónde te llevó tu historia.</p></div></div>
+      <div className="findingsScore"><span><Award size={17} /></span><strong>{totalUnlocked}</strong><small>hallazgos desbloqueados</small></div>
+    </div>
+    <section className="findingsHero"><div className="heroCopy"><span className="heroKicker"><Compass size={15} /> Tu recorrido hasta hoy</span><h3>Cada nombre abre<br /><em>una nueva pista.</em></h3><p>Seguí las ramas, cruzá fronteras y viajá hacia atrás en el tiempo. Tu próximo hallazgo está más cerca de lo que parece.</p><div className="heroStats"><div><strong>{currentValues.construccion_del_arbol}</strong><span>personas</span></div><div><strong>{currentValues.generaciones_descubiertas}</strong><span>generaciones</span></div><div><strong>{currentValues.linaje_sin_fronteras}</strong><span>países</span></div></div></div><div className="heroIllustration"><div className="orbit orbitOne" /><div className="orbit orbitTwo" /><img src={hallazgosAssets.emblem} alt="" /><span className="heroYear">{oldestYear || '—'}</span><small>{oldestYear ? 'antepasado más antiguo' : 'pista más antigua'}</small></div></section>
+    <div className="findingsGrid">{configuredCategories.map((category) => { const badgeLevel = category.currentLevel || category.resolved.nextLevel?.level || 1; return <button type="button" key={category.id} className={`findingCard ${activeId === category.id ? 'selected' : ''} tone-${category.tone}`} onClick={() => setActiveId(category.id)}><div className="findingCardTop"><span className="findingIcon"><AchievementBadge category={category} level={badgeLevel} state={category.currentLevel ? 'active' : 'inactive'} size="card" /></span><span className="findingArrow">↗</span></div><span className="findingTitle">{category.title}</span><strong className="findingName">Nivel {category.currentLevel || '—'} · {category.currentName}</strong><div className="findingMetric"><b>{category.current}</b><span>{category.metric}</span></div><div className="findingProgress"><span style={{ width: `${category.resolved.progress}%` }} /></div><small><span>{category.resolved.isComplete ? 'Recorrido completado' : `${category.current} / ${category.next}`}</span><b>{category.resolved.isComplete ? 'Nivel máximo alcanzado' : `Próximo Hallazgo · ${category.nextName}`}</b></small></button>; })}</div>
+    <section className={`findingDetail tone-${active.tone}`}><div className="detailHero"><img src={hallazgosAssets.heroes[active.id]} alt="" loading="lazy" /></div><div className="detailHeading"><span className="findingIcon detailBadge"><AchievementBadge category={active} level={active.currentLevel || active.resolved.nextLevel?.level || 1} state={active.currentLevel ? 'active' : 'inactive'} size="detail" /></span><div><p className="eyebrow">Explorá este recorrido</p><h3>{active.title}</h3><p>Nivel {active.currentLevel || '—'} · {active.currentName}</p></div></div><div className="detailProgress"><div className="detailProgressLabel"><span>{active.resolved.isComplete ? 'Nivel máximo alcanzado' : `${active.current} / ${active.next}`}</span><b>{active.resolved.isComplete ? '100%' : `${active.resolved.progress}%`}</b></div><div className="largeProgress"><span style={{ width: `${progress}%` }} /></div><small>{active.resolved.isComplete ? 'Recorrido completado' : <>Próximo Hallazgo: <strong>{active.nextName}</strong></>}</small></div><div className="levelsRail">{active.badgeCategory.badges.map((badge) => { const unlocked = active.resolved.badgeState(badge) === 'active'; const current = active.currentLevel === badge.level; return <div className={`levelNode ${unlocked ? 'unlocked' : ''} ${current ? 'current' : ''}`} key={badge.name}><span className="levelBadge"><AchievementBadge category={active} level={badge.level} state={unlocked ? 'active' : 'inactive'} size="timeline" /></span><small>Nivel {badge.level}</small><b>{badge.name}</b><em>{badge.target}</em>{current && <i>Actual</i>}</div>; })}</div></section>
+    <section className="recentFindings"><div className="recentHeading"><div><p className="eyebrow">Tu historia sigue creciendo</p><h3>Recientemente desbloqueados</h3></div><span>{totalUnlocked} hallazgos obtenidos</span></div><div className="recentList">{configuredCategories.flatMap((category) => category.resolved.unlockedLevels.slice(-1).map((badge) => ({ category, badge }))).map(({ category, badge }) => <button type="button" className="recentItem" key={`${category.id}-${badge.level}`} onClick={() => setActiveId(category.id)}><AchievementBadge category={category} level={badge.level} state="active" size="recent" /><span><strong>{badge.name}</strong><small>{category.title} · {badge.target}</small></span></button>)}</div></section>
+    <section className="specialConquest"><HallazgosCelebration special unlocked={conquestUnlocked} category={configuredCategories[3]} badge={{ level: 3, name: 'Ocho raíces' }} /><div className="conquestCopy"><span className="eyebrow">Conquista especial</span><h3>Ocho raíces reunidas</h3><p>{conquestUnlocked ? 'Completaste tus 8 bisabuelos directos.' : 'Completá los 8 bisabuelos directos para desbloquear una insignia reservada para búsquedas excepcionales.'}</p></div><span className="conquestStatus"><Award size={14} /> {conquestUnlocked ? 'Conquista obtenida' : 'Bloqueada'}</span></section>
+  </div>;
+}
+
 export default function GenealogyApp() {
   const [db, setDb] = useState(emptyDatabase);
   const [publicDb, setPublicDb] = useState(null);
@@ -3408,8 +3473,8 @@ export default function GenealogyApp() {
         <header className="topbar">
           <div className="topbarTitle">
             <p className="eyebrow">{db.settings.treeName}</p>
-            {section !== 'tree' && <h1>{section === 'collaborators' ? 'Colaboradores' : t(`sections.${section}`)}</h1>}
-            <p className="topbarSubtitle">{section === 'collaborators' ? 'Administrá el acceso al árbol activo.' : t(`subtitles.${section}`)}</p>
+            {section !== 'tree' && section !== 'findings' && <h1>{section === 'collaborators' ? 'Colaboradores' : t(`sections.${section}`)}</h1>}
+            {section !== 'findings' && <p className="topbarSubtitle">{section === 'collaborators' ? 'Administrá el acceso al árbol activo.' : t(`subtitles.${section}`)}</p>}
           </div>
           <div className="topbarActions">
             {showTopbarStats && <div className="topbarStats">
@@ -3423,6 +3488,8 @@ export default function GenealogyApp() {
         </header>
 
         {section === 'tree' && <TreeView db={db} focusedId={focusedId} setFocusedId={(id) => { setFocusedId(id); setSelectedId(id); }} onOpenPerson={(id) => openPersonDrawer(id, 'view')} onAdd={canEdit ? () => setPersonModal({ mode: 'new' }) : undefined} />}
+
+        {section === 'findings' && <FindingsView db={db} />}
 
         {section === 'timeline' && <TimelineView db={db} onOpenPerson={(id) => { setSelectedId(id); setFocusedId(id); setSection('people'); }} />}
 
@@ -3519,6 +3586,10 @@ export default function GenealogyApp() {
         <button className={section === 'timeline' ? 'active' : ''} onClick={() => setSection('timeline')} aria-label={t('sections.timeline')} title={t('sections.timeline')}>
           {IconTimeline}
           <small>{t('nav.timelineShort')}</small>
+        </button>
+        <button className={section === 'findings' ? 'active' : ''} onClick={() => setSection('findings')} aria-label={t('sections.findings')} title={t('sections.findings')}>
+          {IconFindings}
+          <small>{t('sections.findings')}</small>
         </button>
         <button className={section === 'profile' ? 'active' : ''} onClick={() => setSection('profile')} aria-label={t('profile.title')} title={t('profile.title')}>
           {IconProfile}

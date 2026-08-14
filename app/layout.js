@@ -18,7 +18,7 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#0e4b50" />
         <link rel="apple-touch-icon" href="/raices-icon.png" />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         {/* SW registrar runs on client */}
         <ServiceWorkerRegistrar />
         {children}

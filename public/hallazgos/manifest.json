@@ -1,0 +1,255 @@
+{
+  "version": 1,
+  "format": "PNG",
+  "size": "512x512",
+  "background": "transparent",
+  "categories": [
+    {
+      "id": "construccion_del_arbol",
+      "name": "Construcción del árbol",
+      "badges": [
+        {
+          "level": 1,
+          "name": "Primeras ramas",
+          "target": 10,
+          "active": "construccion_del_arbol/active/nivel_01_primeras_ramas.png",
+          "inactive": "construccion_del_arbol/inactive/nivel_01_primeras_ramas.png"
+        },
+        {
+          "level": 2,
+          "name": "El árbol crece",
+          "target": 25,
+          "active": "construccion_del_arbol/active/nivel_02_el_arbol_crece.png",
+          "inactive": "construccion_del_arbol/inactive/nivel_02_el_arbol_crece.png"
+        },
+        {
+          "level": 3,
+          "name": "Raíces firmes",
+          "target": 50,
+          "active": "construccion_del_arbol/active/nivel_03_raices_firmes.png",
+          "inactive": "construccion_del_arbol/inactive/nivel_03_raices_firmes.png"
+        },
+        {
+          "level": 4,
+          "name": "Gran árbol",
+          "target": 100,
+          "active": "construccion_del_arbol/active/nivel_04_gran_arbol.png",
+          "inactive": "construccion_del_arbol/inactive/nivel_04_gran_arbol.png"
+        },
+        {
+          "level": 5,
+          "name": "Bosque familiar",
+          "target": 250,
+          "active": "construccion_del_arbol/active/nivel_05_bosque_familiar.png",
+          "inactive": "construccion_del_arbol/inactive/nivel_05_bosque_familiar.png"
+        },
+        {
+          "level": 6,
+          "name": "Linaje monumental",
+          "target": 500,
+          "active": "construccion_del_arbol/active/nivel_06_linaje_monumental.png",
+          "inactive": "construccion_del_arbol/inactive/nivel_06_linaje_monumental.png"
+        }
+      ]
+    },
+    {
+      "id": "generaciones_descubiertas",
+      "name": "Generaciones descubiertas",
+      "badges": [
+        {
+          "level": 1,
+          "name": "Primeras raíces",
+          "target": 3,
+          "active": "generaciones_descubiertas/active/nivel_01_primeras_raices.png",
+          "inactive": "generaciones_descubiertas/inactive/nivel_01_primeras_raices.png"
+        },
+        {
+          "level": 2,
+          "name": "Más allá",
+          "target": 4,
+          "active": "generaciones_descubiertas/active/nivel_02_mas_alla.png",
+          "inactive": "generaciones_descubiertas/inactive/nivel_02_mas_alla.png"
+        },
+        {
+          "level": 3,
+          "name": "Raíces profundas",
+          "target": 5,
+          "active": "generaciones_descubiertas/active/nivel_03_raices_profundas.png",
+          "inactive": "generaciones_descubiertas/inactive/nivel_03_raices_profundas.png"
+        },
+        {
+          "level": 4,
+          "name": "Otra época",
+          "target": 6,
+          "active": "generaciones_descubiertas/active/nivel_04_otra_epoca.png",
+          "inactive": "generaciones_descubiertas/inactive/nivel_04_otra_epoca.png"
+        },
+        {
+          "level": 5,
+          "name": "Linaje antiguo",
+          "target": 7,
+          "active": "generaciones_descubiertas/active/nivel_05_linaje_antiguo.png",
+          "inactive": "generaciones_descubiertas/inactive/nivel_05_linaje_antiguo.png"
+        },
+        {
+          "level": 6,
+          "name": "Modo arqueólogo",
+          "target": 8,
+          "active": "generaciones_descubiertas/active/nivel_06_modo_arqueologo.png",
+          "inactive": "generaciones_descubiertas/inactive/nivel_06_modo_arqueologo.png"
+        }
+      ]
+    },
+    {
+      "id": "viaje_en_el_tiempo",
+      "name": "Viaje en el tiempo",
+      "badges": [
+        {
+          "level": 1,
+          "name": "Primer salto",
+          "target": 75,
+          "active": "viaje_en_el_tiempo/active/nivel_01_primer_salto.png",
+          "inactive": "viaje_en_el_tiempo/inactive/nivel_01_primer_salto.png"
+        },
+        {
+          "level": 2,
+          "name": "Un siglo",
+          "target": 100,
+          "active": "viaje_en_el_tiempo/active/nivel_02_un_siglo.png",
+          "inactive": "viaje_en_el_tiempo/inactive/nivel_02_un_siglo.png"
+        },
+        {
+          "level": 3,
+          "name": "Otra época",
+          "target": 140,
+          "active": "viaje_en_el_tiempo/active/nivel_03_otra_epoca.png",
+          "inactive": "viaje_en_el_tiempo/inactive/nivel_03_otra_epoca.png"
+        },
+        {
+          "level": 4,
+          "name": "Ya es historia",
+          "target": 170,
+          "active": "viaje_en_el_tiempo/active/nivel_04_ya_es_historia.png",
+          "inactive": "viaje_en_el_tiempo/inactive/nivel_04_ya_es_historia.png"
+        },
+        {
+          "level": 5,
+          "name": "Dos siglos",
+          "target": 200,
+          "active": "viaje_en_el_tiempo/active/nivel_05_dos_siglos.png",
+          "inactive": "viaje_en_el_tiempo/inactive/nivel_05_dos_siglos.png"
+        },
+        {
+          "level": 6,
+          "name": "Viajero del tiempo",
+          "target": 230,
+          "active": "viaje_en_el_tiempo/active/nivel_06_viajero_del_tiempo.png",
+          "inactive": "viaje_en_el_tiempo/inactive/nivel_06_viajero_del_tiempo.png"
+        },
+        {
+          "level": 7,
+          "name": "Raíces ancestrales",
+          "target": 250,
+          "active": "viaje_en_el_tiempo/active/nivel_07_raices_ancestrales.png",
+          "inactive": "viaje_en_el_tiempo/inactive/nivel_07_raices_ancestrales.png"
+        }
+      ]
+    },
+    {
+      "id": "generaciones_completas",
+      "name": "Generaciones completas",
+      "badges": [
+        {
+          "level": 1,
+          "name": "Origen completo",
+          "target": "2/2",
+          "active": "generaciones_completas/active/nivel_01_origen_completo.png",
+          "inactive": "generaciones_completas/inactive/nivel_01_origen_completo.png"
+        },
+        {
+          "level": 2,
+          "name": "Cuatro raíces",
+          "target": "4/4",
+          "active": "generaciones_completas/active/nivel_02_cuatro_raices.png",
+          "inactive": "generaciones_completas/inactive/nivel_02_cuatro_raices.png"
+        },
+        {
+          "level": 3,
+          "name": "Ocho raíces",
+          "target": "8/8",
+          "active": "generaciones_completas/active/nivel_03_ocho_raices.png",
+          "inactive": "generaciones_completas/inactive/nivel_03_ocho_raices.png"
+        },
+        {
+          "level": 4,
+          "name": "Gran conquista",
+          "target": "16/16",
+          "active": "generaciones_completas/active/nivel_04_gran_conquista.png",
+          "inactive": "generaciones_completas/inactive/nivel_04_gran_conquista.png"
+        },
+        {
+          "level": 5,
+          "name": "Linaje excepcional",
+          "target": "32/32",
+          "active": "generaciones_completas/active/nivel_05_linaje_excepcional.png",
+          "inactive": "generaciones_completas/inactive/nivel_05_linaje_excepcional.png"
+        },
+        {
+          "level": 6,
+          "name": "Linaje legendario",
+          "target": "64/64",
+          "active": "generaciones_completas/active/nivel_06_linaje_legendario.png",
+          "inactive": "generaciones_completas/inactive/nivel_06_linaje_legendario.png"
+        }
+      ]
+    },
+    {
+      "id": "linaje_sin_fronteras",
+      "name": "Linaje sin fronteras",
+      "badges": [
+        {
+          "level": 1,
+          "name": "Primera frontera",
+          "target": 2,
+          "active": "linaje_sin_fronteras/active/nivel_01_primera_frontera.png",
+          "inactive": "linaje_sin_fronteras/inactive/nivel_01_primera_frontera.png"
+        },
+        {
+          "level": 2,
+          "name": "Tres tierras",
+          "target": 3,
+          "active": "linaje_sin_fronteras/active/nivel_02_tres_tierras.png",
+          "inactive": "linaje_sin_fronteras/inactive/nivel_02_tres_tierras.png"
+        },
+        {
+          "level": 3,
+          "name": "Raíces viajeras",
+          "target": 4,
+          "active": "linaje_sin_fronteras/active/nivel_03_raices_viajeras.png",
+          "inactive": "linaje_sin_fronteras/inactive/nivel_03_raices_viajeras.png"
+        },
+        {
+          "level": 4,
+          "name": "Sin fronteras",
+          "target": 5,
+          "active": "linaje_sin_fronteras/active/nivel_04_sin_fronteras.png",
+          "inactive": "linaje_sin_fronteras/inactive/nivel_04_sin_fronteras.png"
+        },
+        {
+          "level": 5,
+          "name": "Linaje internacional",
+          "target": 6,
+          "active": "linaje_sin_fronteras/active/nivel_05_linaje_internacional.png",
+          "inactive": "linaje_sin_fronteras/inactive/nivel_05_linaje_internacional.png"
+        },
+        {
+          "level": 6,
+          "name": "Raíces del mundo",
+          "target": 8,
+          "active": "linaje_sin_fronteras/active/nivel_06_raices_del_mundo.png",
+          "inactive": "linaje_sin_fronteras/inactive/nivel_06_raices_del_mundo.png"
+        }
+      ]
+    }
+  ]
+}

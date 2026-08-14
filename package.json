@@ -7,6 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test:hallazgos": "node --test scripts/test-hallazgos.mjs",
     "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
