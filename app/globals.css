@@ -232,6 +232,7 @@ h1 { font-size: 34px; margin-bottom: 0; } h2 { font-size: 26px; margin-bottom: 6
 .treeLines path.peerLine { stroke: var(--brand-secondary); stroke-dasharray: 7 5; stroke-width: 2.2; opacity: .72; }
 .treeLines path.siblingLine { stroke: var(--accent); stroke-width: 1.45; opacity: .44; }
 .treeLines path.familyLine { stroke: #9aa9a5; }
+.treeLines path.temporalRoutedLine { stroke: #718d83; stroke-width: 1.7; opacity: .66; stroke-linejoin: round; }
 .temporalGuideLayer { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
 .temporalGuideLine { position: absolute; left: 0; right: 0; height: 1px; background: rgba(36,91,77,.15); box-shadow: 0 1px 0 rgba(255,255,255,.55); }
 .temporalGuideLine.alternate { background: rgba(199,153,79,.18); }

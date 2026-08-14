@@ -702,19 +702,19 @@ const positionTreeNodes = (nodes, edgesByKey, cardMetrics = TREE_CARD_DEFAULT) =
 
   const minSlot = Math.min(...nodes.map((node) => node.slot));
   const maxSlot = Math.max(...nodes.map((node) => node.slot));
-  const minGeneration = Math.min(...nodes.map((node) => node.generation));
-  const maxGeneration = Math.max(...nodes.map((node) => node.generation));
+  const orderedGenerations = [...new Set(nodes.map((node) => node.generation))].sort((a, b) => a - b);
+  const generationPosition = new Map(orderedGenerations.map((generation, index) => [generation, index]));
   const paddingX = 42;
   const paddingY = 46;
   const slotSize = cardWidth + cardMetrics.columnGap;
   const rowSize = cardHeight + cardMetrics.rowGap;
   let width = Math.max(760, (maxSlot - minSlot) * slotSize + cardWidth + paddingX * 2);
-  const height = Math.max(460, (maxGeneration - minGeneration) * rowSize + cardHeight + paddingY * 2);
+  const height = Math.max(460, (orderedGenerations.length - 1) * rowSize + cardHeight + paddingY * 2);
 
   const positionedNodes = nodes.map((node) => ({
     ...node,
     x: paddingX + (node.slot - minSlot) * slotSize,
-    y: paddingY + (node.generation - minGeneration) * rowSize,
+    y: paddingY + generationPosition.get(node.generation) * rowSize,
     depth: Math.abs(node.generation)
   }));
   const rowsByGeneration = new Map();
@@ -723,12 +723,78 @@ const positionTreeNodes = (nodes, edgesByKey, cardMetrics = TREE_CARD_DEFAULT) =
     rowsByGeneration.get(node.generation).push(node);
   });
 
-  rowsByGeneration.forEach((row) => {
-    row.sort((a, b) => a.x - b.x || comparePeopleByDate(a.person, b.person));
-    let nextAvailableX = Number.NEGATIVE_INFINITY;
+  [...rowsByGeneration.keys()].sort((a, b) => a - b).forEach((generation) => {
+    const row = rowsByGeneration.get(generation);
+    const rowConnectionCount = edgesByKey.filter((edge) => {
+      if (edge.kind === 'peer') return false;
+      return row.some((node) => node.key === edge.fromKey || node.key === edge.toKey);
+    }).length;
+    // Dense generations get progressively more breathing room. The canvas is
+    // intentionally allowed to grow horizontally; compressing these rows
+    // makes the relationship lines impossible to follow.
+    const rowCardGap = Math.min(
+      cardMetrics.maxColumnGap || 56,
+      Math.max(TREE_MIN_CARD_GAP, cardMetrics.columnGap + Math.ceil((row.length + rowConnectionCount) / 4) * 6)
+    );
+    const blocks = new Map();
     row.forEach((node) => {
-      if (node.x < nextAvailableX) node.x = nextAvailableX;
-      nextAvailableX = node.x + cardWidth + TREE_MIN_CARD_GAP;
+      const parentKey = node.parentIds?.length ? [...node.parentIds].sort().join('|') : node.key;
+      if (!blocks.has(parentKey)) blocks.set(parentKey, []);
+      blocks.get(parentKey).push(node);
+    });
+
+    [...blocks.values()].forEach((block) => {
+      block.sort((a, b) => a.x - b.x || comparePeopleByDate(a.person, b.person));
+      const parentNodes = block[0].parentIds?.map((parentId) => positionedNodes.find((node) => node.id === parentId)).filter(Boolean) || [];
+      if (parentNodes.length) {
+        const parentCenter = parentNodes.reduce((sum, parent) => sum + parent.x + cardWidth / 2, 0) / parentNodes.length;
+        const blockWidth = block.length * cardWidth + (block.length - 1) * rowCardGap;
+        const start = parentCenter - blockWidth / 2;
+        block.forEach((node, index) => { node.x = start + index * (cardWidth + rowCardGap); });
+      }
+    });
+
+    // Partners are atomic visual blocks. Parent/sibling grouping may suggest
+    // an initial position, but it must never split a couple apart.
+    const partnerRoot = new Map(row.map((node) => [node.key, node.key]));
+    const findPartnerRoot = (key) => {
+      let current = key;
+      while (partnerRoot.get(current) !== current) {
+        partnerRoot.set(current, partnerRoot.get(partnerRoot.get(current)));
+        current = partnerRoot.get(current);
+      }
+      return current;
+    };
+    edgesByKey
+      .filter((edge) => edge.kind === 'peer' && partnerRoot.has(edge.fromKey) && partnerRoot.has(edge.toKey))
+      .forEach((edge) => {
+        const first = findPartnerRoot(edge.fromKey);
+        const second = findPartnerRoot(edge.toKey);
+        if (first !== second) partnerRoot.set(second, first);
+      });
+
+    const atomicBlocks = new Map();
+    row.forEach((node) => {
+      const root = findPartnerRoot(node.key);
+      if (!atomicBlocks.has(root)) atomicBlocks.set(root, []);
+      atomicBlocks.get(root).push(node);
+    });
+    [...atomicBlocks.values()].forEach((block) => {
+      if (block.length < 2) return;
+      block.sort((a, b) => a.x - b.x || comparePeopleByDate(a.person, b.person));
+      const currentCenter = (Math.min(...block.map((node) => node.x)) + Math.max(...block.map((node) => node.x + cardWidth))) / 2;
+      const blockWidth = block.length * cardWidth + (block.length - 1) * TREE_MIN_CARD_GAP;
+      const start = currentCenter - blockWidth / 2;
+      block.forEach((node, index) => { node.x = start + index * (cardWidth + TREE_MIN_CARD_GAP); });
+    });
+
+    const orderedBlocks = [...atomicBlocks.values()].sort((a, b) => Math.min(...a.map((node) => node.x)) - Math.min(...b.map((node) => node.x)));
+    let nextAvailableX = Number.NEGATIVE_INFINITY;
+    orderedBlocks.forEach((block) => {
+      const minX = Math.min(...block.map((node) => node.x));
+      const shift = Math.max(0, nextAvailableX - minX);
+      block.forEach((node) => { node.x += shift; });
+      nextAvailableX = Math.max(...block.map((node) => node.x + cardWidth + rowCardGap));
     });
   });
 
@@ -765,7 +831,7 @@ const positionTreeNodes = (nodes, edgesByKey, cardMetrics = TREE_CARD_DEFAULT) =
     edges: positionedEdges,
     width,
     height,
-    generationCount: maxGeneration - minGeneration + 1,
+    generationCount: orderedGenerations.length,
     cardMetrics
   };
 };
@@ -1161,6 +1227,85 @@ const buildAllPeopleLayout = (db, focusId, language = 'es', cardMetrics = TREE_C
         if (!generationById.has(id)) generationById.set(id, 0);
       });
 
+      // Collapse partners into the same generation group. From this point on,
+      // only parent-child edges are allowed to change the generation level.
+      const unionParent = new Map(componentIds.map((id) => [id, id]));
+      const findGroup = (id) => {
+        let current = id;
+        while (unionParent.get(current) !== current) {
+          unionParent.set(current, unionParent.get(unionParent.get(current)));
+          current = unionParent.get(current);
+        }
+        return current;
+      };
+      const unionGroups = (firstId, secondId) => {
+        const firstGroup = findGroup(firstId);
+        const secondGroup = findGroup(secondId);
+        if (firstGroup !== secondGroup) unionParent.set(secondGroup, firstGroup);
+      };
+      db.partnerships
+        .filter((rel) => componentSet.has(rel.personAId) && componentSet.has(rel.personBId))
+        .forEach((rel) => unionGroups(rel.personAId, rel.personBId));
+
+      const groupChildren = new Map();
+      const groupIncoming = new Map();
+      componentIds.forEach((id) => {
+        const group = findGroup(id);
+        if (!groupChildren.has(group)) groupChildren.set(group, new Set());
+        if (!groupIncoming.has(group)) groupIncoming.set(group, new Set());
+      });
+      db.parentChild
+        .filter((rel) => componentSet.has(rel.parentId) && componentSet.has(rel.childId))
+        .forEach((rel) => {
+          const parentGroup = findGroup(rel.parentId);
+          const childGroup = findGroup(rel.childId);
+          if (parentGroup === childGroup) return;
+          groupChildren.get(parentGroup).add(childGroup);
+          groupIncoming.get(childGroup).add(parentGroup);
+        });
+
+      // Build levels outward from the focused person whenever possible. This
+      // makes every parent-child hop exactly one generation, including when a
+      // component has several roots. The previous root-first fallback could
+      // leave stale depth values on intermediate groups and create visual gaps.
+      const groupGeneration = new Map();
+      const generationQueue = [];
+      const focusedGroup = focusId && componentSet.has(focusId) ? findGroup(focusId) : null;
+      if (focusedGroup) {
+        groupGeneration.set(focusedGroup, 0);
+        generationQueue.push(focusedGroup);
+      } else {
+        groupIncoming.forEach((incoming, group) => {
+          if (!incoming.size) {
+            groupGeneration.set(group, 0);
+            generationQueue.push(group);
+          }
+        });
+      }
+
+      while (generationQueue.length) {
+        const group = generationQueue.shift();
+        const generation = groupGeneration.get(group);
+        const neighbours = [
+          ...[...(groupIncoming.get(group) || [])].map((parentGroup) => [parentGroup, generation - 1]),
+          ...[...(groupChildren.get(group) || [])].map((childGroup) => [childGroup, generation + 1])
+        ];
+        neighbours.forEach(([nextGroup, nextGeneration]) => {
+          if (groupGeneration.has(nextGroup)) return;
+          groupGeneration.set(nextGroup, nextGeneration);
+          generationQueue.push(nextGroup);
+        });
+      }
+
+      // Cyclic or incomplete data is rare, but it should still render without
+      // collapsing partner groups. Use the original graph depth only for
+      // groups that were unreachable during the directed traversal.
+      componentIds.forEach((id) => {
+        const group = findGroup(id);
+        if (!groupGeneration.has(group)) groupGeneration.set(group, generationById.get(id) || 0);
+      });
+      componentIds.forEach((id) => generationById.set(id, groupGeneration.get(findGroup(id)) || 0));
+
       const levels = new Map();
       componentIds.forEach((id) => {
         const generation = generationById.get(id) || 0;
@@ -1205,6 +1350,7 @@ const buildAllPeopleLayout = (db, focusId, language = 'es', cardMetrics = TREE_C
                 slot: componentOffset + start + index,
                 relationLabel: relationLabel || (generation === 0 ? translate(language, 'tree.familyGroup') : kinTerms[language]?.generation(generation + 1)),
                 relationGroup: relationGroup === 'family' && group.parentIds.length ? 'sibling' : relationGroup,
+                parentIds: group.parentIds,
                 familyGroupId,
                 familyGroupLabel: familyGroupId ? translate(language, 'tree.siblings') : ''
               });
@@ -1214,12 +1360,33 @@ const buildAllPeopleLayout = (db, focusId, language = 'es', cardMetrics = TREE_C
           });
       });
 
+      const componentNodes = nodes.filter((node) => componentSet.has(node.id));
+      db.partnerships
+        .filter((rel) => componentSet.has(rel.personAId) && componentSet.has(rel.personBId))
+        .forEach((rel) => {
+          const first = componentNodes.find((node) => node.id === rel.personAId);
+          const second = componentNodes.find((node) => node.id === rel.personBId);
+          if (!first || !second || first.generation !== second.generation) return;
+          const left = first.slot <= second.slot ? first : second;
+          const right = left === first ? second : first;
+          right.slot = left.slot + 0.92;
+        });
+
       componentOffset += componentWidth + TREE_COMPONENT_GAP_SLOTS;
     });
 
+  const simplifiedParentEdges = new Set();
+  db.partnerships.forEach((partnership) => {
+    const sharedChildren = db.parentChild
+      .filter((rel) => rel.parentId === partnership.personAId && rel.childId && db.parentChild.some((other) => other.parentId === partnership.personBId && other.childId === rel.childId))
+      .map((rel) => rel.childId);
+    if (sharedChildren.length < 2) return;
+    sharedChildren.forEach((childId) => simplifiedParentEdges.add(`${partnership.personBId}|${childId}`));
+  });
+
   const edgesByKey = [
     ...db.parentChild
-      .filter((rel) => peopleById.has(rel.parentId) && peopleById.has(rel.childId))
+      .filter((rel) => peopleById.has(rel.parentId) && peopleById.has(rel.childId) && !simplifiedParentEdges.has(`${rel.parentId}|${rel.childId}`))
       .map((rel) => ({ id: `all_${rel.parentId}_${rel.childId}`, fromKey: `all_${rel.parentId}`, toKey: `all_${rel.childId}` })),
     ...db.partnerships
       .filter((rel) => peopleById.has(rel.personAId) && peopleById.has(rel.personBId))
@@ -1369,6 +1536,75 @@ const describeSuggestionChange = (change, db) => {
   return 'Aplicar cambio propuesto.';
 };
 
+const resolveTemporalCollisions = (nodes, cardMetrics = TREE_CARD_DEFAULT) => {
+  const cardWidth = cardMetrics.width;
+  const cardHeight = cardMetrics.height;
+  const gap = Math.max(TREE_MIN_CARD_GAP, cardMetrics.columnGap * 0.35);
+  const placed = [];
+
+  // Place older/unknown rows first. Each card keeps its preferred x until it
+  // intersects a card already placed in an overlapping temporal band.
+  const ordered = [...nodes].sort((a, b) => {
+    if (a.y !== b.y) return a.y - b.y;
+    return a.x - b.x || comparePeopleByDate(a.person, b.person);
+  });
+
+  ordered.forEach((node) => {
+    let x = node.x;
+    let conflict;
+    do {
+      conflict = placed.find((other) => {
+        const verticalOverlap = node.y < other.y + cardHeight && node.y + cardHeight > other.y;
+        const horizontalOverlap = x < other.x + cardWidth + gap && x + cardWidth + gap > other.x;
+        return verticalOverlap && horizontalOverlap;
+      });
+      if (conflict) x = conflict.x + cardWidth + gap;
+    } while (conflict);
+
+    const positioned = { ...node, x };
+    placed.push(positioned);
+  });
+
+  return nodes.map((node) => placed.find((placedNode) => placedNode.key === node.key) || node);
+};
+
+const routeTemporalEdges = (edges, nodes, cardMetrics = TREE_CARD_DEFAULT) => {
+  const cardHeight = cardMetrics.height;
+  const nodeByKey = new Map(nodes.map((node) => [node.key, node]));
+  const parentGroups = new Map();
+  edges.filter((edge) => edge.kind !== 'peer').forEach((edge) => {
+    if (!parentGroups.has(edge.fromKey)) parentGroups.set(edge.fromKey, []);
+    parentGroups.get(edge.fromKey).push(edge);
+  });
+
+  const groupLaneByBand = new Map();
+  const busYByFromKey = new Map();
+  parentGroups.forEach((group, fromKey) => {
+    const from = nodeByKey.get(fromKey);
+    const targets = group.map((edge) => nodeByKey.get(edge.toKey)).filter(Boolean);
+    if (!from || !targets.length) return;
+    const nearestTargetY = Math.min(...targets.map((target) => target.y));
+    const availableGap = nearestTargetY - (from.y + cardHeight);
+    const baseY = from.y + cardHeight + Math.max(12, Math.min(28, availableGap / 2));
+    const band = Math.round(baseY / 20);
+    const lane = groupLaneByBand.get(band) || 0;
+    groupLaneByBand.set(band, lane + 1);
+    busYByFromKey.set(fromKey, baseY + lane * 8);
+  });
+
+  return edges.map((edge) => {
+    if (edge.kind === 'peer') return edge;
+    const from = nodeByKey.get(edge.fromKey);
+    const to = nodeByKey.get(edge.toKey);
+    const busY = busYByFromKey.get(edge.fromKey);
+    if (!from || !to || !Number.isFinite(busY)) return edge;
+    return {
+      ...edge,
+      path: `M ${edge.from.x} ${edge.from.y} V ${busY} H ${edge.to.x} V ${edge.to.y}`
+    };
+  });
+};
+
 const buildTemporalLayout = (layout, cardMetrics = layout.cardMetrics || TREE_CARD_DEFAULT) => {
   const cardWidth = cardMetrics.width;
   const cardHeight = cardMetrics.height;
@@ -1384,7 +1620,7 @@ const buildTemporalLayout = (layout, cardMetrics = layout.cardMetrics || TREE_CA
   const axisStartYear = hasUnknownDates ? minYear - UNKNOWN_BIRTH_YEAR_OFFSET : minYear;
   const rangeHeight = Math.max(1, maxYear - axisStartYear) * TEMPORAL_PIXELS_PER_YEAR;
   const unknownY = TEMPORAL_TOP_PADDING;
-  const nodes = layout.nodes.map((node) => {
+  const temporalNodes = layout.nodes.map((node) => {
     const birthYear = birthYearFor(node.person);
     return {
       ...node,
@@ -1392,6 +1628,7 @@ const buildTemporalLayout = (layout, cardMetrics = layout.cardMetrics || TREE_CA
       y: birthYear === null ? unknownY : TEMPORAL_TOP_PADDING + (birthYear - axisStartYear) * TEMPORAL_PIXELS_PER_YEAR
     };
   });
+  const nodes = resolveTemporalCollisions(temporalNodes, cardMetrics);
   const nodeByKey = new Map(nodes.map((node) => [node.key, node]));
   const edges = layout.edges
     .filter((edge) => nodeByKey.has(edge.fromKey) && nodeByKey.has(edge.toKey))
@@ -1404,6 +1641,7 @@ const buildTemporalLayout = (layout, cardMetrics = layout.cardMetrics || TREE_CA
         to: { x: to.x + cardWidth / 2, y: to.y }
       };
     });
+  const routedEdges = routeTemporalEdges(edges, nodes, cardMetrics);
 
   const step = temporalTickStep(minYear, maxYear);
   const tickYears = new Set([minYear, maxYear]);
@@ -1413,12 +1651,14 @@ const buildTemporalLayout = (layout, cardMetrics = layout.cardMetrics || TREE_CA
   const ticks = [...tickYears]
     .sort((a, b) => a - b)
     .map((year) => ({ year, y: TEMPORAL_TOP_PADDING + (year - axisStartYear) * TEMPORAL_PIXELS_PER_YEAR }));
+  const width = Math.max(layout.width, ...nodes.map((node) => node.x + cardWidth + 42));
   const height = Math.max(layout.height, TEMPORAL_TOP_PADDING + rangeHeight + cardHeight + TEMPORAL_BOTTOM_PADDING);
 
   return {
     ...layout,
     nodes,
-    edges,
+    edges: routedEdges,
+    width,
     height,
     groups: [],
     temporal: {
@@ -2040,6 +2280,7 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
             {(layout.groups || []).map((group) => <div key={group.id} className={`familyGroupBand ${group.kind}`} style={{ left: group.x, top: group.y, width: group.width, height: group.height }}><span>{group.label}</span></div>)}
             <svg className="treeLines" viewBox={`0 0 ${layout.width} ${layout.height}`} aria-hidden="true">
               {layout.edges.map((edge) => {
+                if (edge.path) return <path key={edge.id} className="familyLine temporalRoutedLine" d={edge.path} />;
                 if (edge.kind === 'peer') {
                   return <path key={edge.id} className="peerLine" d={`M ${edge.from.x} ${edge.from.y} C ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.from.y}, ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.to.y}, ${edge.to.x} ${edge.to.y}`} />;
                 }
