@@ -6,7 +6,7 @@ import { defaultDatabase, displayName, emptyDatabase, newId, normalizeDatabase, 
 import { exportGedcom, importGedcom } from '@/lib/gedcom';
 import { acceptTreeInvitation, createRemoteTree, createTreeInvitation, deleteRemoteTree, getRemoteTree, listAccessibleTrees, listTreeInvitations, remoteTreeStorageKey, renameRemoteTree, revokeTreeInvitation, saveRemoteTree } from '@/lib/supabaseStore';
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
-import { AlertTriangle, Award, BookOpen, CalendarDays, Check, ChevronDown, ChevronsLeft, ChevronsRight, Clock3, Compass, Copy, Database, FileDown, Globe2, Hourglass, Image as ImageIcon, Layers3, LocateFixed, LockKeyhole, Maximize2, Minimize2, Moon, MoreHorizontal, Puzzle, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sprout, Sun, Trash2, TreePine, UserCircle, UserPlus, UsersRound, Waypoints, ZoomIn, ZoomOut } from 'lucide-react';
+import { AlertTriangle, ArrowDownFromLine, ArrowUpFromLine, Award, BookOpen, CalendarDays, Check, ChevronDown, ChevronsLeft, ChevronsRight, Clock3, Compass, Copy, Database, Eye, EyeOff, FileDown, GitBranch, Globe2, Hourglass, Image as ImageIcon, Layers3, LocateFixed, LockKeyhole, Maximize2, Minimize2, Moon, MoreHorizontal, Puzzle, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sprout, Sun, Trash2, TreePine, UserCircle, UserPlus, UsersRound, Waypoints, ZoomIn, ZoomOut } from 'lucide-react';
 
 const iconProps = { size: 20, strokeWidth: 1.9, 'aria-hidden': true };
 const IconHome = <Sprout {...iconProps} className="rootsNavIcon" />;
@@ -38,7 +38,7 @@ const I18N = {
     placeholders: { birthYear: 'Ej. 1942', email: 'nombre@dominio.com', birthPlace: 'Ciudad, provincia, país', notes: 'Hipótesis, datos pendientes, variantes del apellido...', search: 'Buscar por nombre, apodo, apellido, lugar…', repository: 'FamilySearch, archivo provincial, parroquia…', sourceExplanation: 'Acta, censo, recuerdo familiar, enlace, archivo...' },
     modalTitles: { newPiece: 'Nueva pieza', newSource: 'Nueva fuente', newEvent: 'Nuevo evento · {name}' },
     people: { bioPending: 'Datos biográficos pendientes' },
-    tree: { branch: 'Rama', filters: 'Filtros de rama', tools: 'Herramientas del lienzo', scale: 'Escala', temporalScale: 'Escala temporal', background: 'Fondo', changeBackground: 'Cambiar fondo', center: 'Centrar', zoomIn: 'Acercar', zoomOut: 'Alejar', maximize: 'Maximizar lienzo', restore: 'Restaurar vista', ancestry: 'Ascendencia', descendants: 'Descendencia', generation: 'Generación', noDate: 'Fecha pendiente', unknownDate: 'Sin fecha', birthAxis: 'Nacimiento', hint: 'Arrastrá el lienzo para moverte. Usá la rueda o los botones para acercar y alejar.', cardTitle: 'Click: ver ficha. Doble click: centrar árbol.', siblings: 'Hermanos', partners: 'Parejas', familyGroup: 'Grupo familiar', selectTree: 'Árbol', newTree: 'Nuevo árbol', createTree: 'Crear árbol', role: 'Rol' },
+    tree: { branch: 'Rama', filters: 'Filtros de rama', visibility: 'Visibilidad', achievementsSummary: 'Resumen de hallazgos', tools: 'Herramientas del lienzo', scale: 'Escala', temporalScale: 'Escala temporal', background: 'Fondo', changeBackground: 'Cambiar fondo', center: 'Centrar', zoomIn: 'Acercar', zoomOut: 'Alejar', maximize: 'Maximizar lienzo', restore: 'Restaurar vista', ancestry: 'Ascendencia y tíos', descendants: 'Descendencia', generation: 'Misma generación (hermanos y primos)', noDate: 'Fecha pendiente', unknownDate: 'Sin fecha', birthAxis: 'Nacimiento', hint: 'Arrastrá el lienzo para moverte. Usá la rueda o los botones para acercar y alejar.', cardTitle: 'Click: ver ficha. Doble click: centrar árbol.', siblings: 'Hermanos', partners: 'Parejas', auntsUncles: 'Tíos', cousins: 'Primos', familyGroup: 'Grupo familiar', selectTree: 'Árbol', newTree: 'Nuevo árbol', createTree: 'Crear árbol', role: 'Rol' },
     card: { birthDate: 'Fecha de nacimiento', familyBranch: 'Rama familiar', sources: 'Fuentes', noBranch: 'Rama pendiente', missingName: 'Nombre pendiente' },
     profile: { account: 'Cuenta', title: 'Mi perfil', subtitle: 'Accedé a tu perfil y ajustes', localNoEmail: 'Cuenta local sin email', localAccount: 'Cuenta local', visualPreference: 'Preferencia visual', darkActive: 'Interfaz oscura activa', lightActive: 'Interfaz clara activa', language: 'Idioma', esSelected: 'Español seleccionado', enSelected: 'English selected', changeToEnglish: 'Cambiar idioma a inglés', changeToSpanish: 'Cambiar idioma a español', notice: 'Perfil básico local. Para sincronizar y tener cuenta, configurá Supabase.', darkToLight: 'Cambiar a modo claro', lightToDark: 'Cambiar a modo oscuro' },
     empty: { title: 'Empezá por una pieza', body: 'El árbol se construye alrededor de piezas y vínculos. Podés cargar datos incompletos e ir documentándolos a medida que investigás.', firstPiece: '+ Agregar primera pieza' },
@@ -70,7 +70,7 @@ const I18N = {
     placeholders: { birthYear: 'Ex. 1942', email: 'name@domain.com', birthPlace: 'City, state, country', notes: 'Hypotheses, pending data, surname variants...', search: 'Search by name, nickname, surname, place…', repository: 'FamilySearch, provincial archive, parish…', sourceExplanation: 'Certificate, census, family memory, link, file...' },
     modalTitles: { newPiece: 'New piece', newSource: 'New source', newEvent: 'New event · {name}' },
     people: { bioPending: 'Biographical data pending' },
-    tree: { branch: 'Branch', filters: 'Branch filters', tools: 'Canvas tools', scale: 'Scale', temporalScale: 'Timeline scale', background: 'Background', changeBackground: 'Change background', center: 'Center', zoomIn: 'Zoom in', zoomOut: 'Zoom out', maximize: 'Maximize canvas', restore: 'Restore view', ancestry: 'Ancestry', descendants: 'Descendants', generation: 'Generation', noDate: 'Date pending', unknownDate: 'No date', birthAxis: 'Birth', hint: 'Drag the canvas to move. Use the wheel or buttons to zoom.', cardTitle: 'Click: view profile. Double click: focus tree.', siblings: 'Siblings', partners: 'Partners', familyGroup: 'Family group', selectTree: 'Tree', newTree: 'New tree', createTree: 'Create tree', role: 'Role' },
+    tree: { branch: 'Branch', filters: 'Branch filters', visibility: 'Visibility', achievementsSummary: 'Findings summary', tools: 'Canvas tools', scale: 'Scale', temporalScale: 'Timeline scale', background: 'Background', changeBackground: 'Change background', center: 'Center', zoomIn: 'Zoom in', zoomOut: 'Zoom out', maximize: 'Maximize canvas', restore: 'Restore view', ancestry: 'Ancestors & aunts/uncles', descendants: 'Descendants', generation: 'Same generation (siblings & cousins)', noDate: 'Date pending', unknownDate: 'No date', birthAxis: 'Birth', hint: 'Drag the canvas to move. Use the wheel or buttons to zoom.', cardTitle: 'Click: view profile. Double click: focus tree.', siblings: 'Siblings', partners: 'Partners', auntsUncles: 'Aunts/uncles', cousins: 'Cousins', familyGroup: 'Family group', selectTree: 'Tree', newTree: 'New tree', createTree: 'Create tree', role: 'Role' },
     card: { birthDate: 'Birth date', familyBranch: 'Family branch', sources: 'Sources', noBranch: 'Branch pending', missingName: 'Name pending' },
     profile: { account: 'Account', title: 'My profile', subtitle: 'Access your profile and settings', localNoEmail: 'Local account without email', localAccount: 'Local account', visualPreference: 'Visual preference', darkActive: 'Dark interface active', lightActive: 'Light interface active', language: 'Language', esSelected: 'Spanish selected', enSelected: 'English selected', changeToEnglish: 'Switch language to English', changeToSpanish: 'Switch language to Spanish', notice: 'Local basic profile. Configure Supabase to sync and create an account.', darkToLight: 'Switch to light mode', lightToDark: 'Switch to dark mode' },
     empty: { title: 'Start with one piece', body: 'The tree is built around pieces and links. You can add incomplete data and document it as you research.', firstPiece: '+ Add first piece' },
@@ -613,6 +613,13 @@ const drawTreeExportCanvas = async ({ db, layout, title, temporalScale, canvasBa
   });
 
   layout.nodes.forEach((node) => {
+    if (node.isConnector) {
+      ctx.beginPath();
+      ctx.arc(node.x + TREE_CARD_WIDTH / 2, node.y + 6, 4, 0, Math.PI * 2);
+      ctx.fillStyle = node.connectorType === 'pair' ? '#b78a3b' : '#245b4d';
+      ctx.fill();
+      return;
+    }
     const status = personStatusClass(node.person);
     roundRectPath(ctx, node.x, node.y, TREE_CARD_WIDTH, TREE_CARD_HEIGHT, 12);
     ctx.fillStyle = status === 'living' ? '#fffefb' : '#fffdf9';
@@ -699,7 +706,65 @@ const buildGlobalTimeline = (db) => {
     });
 };
 
+const addFamilyConvergenceNodes = (sourceNodes, sourceEdges) => {
+  const nodes = sourceNodes.map((node) => ({ ...node }));
+  const edges = sourceEdges.map((edge) => ({ ...edge }));
+  const nodeById = new Map();
+  nodes.forEach((node) => {
+    if (node.isConnector || !node.id) return;
+    if (!nodeById.has(node.id)) nodeById.set(node.id, []);
+    nodeById.get(node.id).push(node);
+  });
+
+  const familyGroups = new Map();
+  nodes.forEach((child) => {
+    if (child.isConnector || !child.parentIds || child.parentIds.length < 2) return;
+    const parents = [...new Set(child.parentIds)].sort();
+    const parentNodes = parents.flatMap((id) => nodeById.get(id) || []).filter((node) => node.generation < child.generation);
+    if (parentNodes.length < parents.length) return;
+    const parentGeneration = Math.max(...parentNodes.map((node) => node.generation));
+    const key = `${parents.join('|')}@${parentGeneration}`;
+    if (!familyGroups.has(key)) familyGroups.set(key, { key, parents, parentNodes, children: [] });
+    familyGroups.get(key).children.push(child);
+  });
+
+  familyGroups.forEach((group) => {
+    const children = [...new Map(group.children.map((child) => [child.key, child])).values()];
+    if (!children.length) return;
+    const parentNodes = group.parents.flatMap((id) => nodeById.get(id) || [])
+      .filter((node) => node.generation === group.parentNodes[0].generation);
+    const parentKeys = parentNodes.map((node) => node.key).sort();
+    const pairKey = `connector_pair_${parentKeys.join('_')}`;
+    const siblingKey = `connector_siblings_${parentKeys.join('_')}`;
+    const pairSlot = parentNodes.length
+      ? parentNodes.reduce((sum, node) => sum + node.slot, 0) / parentNodes.length
+      : children.reduce((sum, node) => sum + node.slot, 0) / children.length;
+    const siblingSlot = children.reduce((sum, node) => sum + node.slot, 0) / children.length;
+    const pairGeneration = group.parentNodes[0].generation + 0.32;
+    const siblingGeneration = group.parentNodes[0].generation + 0.64;
+    const pairNode = { key: pairKey, id: pairKey, generation: pairGeneration, slot: pairSlot, parentIds: parentNodes.map((node) => node.id), isConnector: true, connectorType: 'pair' };
+    const siblingNode = { key: siblingKey, id: siblingKey, generation: siblingGeneration, slot: siblingSlot, parentIds: [pairKey], isConnector: true, connectorType: 'siblings' };
+    nodes.push(pairNode, siblingNode);
+    children.forEach((child) => { child.parentIds = [siblingKey]; });
+
+    const childKeys = new Set(children.map((child) => child.key));
+    for (let index = edges.length - 1; index >= 0; index -= 1) {
+      const edge = edges[index];
+      if (edge.kind === 'peer') continue;
+      if (childKeys.has(edge.toKey) && group.parents.includes(nodes.find((node) => node.key === edge.fromKey)?.id)) edges.splice(index, 1);
+    }
+    parentNodes.forEach((parent) => edges.push({ id: `${parent.key}_${pairKey}`, kind: 'convergence', fromKey: parent.key, toKey: pairKey }));
+    edges.push({ id: `${pairKey}_${siblingKey}`, kind: 'convergence', fromKey: pairKey, toKey: siblingKey });
+    children.forEach((child) => edges.push({ id: `${siblingKey}_${child.key}`, kind: 'convergence', fromKey: siblingKey, toKey: child.key }));
+  });
+
+  return { nodes, edges };
+};
+
 const positionTreeNodes = (nodes, edgesByKey, cardMetrics = TREE_CARD_DEFAULT) => {
+  const expanded = addFamilyConvergenceNodes(nodes, edgesByKey);
+  nodes = expanded.nodes;
+  edgesByKey = expanded.edges;
   if (!nodes.length) return { nodes: [], edges: [], width: 0, height: 0, generationCount: 0 };
   const cardWidth = cardMetrics.width;
   const cardHeight = cardMetrics.height;
@@ -707,18 +772,29 @@ const positionTreeNodes = (nodes, edgesByKey, cardMetrics = TREE_CARD_DEFAULT) =
   const minSlot = Math.min(...nodes.map((node) => node.slot));
   const maxSlot = Math.max(...nodes.map((node) => node.slot));
   const orderedGenerations = [...new Set(nodes.map((node) => node.generation))].sort((a, b) => a - b);
-  const generationPosition = new Map(orderedGenerations.map((generation, index) => [generation, index]));
+  const cardGenerations = [...new Set(nodes.filter((node) => !node.isConnector).map((node) => node.generation))].sort((a, b) => a - b);
+  const generationPosition = new Map(cardGenerations.map((generation, index) => [generation, index]));
   const paddingX = 42;
   const paddingY = 46;
   const slotSize = cardWidth + cardMetrics.columnGap;
   const rowSize = cardHeight + cardMetrics.rowGap;
   let width = Math.max(760, (maxSlot - minSlot) * slotSize + cardWidth + paddingX * 2);
-  const height = Math.max(460, (orderedGenerations.length - 1) * rowSize + cardHeight + paddingY * 2);
+  const height = Math.max(460, (cardGenerations.length - 1) * rowSize + cardHeight + paddingY * 2);
+
+  const nodeY = (node) => {
+    if (!node.isConnector) return paddingY + generationPosition.get(node.generation) * rowSize;
+    const parentGeneration = Math.floor(node.generation);
+    const parentRow = generationPosition.get(parentGeneration);
+    if (parentRow === undefined) return paddingY + generationPosition.get(node.generation) * rowSize;
+    // Keep convergence nodes inside the normal inter-generation gap instead
+    // of allocating a full card row to each connector.
+    return paddingY + parentRow * rowSize + cardHeight + (node.generation - parentGeneration) * cardMetrics.rowGap;
+  };
 
   const positionedNodes = nodes.map((node) => ({
     ...node,
     x: paddingX + (node.slot - minSlot) * slotSize,
-    y: paddingY + generationPosition.get(node.generation) * rowSize,
+    y: nodeY(node),
     depth: Math.abs(node.generation)
   }));
   const rowsByGeneration = new Map();
@@ -820,13 +896,16 @@ const positionTreeNodes = (nodes, edgesByKey, cardMetrics = TREE_CARD_DEFAULT) =
           to: { x: to.x + (fromLeft ? 0 : cardWidth), y: to.y + cardHeight / 2 }
         };
       }
+      const connectorPoint = (node, from = false) => from
+        ? node.y + 6
+        : node.y + 6;
       return {
         id: edge.id,
         kind: edge.kind || 'parentChild',
         fromKey: edge.fromKey,
         toKey: edge.toKey,
-        from: { x: from.x + cardWidth / 2, y: from.y + cardHeight },
-        to: { x: to.x + cardWidth / 2, y: to.y }
+        from: { x: from.x + cardWidth / 2, y: from.isConnector ? connectorPoint(from, true) : from.y + cardHeight },
+        to: { x: to.x + cardWidth / 2, y: to.isConnector ? connectorPoint(to) : to.y }
       };
     });
 
@@ -965,6 +1044,9 @@ const buildAncestorLayout = (db, rootId, options = {}, language = 'es', cardMetr
   if (showGeneration) {
     const existingNodeIds = new Set(nodes.map((node) => node.id));
     const parentIds = validSortedIds(parentsByChild.get(rootId));
+    const auntUncleIds = validSortedIds(parentIds.flatMap((parentId) =>
+      [...new Set((parentsByChild.get(parentId) || []).flatMap((grandparentId) => childrenByParent.get(grandparentId) || []))]
+    )).filter((id) => !parentIds.includes(id) && id !== rootId && !existingNodeIds.has(id));
     const siblingIds = validSortedIds(parentIds.flatMap((parentId) => childrenByParent.get(parentId) || []))
       .filter((id) => id !== rootId && !existingNodeIds.has(id));
     const partnerIds = validSortedIds(db.partnerships
@@ -972,6 +1054,19 @@ const buildAncestorLayout = (db, rootId, options = {}, language = 'es', cardMetr
       .map((rel) => rel.personAId === rootId ? rel.personBId : rel.personAId))
       .filter((id) => !existingNodeIds.has(id));
     const rootSlot = ancestors.rootX;
+    if (showAncestors) {
+      const parentGenerationSlots = nodes.filter((node) => node.generation === -1).map((node) => node.slot);
+      const auntUncleStart = Math.min(rootSlot, ...parentGenerationSlots) - auntUncleIds.length;
+      auntUncleIds.forEach((id, index) => {
+        const key = `aunt_uncle_${id}`;
+        nodes.push({ key, id, person: peopleById.get(id), generation: -1, slot: auntUncleStart + index, relationLabel: kinTerm(language, 'auntUncle', peopleById.get(id)), relationGroup: 'collateral', familyGroupId: 'focus_aunts_uncles', familyGroupLabel: translate(language, 'tree.auntsUncles') });
+        existingNodeIds.add(id);
+        (parentsByChild.get(id) || []).forEach((grandparentId) => {
+          const grandparentNode = nodes.find((node) => node.id === grandparentId);
+          if (grandparentNode) edgeById.set(`${grandparentNode.key}_${key}`, { id: `${grandparentNode.key}_${key}`, kind: 'sibling', fromKey: grandparentNode.key, toKey: key });
+        });
+      });
+    }
     siblingIds.forEach((id, index) => {
       const key = `generation_${id}`;
       nodes.push({
@@ -1007,7 +1102,47 @@ const buildAncestorLayout = (db, rootId, options = {}, language = 'es', cardMetr
       existingNodeIds.add(id);
       if (partnerIds.includes(id)) edgeById.set(`${rootKey}_${key}_partner`, { id: `${rootKey}_${key}_partner`, kind: 'peer', fromKey: rootKey, toKey: key });
     });
+    const cousinIds = validSortedIds(auntUncleIds.flatMap((auntUncleId) => childrenByParent.get(auntUncleId) || []))
+      .filter((id) => id !== rootId && !existingNodeIds.has(id));
+    const cousinStart = rootSlot + partnerIds.length + 1;
+    cousinIds.forEach((id, index) => {
+      const key = `cousin_${id}`;
+      nodes.push({ key, id, person: peopleById.get(id), generation: 0, slot: cousinStart + index, relationLabel: kinTerm(language, 'cousin', peopleById.get(id)), relationGroup: 'collateral', familyGroupId: 'focus_cousins', familyGroupLabel: translate(language, 'tree.cousins') });
+      existingNodeIds.add(id);
+      auntUncleIds.forEach((auntUncleId) => {
+        if (!(childrenByParent.get(auntUncleId) || []).includes(id)) return;
+        const auntUncleNode = nodes.find((node) => node.id === auntUncleId);
+        if (auntUncleNode) edgeById.set(`${auntUncleNode.key}_${key}`, { id: `${auntUncleNode.key}_${key}`, kind: 'sibling', fromKey: auntUncleNode.key, toKey: key });
+      });
+    });
   }
+
+  // La ascendencia también incluye la rama colateral de la generación de los
+  // padres. Cuando la expansión de generación está apagada, agregamos los
+  // tíos aquí sin activar hermanos, parejas ni primos.
+  if (showAncestors && !showGeneration) {
+    const existingNodeIds = new Set(nodes.map((node) => node.id));
+    const parentIds = validSortedIds(parentsByChild.get(rootId));
+    const auntUncleIds = validSortedIds(parentIds.flatMap((parentId) =>
+      [...new Set((parentsByChild.get(parentId) || []).flatMap((grandparentId) => childrenByParent.get(grandparentId) || []))]
+    )).filter((id) => !parentIds.includes(id) && id !== rootId && !existingNodeIds.has(id));
+    const parentGenerationSlots = nodes.filter((node) => node.generation === -1).map((node) => node.slot);
+    const auntUncleStart = Math.min(ancestors.rootX, ...parentGenerationSlots) - auntUncleIds.length;
+    auntUncleIds.forEach((id, index) => {
+      const key = `aunt_uncle_${id}`;
+      nodes.push({ key, id, person: peopleById.get(id), generation: -1, slot: auntUncleStart + index, relationLabel: kinTerm(language, 'auntUncle', peopleById.get(id)), relationGroup: 'collateral', familyGroupId: 'focus_aunts_uncles', familyGroupLabel: translate(language, 'tree.auntsUncles') });
+      (parentsByChild.get(id) || []).forEach((grandparentId) => {
+        const grandparentNode = nodes.find((node) => node.id === grandparentId);
+        if (grandparentNode) edgeById.set(`${grandparentNode.key}_${key}`, { id: `${grandparentNode.key}_${key}`, kind: 'sibling', fromKey: grandparentNode.key, toKey: key });
+      });
+    });
+  }
+
+  const visibleNodeIds = new Set(nodes.map((node) => node.id));
+  nodes.forEach((node) => {
+    if (node.isConnector || !node.id) return;
+    node.parentIds = validSortedIds(parentsByChild.get(node.id)).filter((parentId) => visibleNodeIds.has(parentId));
+  });
 
   const positioned = positionTreeNodes(nodes, [...edgeById.values()], cardMetrics);
   const uniqueAncestors = new Set(positioned.nodes.filter((node) => node.generation < 0).map((node) => node.id));
@@ -1020,7 +1155,9 @@ const buildAncestorLayout = (db, rootId, options = {}, language = 'es', cardMetr
     allPeopleCount: positioned.nodes.length,
     groups: makeNodeGroups(positioned.nodes, {
       focus_siblings: translate(language, 'tree.siblings'),
-      focus_partners: translate(language, 'tree.partners')
+      focus_partners: translate(language, 'tree.partners'),
+      focus_aunts_uncles: translate(language, 'tree.auntsUncles'),
+      focus_cousins: translate(language, 'tree.cousins')
     }, cardMetrics)
   };
 };
@@ -1558,7 +1695,9 @@ const resolveTemporalCollisions = (nodes, cardMetrics = TREE_CARD_DEFAULT) => {
     let conflict;
     do {
       conflict = placed.find((other) => {
-        const verticalOverlap = node.y < other.y + cardHeight && node.y + cardHeight > other.y;
+        const nodeHeight = node.isConnector ? 12 : cardHeight;
+        const otherHeight = other.isConnector ? 12 : cardHeight;
+        const verticalOverlap = node.y < other.y + otherHeight && node.y + nodeHeight > other.y;
         const horizontalOverlap = x < other.x + cardWidth + gap && x + cardWidth + gap > other.x;
         return verticalOverlap && horizontalOverlap;
       });
@@ -1574,6 +1713,7 @@ const resolveTemporalCollisions = (nodes, cardMetrics = TREE_CARD_DEFAULT) => {
 
 const routeTemporalEdges = (edges, nodes, cardMetrics = TREE_CARD_DEFAULT) => {
   const cardHeight = cardMetrics.height;
+  const bottomOf = (node) => node.y + (node.isConnector ? 6 : cardHeight);
   const nodeByKey = new Map(nodes.map((node) => [node.key, node]));
   const parentGroups = new Map();
   edges.filter((edge) => edge.kind !== 'peer').forEach((edge) => {
@@ -1588,8 +1728,8 @@ const routeTemporalEdges = (edges, nodes, cardMetrics = TREE_CARD_DEFAULT) => {
     const targets = group.map((edge) => nodeByKey.get(edge.toKey)).filter(Boolean);
     if (!from || !targets.length) return;
     const nearestTargetY = Math.min(...targets.map((target) => target.y));
-    const availableGap = nearestTargetY - (from.y + cardHeight);
-    const baseY = from.y + cardHeight + Math.max(12, Math.min(28, availableGap / 2));
+    const availableGap = nearestTargetY - bottomOf(from);
+    const baseY = bottomOf(from) + Math.max(12, Math.min(28, availableGap / 2));
     const band = Math.round(baseY / 20);
     const lane = groupLaneByBand.get(band) || 0;
     groupLaneByBand.set(band, lane + 1);
@@ -1597,14 +1737,14 @@ const routeTemporalEdges = (edges, nodes, cardMetrics = TREE_CARD_DEFAULT) => {
   });
 
   return edges.map((edge) => {
-    if (edge.kind === 'peer') return edge;
+    if (edge.kind === 'peer' || edge.kind === 'convergence') return edge;
     const from = nodeByKey.get(edge.fromKey);
     const to = nodeByKey.get(edge.toKey);
     const busY = busYByFromKey.get(edge.fromKey);
     if (!from || !to || !Number.isFinite(busY)) return edge;
     return {
       ...edge,
-      path: `M ${edge.from.x} ${edge.from.y} V ${busY} H ${edge.to.x} V ${edge.to.y}`
+      path: `M ${edge.from.x} ${bottomOf(from)} V ${busY} H ${edge.to.x} V ${to.isConnector ? to.y + 6 : to.y}`
     };
   });
 };
@@ -1629,8 +1769,31 @@ const buildTemporalLayout = (layout, cardMetrics = layout.cardMetrics || TREE_CA
     return {
       ...node,
       birthYear,
-      y: birthYear === null ? unknownY : TEMPORAL_TOP_PADDING + (birthYear - axisStartYear) * TEMPORAL_PIXELS_PER_YEAR
+      y: node.isConnector ? null : birthYear === null ? unknownY : TEMPORAL_TOP_PADDING + (birthYear - axisStartYear) * TEMPORAL_PIXELS_PER_YEAR
     };
+  });
+  const temporalNodeByKey = new Map(temporalNodes.map((node) => [node.key, node]));
+  const incoming = new Map();
+  const outgoing = new Map();
+  layout.edges.forEach((edge) => {
+    if (!incoming.has(edge.toKey)) incoming.set(edge.toKey, []);
+    if (!outgoing.has(edge.fromKey)) outgoing.set(edge.fromKey, []);
+    incoming.get(edge.toKey).push(edge.fromKey);
+    outgoing.get(edge.fromKey).push(edge.toKey);
+  });
+  temporalNodes.filter((node) => node.isConnector).forEach((node) => {
+    const parentYs = (incoming.get(node.key) || [])
+      .map((key) => temporalNodeByKey.get(key))
+      .filter((item) => item && !item.isConnector && Number.isFinite(item.y))
+      .map((item) => item.y + cardHeight);
+    const childYs = (outgoing.get(node.key) || [])
+      .map((key) => temporalNodeByKey.get(key))
+      .filter((item) => item && !item.isConnector && Number.isFinite(item.y))
+      .map((item) => item.y);
+    if (parentYs.length && childYs.length) node.y = (Math.max(...parentYs) + Math.min(...childYs)) / 2 - 6;
+    else if (parentYs.length) node.y = Math.max(...parentYs) + 12;
+    else if (childYs.length) node.y = Math.min(...childYs) - 18;
+    else node.y = unknownY;
   });
   const nodes = resolveTemporalCollisions(temporalNodes, cardMetrics);
   const nodeByKey = new Map(nodes.map((node) => [node.key, node]));
@@ -1641,8 +1804,8 @@ const buildTemporalLayout = (layout, cardMetrics = layout.cardMetrics || TREE_CA
       const to = nodeByKey.get(edge.toKey);
       return {
         ...edge,
-        from: { x: from.x + cardWidth / 2, y: from.y + cardHeight },
-        to: { x: to.x + cardWidth / 2, y: to.y }
+        from: { x: from.x + cardWidth / 2, y: from.y + (from.isConnector ? 6 : cardHeight) },
+        to: { x: to.x + cardWidth / 2, y: to.y + (to.isConnector ? 6 : 0) }
       };
     });
   const routedEdges = routeTemporalEdges(edges, nodes, cardMetrics);
@@ -1990,6 +2153,69 @@ function TreeCard({ person, label, relationGroup = 'family', sourceCount = 0, ca
   );
 }
 
+function TreeConnector({ type, style }) {
+  return <div className={`treeConnector ${type}`} style={style} aria-hidden="true"><span /></div>;
+}
+
+function VisibilityControl({ t, open, onOpenChange, showAllPeople, showAncestors, showDescendants, showGeneration, onToggle }) {
+  const options = [
+    { key: 'ancestors', active: showAncestors, label: t('tree.ancestry'), Icon: Waypoints },
+    { key: 'descendants', active: showDescendants, label: t('tree.descendants'), Icon: ArrowDownFromLine },
+    { key: 'generation', active: showGeneration, label: t('tree.generation'), Icon: UsersRound },
+    { key: 'allPeople', active: showAllPeople, label: t('actions.allPieces'), Icon: GitBranch }
+  ];
+  const activeCount = options.filter((option) => option.active).length;
+  const toggle = (key) => onToggle(key);
+
+  return <div className={`visibilityControl ${open ? 'open' : ''}`} onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()}>
+    <button className={`visibilityToggle ${open ? 'activeToggle' : ''}`} type="button" onClick={() => onOpenChange(!open)} aria-expanded={open} aria-label={open ? t('actions.hideTools') : t('tree.visibility')} title={open ? t('actions.hideTools') : t('tree.visibility')}>
+      {open ? <Eye size={19} strokeWidth={2} aria-hidden="true" /> : <EyeOff size={19} strokeWidth={2} aria-hidden="true" />}
+      <span className="visibilityCount">{activeCount}</span>
+    </button>
+    {open && <div className="visibilityOptions" role="group" aria-label={t('tree.visibility')}>
+      {options.map(({ key, active, label, Icon }) => <button key={key} className={`visibilityOption ${active ? 'on' : 'off'} ${showAllPeople && key !== 'allPeople' ? 'disabled' : ''}`} type="button" onClick={() => toggle(key)} aria-pressed={active} aria-label={`${label}: ${active ? 'on' : 'off'}`} title={label} disabled={showAllPeople && key !== 'allPeople'}>
+        <Icon size={18} strokeWidth={2} aria-hidden="true" />
+        <span className="visibilityStatus" aria-hidden="true" />
+      </button>)}
+    </div>}
+  </div>;
+}
+
+function AchievementSummary({ db, t, open, onOpenChange }) {
+  const people = db.people || [];
+  const oldestYear = calculateOldestYear(people);
+  const yearsBack = oldestYear ? Math.max(0, new Date().getFullYear() - oldestYear) : 0;
+  const currentValues = {
+    construccion_del_arbol: people.length,
+    generaciones_descubiertas: calculateGenerations(db),
+    viaje_en_el_tiempo: yearsBack,
+    generaciones_completas: calculateCompleteAncestors(db),
+    linaje_sin_fronteras: calculateCountries(people)
+  };
+  const iconByCategory = { construccion_del_arbol: TreePine, generaciones_descubiertas: Layers3, viaje_en_el_tiempo: Clock3, generaciones_completas: Waypoints, linaje_sin_fronteras: Globe2 };
+  const summaries = achievementCategories.map((category) => {
+    const resolved = resolveAchievementProgress(category, currentValues[category.id]);
+    return { ...category, current: resolved.currentValue, target: resolved.isComplete ? resolved.currentValue : resolved.nextTarget, resolved, Icon: iconByCategory[category.id] };
+  });
+  const unlocked = getTotalUnlockedAchievements(summaries.map((summary) => summary.resolved));
+
+  return <div className={`achievementSummary ${open ? 'open' : ''}`}>
+    <button className={`achievementSummaryToggle ${open ? 'activeToggle' : ''}`} type="button" onPointerDown={(event) => event.stopPropagation()} onClick={() => onOpenChange(!open)} aria-expanded={open} aria-label={t('tree.achievementsSummary')} title={t('tree.achievementsSummary')}>
+      <Award size={18} strokeWidth={2} aria-hidden="true" />
+      <span className="achievementSummaryTitle">{t('tree.achievementsSummary')}</span>
+      <span className="achievementSummaryCount">{unlocked}</span>
+      <ChevronDown size={15} strokeWidth={2.2} aria-hidden="true" />
+    </button>
+    {open && <div className="achievementSummaryPanel" role="status" aria-label={t('tree.achievementsSummary')}>
+      {summaries.map(({ id, name, current, target, Icon }) => <div className="achievementSummaryMetric" key={id} title={name}>
+        <span className="achievementSummaryMetricIcon"><Icon size={16} strokeWidth={2} aria-hidden="true" /></span>
+        <span className="achievementSummaryMetricName">{name}</span>
+        <strong>{current} <small>/ {target}</small></strong>
+      </div>)}
+    </div>}
+  </div>;
+}
+
 function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
   const { language, t } = useI18n();
   const cardMetrics = useTreeCardMetrics();
@@ -1999,6 +2225,8 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
   const [showAncestors, setShowAncestors] = useState(true);
   const [showDescendants, setShowDescendants] = useState(true);
   const [showGeneration, setShowGeneration] = useState(false);
+  const [visibilityMenuOpen, setVisibilityMenuOpen] = useState(false);
+  const [achievementSummaryOpen, setAchievementSummaryOpen] = useState(false);
   const [temporalScale, setTemporalScale] = useState(false);
   const [isCanvasMaximized, setCanvasMaximized] = useState(false);
   const [canvasBackground, setCanvasBackground] = useState('');
@@ -2220,44 +2448,6 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
             <span>{t('tree.branch')}</span>
             <select value={person.id} onChange={(e) => { setShowAllPeople(false); setFocusedId(e.target.value); }}>{[...db.people].sort(comparePeopleByName).map((p) => <option key={p.id} value={p.id}>{displayName(p)}</option>)}</select>
           </label>
-          <button className={`secondaryButton iconTextButton ${showAllPeople ? 'activeToggle' : ''}`} type="button" onClick={() => setShowAllPeople((value) => !value)}>
-            <UsersRound size={16} strokeWidth={2} aria-hidden="true" />
-            <span>{showAllPeople ? t('actions.focusedBranch') : t('actions.allPieces')}</span>
-          </button>
-        </div>
-        <div className="treeControls" id="treeCanvasTools">
-          {!showAllPeople && <div className="treeFilterChecks" aria-label={t('tree.filters')}>
-            <label data-short="Asc."><input type="checkbox" checked={showAncestors} onChange={(event) => setShowAncestors(event.target.checked)} /> {t('tree.ancestry')}</label>
-            <label data-short="Desc."><input type="checkbox" checked={showDescendants} onChange={(event) => setShowDescendants(event.target.checked)} /> {t('tree.descendants')}</label>
-            <label data-short="Gen."><input type="checkbox" checked={showGeneration} onChange={(event) => setShowGeneration(event.target.checked)} /> {t('tree.generation')}</label>
-          </div>}
-          <div className="zoomControls" aria-label={t('tree.tools')}>
-            <button className={`secondaryButton iconTextButton ${temporalScale ? 'activeToggle' : ''}`} type="button" onClick={() => setTemporalScale((value) => !value)} title={t('tree.temporalScale')}>
-              <Hourglass size={16} strokeWidth={2} aria-hidden="true" />
-              <span>{t('tree.scale')}</span>
-            </button>
-            <button className={`iconButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')} aria-label={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')}>
-              {isCanvasMaximized ? <Minimize2 size={18} strokeWidth={2} aria-hidden="true" /> : <Maximize2 size={18} strokeWidth={2} aria-hidden="true" />}
-            </button>
-            <button className={`iconButton ${canvasBackground ? 'activeToggle' : ''}`} type="button" onClick={() => backgroundInputRef.current?.click()} title={t('tree.background')} aria-label={t('tree.changeBackground')}>
-              <ImageIcon size={18} strokeWidth={2} aria-hidden="true" />
-            </button>
-            {canvasBackground && <button className="textButton compactTextButton" type="button" onClick={() => setCanvasBackground('')}>{t('actions.remove')}</button>}
-            <input ref={backgroundInputRef} hidden type="file" accept="image/*" onChange={loadCanvasBackground} />
-            <button className="iconButton" type="button" onClick={exportCurrentCanvasPdf} title={t('actions.exportPdf')} aria-label={t('actions.exportPdf')}>
-              <FileDown size={18} strokeWidth={2} aria-hidden="true" />
-            </button>
-            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale - 0.12)} title={t('tree.zoomOut')} aria-label={t('tree.zoomOut')}>
-              <ZoomOut size={18} strokeWidth={2} aria-hidden="true" />
-            </button>
-            <span>{Math.round(viewport.scale * 100)}%</span>
-            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale + 0.12)} title={t('tree.zoomIn')} aria-label={t('tree.zoomIn')}>
-              <ZoomIn size={18} strokeWidth={2} aria-hidden="true" />
-            </button>
-            <button className="iconButton" type="button" onClick={fitActiveCards} title={t('tree.center')} aria-label={t('tree.center')}>
-              <LocateFixed size={18} strokeWidth={2} aria-hidden="true" />
-            </button>
-          </div>
         </div>
       </div>
       <div ref={canvasRef} className={`treeCanvas ${temporalScale ? 'temporalCanvas' : ''} ${canvasBackground ? 'hasCanvasBackground' : ''}`} style={canvasBackground ? { '--canvas-bg-image': `url(${canvasBackground})` } : undefined} onWheel={(event) => { event.preventDefault(); setZoom(viewport.scale + (event.deltaY > 0 ? -0.08 : 0.08)); }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
@@ -2271,12 +2461,49 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
           {layout.temporal.ticks.map((tick) => <div key={tick.year} className="temporalTick" style={{ top: viewport.y + tick.y * viewport.scale }}><span>{tick.year}</span></div>)}
           {layout.temporal.hasUnknownDates && <div className="temporalTick unknown" style={{ top: viewport.y + layout.temporal.unknownY * viewport.scale }}><span>{t('tree.unknownDate')}</span></div>}
         </div>}
-        <div className="canvasFloatingControls">
+        <div className="canvasTopRightControls">
+          <AchievementSummary db={db} t={t} open={achievementSummaryOpen} onOpenChange={setAchievementSummaryOpen} />
+          <div className="canvasFloatingControls">
+          <div className="canvasZoomControls" onPointerDown={(event) => event.stopPropagation()} aria-label={t('tree.tools')}>
+            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale - 0.12)} title={t('tree.zoomOut')} aria-label={t('tree.zoomOut')}>
+              <ZoomOut size={18} strokeWidth={2} aria-hidden="true" />
+            </button>
+            <span>{Math.round(viewport.scale * 100)}%</span>
+            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale + 0.12)} title={t('tree.zoomIn')} aria-label={t('tree.zoomIn')}>
+              <ZoomIn size={18} strokeWidth={2} aria-hidden="true" />
+            </button>
+          </div>
+          <button className="iconButton canvasCenterButton" type="button" onPointerDown={(event) => event.stopPropagation()} onClick={fitActiveCards} title={t('tree.center')} aria-label={t('tree.center')}>
+            <LocateFixed size={18} strokeWidth={2} aria-hidden="true" />
+          </button>
           {onAdd && <button className="primaryButton canvasNewPieceButton" type="button" onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onClick={onAdd}>
             {t('actions.newPiece')}
           </button>}
           <button className={`iconButton canvasMaximizeButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')} aria-label={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')}>
             {isCanvasMaximized ? <Minimize2 size={18} strokeWidth={2} aria-hidden="true" /> : <Maximize2 size={18} strokeWidth={2} aria-hidden="true" />}
+          </button>
+          </div>
+        </div>
+        <div className="canvasBottomLeftControls">
+          <VisibilityControl t={t} open={visibilityMenuOpen} onOpenChange={setVisibilityMenuOpen} showAllPeople={showAllPeople} showAncestors={showAncestors} showDescendants={showDescendants} showGeneration={showGeneration} onToggle={(key) => {
+            if (key === 'ancestors') setShowAncestors((value) => !value);
+            if (key === 'descendants') setShowDescendants((value) => !value);
+            if (key === 'generation') setShowGeneration((value) => !value);
+            if (key === 'allPeople') setShowAllPeople((value) => !value);
+          }} />
+          <button className={`secondaryButton iconTextButton canvasScaleButton ${temporalScale ? 'activeToggle' : ''}`} type="button" onPointerDown={(event) => event.stopPropagation()} onClick={() => setTemporalScale((value) => !value)} title={t('tree.temporalScale')}>
+            <Hourglass size={16} strokeWidth={2} aria-hidden="true" />
+            <span>{t('tree.scale')}</span>
+          </button>
+        </div>
+        <div className="canvasBottomControls" onPointerDown={(event) => event.stopPropagation()}>
+          <button className={`iconButton ${canvasBackground ? 'activeToggle' : ''}`} type="button" onClick={() => backgroundInputRef.current?.click()} title={t('tree.background')} aria-label={t('tree.changeBackground')}>
+            <ImageIcon size={18} strokeWidth={2} aria-hidden="true" />
+          </button>
+          {canvasBackground && <button className="textButton compactTextButton" type="button" onClick={() => setCanvasBackground('')}>{t('actions.remove')}</button>}
+          <input ref={backgroundInputRef} hidden type="file" accept="image/*" onChange={loadCanvasBackground} />
+          <button className="iconButton" type="button" onClick={exportCurrentCanvasPdf} title={t('actions.exportPdf')} aria-label={t('actions.exportPdf')}>
+            <FileDown size={18} strokeWidth={2} aria-hidden="true" />
           </button>
         </div>
         <div className="treePanLayer" style={{ transform: `translate(${viewport.x + (temporalScale && layout.temporal ? TEMPORAL_AXIS_WIDTH + TEMPORAL_AXIS_GAP : 0)}px, ${viewport.y}px) scale(${viewport.scale})` }}>
@@ -2289,17 +2516,17 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
                   return <path key={edge.id} className="peerLine" d={`M ${edge.from.x} ${edge.from.y} C ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.from.y}, ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.to.y}, ${edge.to.x} ${edge.to.y}`} />;
                 }
                 const middleY = edge.from.y + (edge.to.y - edge.from.y) / 2;
-                return <path key={edge.id} className={edge.kind === 'sibling' ? 'siblingLine' : 'familyLine'} d={`M ${edge.from.x} ${edge.from.y} C ${edge.from.x} ${middleY}, ${edge.to.x} ${middleY}, ${edge.to.x} ${edge.to.y}`} />;
+                return <path key={edge.id} className={edge.kind === 'convergence' ? 'convergenceLine' : edge.kind === 'sibling' ? 'siblingLine' : 'familyLine'} d={`M ${edge.from.x} ${edge.from.y} C ${edge.from.x} ${middleY}, ${edge.to.x} ${middleY}, ${edge.to.x} ${edge.to.y}`} />;
               })}
             </svg>
             {layout.nodes.map((node) => {
+              if (node.isConnector) return <TreeConnector key={node.key} type={node.connectorType} style={{ left: node.x, top: node.y }} />;
               const label = showAllPeople ? allPeopleNodeLabel(node, language) : treeNodeLabel(node, language);
               return <TreeCard key={node.key} person={node.person} label={label} relationGroup={node.relationGroup || relationGroupFromLabel(label)} sourceCount={sourceCountByPerson.get(node.id) || 0} cardVariant={cardMetrics.variant} focal={!showAllPeople && node.id === person.id} onOpen={onOpenPerson} onFocus={(id) => { setShowAllPeople(false); setFocusedId(id); }} style={{ left: node.x, top: node.y }} />;
             })}
           </div>
         </div>
       </div>
-      <p className="treeHint">{t('tree.hint')}</p>
     </div>
   );
 }
@@ -2543,10 +2770,11 @@ function PublicTreePage({ db }) {
                     return <path key={edge.id} className="peerLine" d={`M ${edge.from.x} ${edge.from.y} C ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.from.y}, ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.to.y}, ${edge.to.x} ${edge.to.y}`} />;
                   }
                   const middleY = edge.from.y + (edge.to.y - edge.from.y) / 2;
-                  return <path key={edge.id} className="familyLine" d={`M ${edge.from.x} ${edge.from.y} C ${edge.from.x} ${middleY}, ${edge.to.x} ${middleY}, ${edge.to.x} ${edge.to.y}`} />;
+                  return <path key={edge.id} className={edge.kind === 'convergence' ? 'convergenceLine' : 'familyLine'} d={`M ${edge.from.x} ${edge.from.y} C ${edge.from.x} ${middleY}, ${edge.to.x} ${middleY}, ${edge.to.x} ${edge.to.y}`} />;
                 })}
               </svg>
               {layout.nodes.map((node) => {
+                if (node.isConnector) return <TreeConnector key={node.key} type={node.connectorType} style={{ left: node.x, top: node.y }} />;
                 const label = allPeopleNodeLabel(node, language);
                 return <TreeCard key={node.key} person={node.person} label={label} relationGroup={node.relationGroup || relationGroupFromLabel(label)} cardVariant={cardMetrics.variant} onOpen={openContribution} onFocus={openContribution} style={{ left: node.x, top: node.y }} />;
               })}

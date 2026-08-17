@@ -210,8 +210,62 @@ h1 { font-size: 34px; margin-bottom: 0; } h2 { font-size: 26px; margin-bottom: 6
 /* Floating canvas controls (maximize, etc.) */
 .canvasFloatingControls { position: absolute; top: 12px; right: 12px; z-index: 6; display: flex; gap: 8px; pointer-events: auto; }
 .canvasFloatingControls button { touch-action: manipulation; user-select: auto; }
+.canvasTopRightControls { position: absolute; top: 12px; left: 12px; right: 12px; z-index: 6; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; pointer-events: none; }
+.canvasTopRightControls .canvasFloatingControls { position: static; z-index: auto; pointer-events: auto; display: grid; grid-template-columns: 156px 44px 44px; grid-template-areas: 'new new new' 'zoom center max'; align-items: stretch; width: 260px; column-gap: 8px; row-gap: 8px; }
+.canvasTopRightControls .canvasFloatingControls .canvasZoomControls { grid-area: zoom; min-width: 0; height: 44px; justify-content: space-around; }
+.canvasTopRightControls .canvasFloatingControls .canvasCenterButton { grid-area: center; width: 44px; height: 44px; padding: 0; background: rgba(255,255,255,.9); border-radius: 10px; box-shadow: 0 8px 22px rgba(31,37,33,.06); }
+.canvasTopRightControls .canvasFloatingControls .canvasNewPieceButton { grid-area: new; width: 100%; height: 44px; min-height: 44px; padding: 8px 10px; }
+.canvasTopRightControls .canvasFloatingControls .canvasMaximizeButton { grid-area: max; width: 44px; height: 44px; }
+.achievementSummary { position: relative; width: max-content; pointer-events: auto; }
+.achievementSummaryToggle { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 8px 10px; border: 1px solid rgba(14,35,38,.1); border-radius: 11px; color: var(--ink); background: rgba(255,255,255,.93); box-shadow: 0 8px 22px rgba(31,37,33,.06); cursor: pointer; }
+.achievementSummaryToggle:hover, .achievementSummaryToggle.activeToggle { color: var(--accent); border-color: rgba(14,75,80,.25); }
+.achievementSummaryTitle { display: none; font-size: 11px; font-weight: 850; }
+.achievementSummaryToggle:hover .achievementSummaryTitle, .achievementSummaryToggle:focus-visible .achievementSummaryTitle, .achievementSummary:focus-within .achievementSummaryTitle { display: inline; }
+.achievementSummaryCount { min-width: 20px; height: 20px; display: grid; place-items: center; padding: 0 5px; border-radius: 999px; color: #8b6338; background: #f3e6cc; font-size: 10px; font-weight: 900; }
+.achievementSummaryPanel { position: absolute; left: 0; top: calc(100% + 7px); display: grid; gap: 5px; width: min(360px, calc(100vw - 32px)); padding: 9px; border: 1px solid rgba(14,35,38,.1); border-radius: 13px; background: rgba(255,255,255,.95); box-shadow: 0 12px 28px rgba(31,37,33,.1); }
+.achievementSummaryMetric { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 7px; min-height: 30px; padding: 3px 5px; border-radius: 8px; color: var(--muted); }
+.achievementSummaryMetricIcon { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 7px; color: var(--accent); background: var(--accent-2); }
+.achievementSummaryMetricName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 750; }
+.achievementSummaryMetric strong { color: var(--ink); font-size: 12px; white-space: nowrap; }
+.achievementSummaryMetric strong small { color: var(--muted); font-size: 10px; font-weight: 700; }
+.visibilityControl { display: flex; align-items: center; gap: 4px; padding: 4px; border: 1px solid rgba(14,35,38,.1); border-radius: 999px; background: rgba(255,255,255,.92); box-shadow: 0 8px 22px rgba(31,37,33,.06); }
+.visibilityToggle, .visibilityOption { position: relative; display: inline-grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 0; border-radius: 50%; color: var(--muted); background: transparent; cursor: pointer; }
+.visibilityToggle { color: var(--ink); background: #f0eee9; }
+.visibilityToggle:hover, .visibilityToggle.activeToggle { color: var(--accent); background: var(--accent-2); }
+.visibilityCount { position: absolute; right: -1px; top: -3px; min-width: 16px; height: 16px; padding: 0 4px; display: grid; place-items: center; border: 2px solid rgba(255,255,255,.94); border-radius: 999px; color: var(--ink); background: #e5e1d9; font-size: 9px; font-weight: 900; line-height: 1; }
+.visibilityOptions { display: flex; align-items: center; gap: 3px; }
+.visibilityOption { border: 1px solid transparent; }
+.visibilityOption.on { color: var(--accent); border-color: rgba(14,75,80,.32); background: rgba(14,75,80,.12); }
+.visibilityOption.off { color: #9b9a95; background: transparent; opacity: .58; }
+.visibilityOption.disabled { cursor: not-allowed; }
+.visibilityOption:hover { border-color: rgba(14,75,80,.28); background: rgba(14,75,80,.08); opacity: 1; }
+.visibilityStatus { position: absolute; right: 5px; top: 5px; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.canvasZoomControls { display: flex; align-items: center; gap: 4px; padding: 4px; border: 1px solid rgba(14,35,38,.1); border-radius: 11px; background: rgba(255,255,255,.9); box-shadow: 0 8px 22px rgba(31,37,33,.06); }
+.canvasZoomControls span { min-width: 42px; color: var(--muted); font-size: 11px; font-weight: 800; text-align: center; }
+.canvasZoomControls .iconButton { width: 34px; height: 34px; padding: 0; background: transparent; }
+.canvasScaleButton { height: 44px; padding: 9px 12px; background: rgba(255,255,255,.9); box-shadow: 0 8px 22px rgba(31,37,33,.06); }
 .canvasFloatingControls .canvasMaximizeButton { width: 44px; height: 44px; padding: 0; display: inline-grid; place-items: center; background: rgba(255,255,255,.9); border-radius: 9px; box-shadow: 0 8px 22px rgba(31,37,33,.06); }
 .canvasFloatingControls .canvasNewPieceButton { white-space: nowrap; box-shadow: 0 8px 22px rgba(31,37,33,.12); }
+.canvasBottomControls { position: absolute; right: 12px; bottom: 12px; z-index: 6; display: flex; align-items: center; gap: 5px; padding: 4px; border: 1px solid rgba(14,35,38,.1); border-radius: 11px; background: rgba(255,255,255,.9); box-shadow: 0 8px 22px rgba(31,37,33,.06); }
+.canvasBottomControls .iconButton { width: 34px; height: 34px; padding: 0; background: transparent; }
+.canvasBottomLeftControls { position: absolute; left: 12px; bottom: 12px; z-index: 6; display: flex; align-items: center; gap: 8px; }
+
+@keyframes achievementDrawerIn { from { opacity: 0; transform: scaleX(.72); transform-origin: left top; } to { opacity: 1; transform: scaleX(1); transform-origin: left top; } }
+
+@media (max-width: 760px) {
+  .canvasTopRightControls { left: 8px; right: 8px; }
+  .canvasTopRightControls .canvasFloatingControls { width: min(393px, calc(100vw - 24px)); grid-template-columns: minmax(0, 1fr) 44px 44px; column-gap: 8px; row-gap: 8px; }
+  .canvasTopRightControls .canvasFloatingControls .canvasCenterButton,
+  .canvasTopRightControls .canvasFloatingControls .canvasMaximizeButton { width: 44px; height: 44px; }
+  .canvasTopRightControls .canvasFloatingControls .canvasZoomControls { height: 44px; }
+  .canvasTopRightControls .canvasFloatingControls .canvasNewPieceButton { width: 100%; height: 44px; min-height: 44px; }
+  .canvasBottomLeftControls { left: 8px; bottom: 8px; max-width: calc(100vw - 16px); }
+  .canvasBottomControls { right: 8px; bottom: 8px; }
+  .achievementSummary { width: min(360px, calc(100vw - 24px)); }
+  .achievementSummaryToggle { width: 100%; justify-content: flex-start; }
+  .achievementSummaryTitle { display: inline; }
+  .achievementSummaryPanel { width: min(360px, calc(100vw - 24px)); animation: achievementDrawerIn .18s ease-out; }
+}
 
 /* Maximized workspace uses fixed positioning to occupy the entire viewport */
 .treeWorkspace.canvasMaximized { position: fixed; inset: 0; z-index: 9999; margin: 0; width: 100%; height: 100%; border-radius: 0; background: var(--surface); display: block; }
@@ -229,9 +283,13 @@ h1 { font-size: 34px; margin-bottom: 0; } h2 { font-size: 26px; margin-bottom: 6
 .familyGroupBand.collateral { border-color: rgba(91,110,137,.2); background: rgba(91,110,137,.055); }
 .treeLines { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .treeLines path { fill: none; stroke: #b6aa9a; stroke-width: 2; stroke-linecap: round; opacity: .78; }
+.treeLines path.convergenceLine { stroke: #8fa29b; stroke-width: 1.7; opacity: .68; }
 .treeLines path.peerLine { stroke: var(--brand-secondary); stroke-dasharray: 7 5; stroke-width: 2.2; opacity: .72; }
 .treeLines path.siblingLine { stroke: var(--accent); stroke-width: 1.45; opacity: .44; }
 .treeLines path.familyLine { stroke: #9aa9a5; }
+.treeConnector { position: absolute; z-index: 3; width: var(--tree-card-width, 180px); height: 12px; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.treeConnector span { display: block; width: 9px; height: 9px; border: 2px solid #f7f8f6; border-radius: 50%; background: #8fa29b; box-shadow: 0 0 0 1px #8fa29b; }
+.treeConnector.pair span { background: var(--brand-secondary); box-shadow: 0 0 0 1px var(--brand-secondary); }
 .treeLines path.temporalRoutedLine { stroke: #718d83; stroke-width: 1.7; opacity: .66; stroke-linejoin: round; }
 .temporalGuideLayer { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
 .temporalGuideLine { position: absolute; left: 0; right: 0; height: 1px; background: rgba(36,91,77,.15); box-shadow: 0 1px 0 rgba(255,255,255,.55); }
@@ -1985,6 +2043,7 @@ input:focus, select:focus, textarea:focus { border-color: #c77a4e; box-shadow: 0
 
 /* Hallazgos: discovery-led progress surface */
 .section-findings .topbar { display: none; }
+.section-tree .topbar { display: none; }
 .findingsPage { max-width: 1180px; margin: 0 auto; padding: 4px 0 34px; }
 .findingsIntro { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; margin-bottom: 24px; }
 .findingsIntro h2 { margin: 0 0 5px; font-size: clamp(34px, 4vw, 48px); letter-spacing: -.045em; }
@@ -2027,4 +2086,7 @@ input:focus, select:focus, textarea:focus { border-color: #c77a4e; box-shadow: 0
 .findingsGrid { gap: 16px; }.findingCard { min-height: 300px; padding: 22px 19px; }.findingCardTop { margin-bottom: 19px; }.achievementBadge-card { width: 74px; height: 74px; }.findingTitle { font-size: 12px; }.findingName { font-size: 17px; }.findingMetric b { font-size: 27px; }.findingMetric span { font-size: 10px; }.findingProgress { height: 7px; }.findingCard > small { margin-top: 16px; font-size: 10px; }.findingCard > small b { font-size: 11px; }.findingCard.selected { border-color: #8c7b58; background: rgba(255,251,240,.92); box-shadow: 0 0 0 2px rgba(140,123,88,.18), 0 15px 28px rgba(77,53,33,.12); }
 .findingDetail { padding: 30px 32px 26px; min-height: 380px; }.detailHero { width: 280px; height: 210px; top: 16px; right: 24px; opacity: .9; }.detailHeading { min-height: 92px; }.detailHeading h3 { font-size: 27px; }.detailProgress { max-width: 620px; margin-top: 24px; }.levelsRail { gap: 15px; padding-top: 19px; }.levelBadge { width: 64px; height: 64px; }.achievementBadge-timeline { width: 58px; height: 58px; }.levelNode:not(.unlocked) b { filter: none; opacity: .72; }.levelNode:not(.unlocked) { opacity: .78; }.levelNode.current::after { content: 'Actual'; display: inline-block; width: fit-content; margin-top: 3px; padding: 3px 6px; border-radius: 999px; color: #8b6338; background: #f3e6cc; font-size: 8px; font-weight: 800; }.levelNode.current i { display: none; }.recentFindings { padding: 24px 26px; }.recentList { gap: 14px; }.recentItem { min-height: 88px; padding: 10px; gap: 12px; cursor: pointer; }.recentItem:hover { border-color: #c39a68; background: #fffaf0; }.achievementBadge-recent { width: 70px; height: 70px; }
 @media (max-width: 760px) { .findingsPage > * { width: 100%; }.findingsHero { min-height: 270px; padding: 25px 22px; }.heroCopy h3 { font-size: 34px; }.heroIllustration img { width: 120px; height: 120px; }.findingCard { min-height: 0; padding: 13px; }.achievementBadge-card { width: 64px; height: 64px; }.findingDetail { min-height: 0; padding: 18px 15px; }.detailHero { width: 100%; height: 120px; }.detailHeading h3 { font-size: 22px; }.levelBadge { width: 54px; height: 54px; }.achievementBadge-timeline { width: 48px; height: 48px; } }
+
+/* El árbol concentra sus herramientas en el propio lienzo. */
+.section-tree .topbar { display: none; }
 
