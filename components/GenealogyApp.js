@@ -25,7 +25,7 @@ const I18N = {
     appSubtitle: 'Genealogía web',
     loading: { openingTree: 'Abriendo tu árbol' },
     nav: { expand: 'Expandir menú', collapse: 'Colapsar menú', navigation: 'Navegación', rootsShort: 'Raíces', timelineShort: 'Historia', profileShort: 'Perfil' },
-    sections: { tree: 'Mis raíces', people: 'Piezas', timeline: 'Historia', familyMap: 'Mapa familiar', findings: 'Hallazgos', sources: 'Fuentes', data: 'Datos', profile: 'Mi perfil' },
+    sections: { tree: 'Mis raíces', people: 'Piezas', timeline: 'Historia', familyMap: 'Mapa familiar', findings: 'Hallazgos', sources: 'Fuentes', data: 'Datos', profile: 'Mi perfil', collaborators: 'Colaboradores' },
     subtitles: {
       tree: 'Visualiza y navega el árbol familiar.',
       people: 'Gestiona las piezas registradas y sus perfiles.',
@@ -65,7 +65,7 @@ const I18N = {
     appSubtitle: 'Genealogy web',
     loading: { openingTree: 'Opening your tree' },
     nav: { expand: 'Expand menu', collapse: 'Collapse menu', navigation: 'Navigation', rootsShort: 'Roots', timelineShort: 'History', profileShort: 'Profile' },
-    sections: { tree: 'My roots', people: 'Pieces', timeline: 'History', familyMap: 'Family map', findings: 'Findings', sources: 'Sources', data: 'Data', profile: 'My profile' },
+    sections: { tree: 'My roots', people: 'Pieces', timeline: 'History', familyMap: 'Family map', findings: 'Findings', sources: 'Sources', data: 'Data', profile: 'My profile', collaborators: 'Collaborators' },
     subtitles: { tree: 'View and explore your family tree.', people: 'Manage registered pieces and profiles.', timeline: 'Review events in chronological order.', familyMap: 'Explore where each family story began through time.', sources: 'Organize your research sources.', data: 'Import, export and back up your tree.', profile: 'Account and preferences.' },
     actions: { newPiece: '+ New piece', newSource: '+ New source', cancel: 'Cancel', savePiece: 'Save piece', createPiece: 'Create piece', saveChanges: 'Save changes', saveEvent: 'Save event', saveSource: 'Save source', edit: 'Edit', viewInTree: 'View in tree', add: '+ Add', remove: 'Remove', import: 'Import', exportJson: 'Export JSON', exportGedcom: 'Export GEDCOM', exportPdf: 'Export PDF', generateLink: 'Generate link', activateDetective: 'Activate detective', accept: 'Accept', reject: 'Reject', acceptPiece: 'Accept piece', rejectPiece: 'Reject', importPiece: 'Import piece', tools: 'Tools', hideTools: 'Hide tools', allPieces: 'All pieces', focusedBranch: 'Focused branch', uploadImage: 'Upload image', copy: 'Copy', downloadPiece: 'Download piece' },
     stats: { pieces: 'pieces', links: 'links', events: 'events', sources: 'sources', results: 'results', dated: 'dated', pending: 'pending', accepted: 'accepted', rejected: 'rejected' },
@@ -114,6 +114,8 @@ const sections = [
   ['timeline', 'sections.timeline', IconTimeline],
   ['family-map', 'sections.familyMap', <Globe2 {...iconProps} />],
   ['findings', 'sections.findings', <Award {...iconProps} />],
+  ['sources', 'sections.sources', IconSources],
+  ['data', 'sections.data', IconData],
   ['collaborators', 'sections.collaborators', IconCollaborators]
 ];
 
@@ -1871,16 +1873,40 @@ function Stat({ value, label }) {
 
 function Modal({ title, onClose, children }) {
   const titleId = useId();
+  const dialogRef = useRef(null);
+  const restoreFocusRef = useRef(null);
   useEffect(() => {
+    restoreFocusRef.current = document.activeElement;
+    const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const focusInitial = () => {
+      const first = dialogRef.current?.querySelector('[autofocus], input:not([type="hidden"]), select, textarea, button:not([disabled])');
+      first?.focus();
+    };
     const onKey = (event) => event.key === 'Escape' && onClose();
+    const trapFocus = (event) => {
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = [...dialogRef.current.querySelectorAll(focusableSelector)];
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
     window.addEventListener('keydown', onKey);
+    window.addEventListener('keydown', trapFocus);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = previousOverflow; };
+    window.requestAnimationFrame(focusInitial);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keydown', trapFocus);
+      document.body.style.overflow = previousOverflow;
+      if (restoreFocusRef.current instanceof HTMLElement) restoreFocusRef.current.focus();
+    };
   }, [onClose]);
   return (
     <div className="modalBackdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <div className="modal" role="dialog" aria-modal="true" aria-labelledby={titleId} onMouseDown={(e) => e.stopPropagation()}>
+      <div ref={dialogRef} className="modal" role="dialog" aria-modal="true" aria-labelledby={titleId} onMouseDown={(e) => e.stopPropagation()}>
         <div className="modalHeader"><h2 id={titleId}>{title}</h2><button className="iconButton" type="button" onClick={onClose} aria-label="Cerrar ventana">×</button></div>
         {children}
       </div>
@@ -1953,7 +1979,7 @@ function PlaceSearch({ value, places = [], onChange }) {
     }
     return chain;
   })();
-  return <div className="placeSearch"><div className="placeSearchInput"><Search size={15} aria-hidden="true" /><input value={query} onChange={(event) => { setQuery(event.target.value); if (value) onChange(null); }} placeholder="Buscar un lugar…" />{loading && <span className="muted">…</span>}</div>
+  return <div className="placeSearch"><div className="placeSearchInput"><Search size={15} aria-hidden="true" /><input aria-label="Buscar un lugar" value={query} onChange={(event) => { setQuery(event.target.value); if (value) onChange(null); }} placeholder="Buscar un lugar…" />{loading && <span className="muted" role="status">…</span>}</div>
     {results.length > 0 && <div className="placeResults">{results.map((result) => <button type="button" key={result.externalId} onClick={() => choose(result)}><strong>{result.name}</strong><span>{result.context || result.type}</span></button>)}</div>}
     {value && <div className="selectedPlace"><span><strong>{value.name}</strong>{hierarchy.length > 1 && <small> · {hierarchy.filter((item) => item.id !== value.id).map((item) => item.name).join(' · ')}</small>}</span><button type="button" className="textButton" onClick={() => { setQuery(''); onChange(null); }}>Quitar</button></div>}
   </div>;
@@ -1999,6 +2025,10 @@ function PersonForm({ initial, people = [], places = [], showRelation = false, o
   const [relationKind, setRelationKind] = useState('');
   const [relations, setRelations] = useState([]);
   const [errors, setErrors] = useState({});
+  useEffect(() => {
+    if (!Object.keys(errors).length) return;
+    document.querySelector('[aria-invalid="true"]')?.focus();
+  }, [errors]);
   const imageInputRef = useRef(null);
   const relationOptions = people.filter((person) => person.id !== initial?.id).sort(comparePeopleByName);
   const set = (key) => (event) => {
@@ -2122,10 +2152,28 @@ function PersonPicker({ people, excludeId, onPick, label }) {
 
 function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus, onLink, onDelete, onRemoveRelation, onAddEvent, canEdit = true }) {
   const { language, t } = useI18n();
+  const drawerRef = useRef(null);
+  const restoreFocusRef = useRef(null);
   useEffect(() => {
-    const onKey = (event) => event.key === 'Escape' && onClose();
+    restoreFocusRef.current = document.activeElement;
+    const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const focusInitial = () => drawerRef.current?.querySelector('button:not([disabled]), input:not([disabled]), select, textarea')?.focus();
+    const onKey = (event) => {
+      if (event.key === 'Escape') onClose();
+      if (event.key !== 'Tab' || !drawerRef.current) return;
+      const focusable = [...drawerRef.current.querySelectorAll(focusableSelector)];
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.requestAnimationFrame(focusInitial);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      if (restoreFocusRef.current instanceof HTMLElement) restoreFocusRef.current.focus();
+    };
   }, [onClose]);
 
   if (!person) return null;
@@ -2142,18 +2190,18 @@ function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus
 
   return (
     <div className="drawerBackdrop" onMouseDown={onClose}>
-      <aside className={`personDrawer ${personStatusClass(person)}`} onMouseDown={(event) => event.stopPropagation()} aria-label={t('drawer.personalFile')}>
+      <aside ref={drawerRef} className={`personDrawer ${personStatusClass(person)}`} role="dialog" aria-modal="true" aria-labelledby="person-drawer-title" onMouseDown={(event) => event.stopPropagation()}>
         <div className="drawerHeader">
           <div>
             <p className="eyebrow">{isEditing ? t('drawer.editMode') : t('drawer.viewMode')}</p>
-            <h2>{isEditing ? t('drawer.editPerson') : t('drawer.personalFile')}</h2>
+            <h2 id="person-drawer-title">{isEditing ? t('drawer.editPerson') : t('drawer.personalFile')}</h2>
           </div>
           <div className="drawerHeaderActions">
             <span className={`modePill ${isEditing ? 'editing' : 'viewing'}`}>{isEditing ? t('drawer.editing') : t('drawer.view')}</span>
             {canEdit && <button className="iconButton dangerIcon" type="button" onClick={onDelete} title={t('drawer.deletePerson')} aria-label={t('drawer.deletePerson')}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 6h18" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 6v14a2 2 0 002 2h4a2 2 0 002-2V6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>}
-            <button className="iconButton" onClick={onClose}>×</button>
+            <button className="iconButton" type="button" onClick={onClose} aria-label={language === 'es' ? 'Cerrar ventana' : 'Close window'}>×</button>
           </div>
         </div>
 
@@ -3275,6 +3323,7 @@ export default function GenealogyApp() {
   const [accessibleTrees, setAccessibleTrees] = useState([]);
   const [currentTreeRole, setCurrentTreeRole] = useState(null);
   const [remoteSyncError, setRemoteSyncError] = useState('');
+  const [remoteSyncState, setRemoteSyncState] = useState(isSupabaseConfigured ? 'loading' : 'local');
   const [treeInvitations, setTreeInvitations] = useState([]);
   const [inviteLink, setInviteLink] = useState('');
   const [treeMenuOpen, setTreeMenuOpen] = useState(false);
@@ -3286,6 +3335,7 @@ export default function GenealogyApp() {
   const [personDeleteModalOpen, setPersonDeleteModalOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [section, setSection] = useState('tree');
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [focusedId, setFocusedId] = useState(null);
   const [drawerPersonId, setDrawerPersonId] = useState(null);
@@ -3306,6 +3356,10 @@ export default function GenealogyApp() {
   const pieceImportRef = useRef(null);
   const i18n = useMemo(() => ({ language, t: (key, vars) => translate(language, key, vars) }), [language]);
   const t = i18n.t;
+
+  useEffect(() => {
+    setMobileMoreOpen(false);
+  }, [section]);
 
   useEffect(() => {
     if (!supabase) return undefined;
@@ -3383,6 +3437,7 @@ export default function GenealogyApp() {
           const { data, error } = await getRemoteTree(remoteTreeId);
           if (error) {
             setRemoteTreeDataReadyId(null);
+            setRemoteSyncState('error');
             setRemoteSyncError(translate(savedLanguage, 'errors.supabaseConnect', { message: error.message || 'Revisa tus credenciales.' }));
           } else if (data?.data) {
             const remoteDb = normalizeDatabase(data.data);
@@ -3394,6 +3449,7 @@ export default function GenealogyApp() {
             localStorage.setItem(remoteTreeStorageKey, data.id);
           } else {
             setRemoteTreeDataReadyId(null);
+            setRemoteSyncState('error');
             setRemoteSyncError(translate(savedLanguage, 'errors.supabaseConnect', { message: 'No se pudo cargar el árbol seleccionado.' }));
           }
         }
@@ -3402,6 +3458,7 @@ export default function GenealogyApp() {
         if (window.location.hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) {
           setPublicLoadError(translate(savedLanguage, 'errors.publicLoad'));
         } else if (isSupabaseConfigured && authUser) {
+          setRemoteSyncState('error');
           setRemoteSyncError(translate(savedLanguage, 'errors.supabaseConnect', { message: error?.message || 'No se pudo inicializar la sincronización remota.' }));
         } else {
           setDb(defaultDatabase());
@@ -3465,8 +3522,10 @@ export default function GenealogyApp() {
   useEffect(() => {
     if (!hydrated || publicDb || !isSupabaseConfigured || !remoteTreeId || remoteTreeDataReadyId !== remoteTreeId) return;
     const syncRemote = async () => {
+      setRemoteSyncState('saving');
       const { data, error } = await saveRemoteTree({ id: remoteTreeId, data: db });
       if (error) {
+        setRemoteSyncState('error');
         setRemoteSyncError(t('errors.supabaseSave', { message: error.message || error.details || 'Error desconocido' }));
         return;
       }
@@ -3475,6 +3534,7 @@ export default function GenealogyApp() {
         localStorage.setItem(remoteTreeStorageKey, data.id);
       }
       setRemoteSyncError('');
+      setRemoteSyncState('synced');
     };
     syncRemote();
   }, [db, hydrated, publicDb, remoteTreeId, remoteTreeDataReadyId, t]);
@@ -3881,13 +3941,13 @@ export default function GenealogyApp() {
           </div>}
         </div>}
         <nav>{sections.filter(([id]) => id !== 'collaborators').map(([id, label, icon]) => {
-          const sectionLabel = id === 'collaborators' ? 'Colaboradores' : t(label);
-          return <button key={id} title={sectionLabel} className={section === id ? 'active' : ''} onClick={() => { setSection(id); }}><span className="navIcon">{icon}</span><span className="navLabel">{sectionLabel}</span></button>;
+          const sectionLabel = t(label);
+          return <button key={id} type="button" title={sectionLabel} className={section === id ? 'active' : ''} aria-current={section === id ? 'page' : undefined} onClick={() => { setSection(id); }}><span className="navIcon">{icon}</span><span className="navLabel">{sectionLabel}</span></button>;
         })}</nav>
         <div className="sidebarSectionLabel">ADMINISTRACIÓN</div>
         <nav className="sidebarAdminNav">{sections.filter(([id]) => id === 'collaborators').map(([id, label, icon]) => {
-          const sectionLabel = 'Colaboradores';
-          return <button key={id} title={sectionLabel} className={section === id ? 'active' : ''} onClick={() => setSection(id)}><span className="navIcon">{icon}</span><span className="navLabel">{sectionLabel}</span></button>;
+          const sectionLabel = t(label);
+          return <button key={id} type="button" title={sectionLabel} className={section === id ? 'active' : ''} aria-current={section === id ? 'page' : undefined} onClick={() => setSection(id)}><span className="navIcon">{icon}</span><span className="navLabel">{sectionLabel}</span></button>;
         })}</nav>
         <div className="sidebarBottom">
           <div className="sidebarProfile">
@@ -3908,8 +3968,11 @@ export default function GenealogyApp() {
         <header className="topbar">
           <div className="topbarTitle">
             <p className="eyebrow">{db.settings.treeName}</p>
-            {section !== 'tree' && section !== 'findings' && section !== 'family-map' && <h1>{section === 'collaborators' ? 'Colaboradores' : t(`sections.${section}`)}</h1>}
-            {section !== 'findings' && section !== 'family-map' && <p className="topbarSubtitle">{section === 'collaborators' ? 'Administrá el acceso al árbol activo.' : t(`subtitles.${section}`)}</p>}
+            {section !== 'tree' && section !== 'findings' && section !== 'family-map' && <h1>{t(`sections.${section}`)}</h1>}
+            {section !== 'findings' && section !== 'family-map' && <p className="topbarSubtitle">{section === 'collaborators' ? (language === 'es' ? 'Administrá el acceso al árbol activo.' : 'Manage access to the active tree.') : t(`subtitles.${section}`)}</p>}
+            <span className={`syncStatus ${remoteSyncState === 'error' ? 'error' : remoteSyncState === 'saving' || remoteSyncState === 'loading' ? 'pending' : 'success'}`} role="status" aria-live="polite">
+              {remoteSyncState === 'saving' ? (language === 'es' ? 'Guardando cambios…' : 'Saving changes…') : remoteSyncState === 'error' ? (language === 'es' ? 'No se pudo sincronizar. Revisá Datos.' : 'Sync failed. Check Data.') : remoteSyncState === 'local' ? (language === 'es' ? 'Guardado local' : 'Saved locally') : (language === 'es' ? 'Sincronizado' : 'Synced')}
+            </span>
           </div>
           <div className="topbarActions">
             {showTopbarStats && <div className="topbarStats">
@@ -3932,7 +3995,7 @@ export default function GenealogyApp() {
 
         {section === 'people' && <div className="peopleLayout peopleListOnly">
           <section className="peoplePane">
-            <div className="paneToolbar"><input className="searchInput" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('placeholders.search')} /><span>{filteredPeople.length} {t('stats.results')}</span></div>
+           <div className="paneToolbar"><input className="searchInput" aria-label={t('placeholders.search')} value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('placeholders.search')} /><span aria-live="polite">{filteredPeople.length} {t('stats.results')}</span></div>
             {db.people.length === 0 ? <EmptyState onAdd={canEdit ? () => setPersonModal({ mode: 'new' }) : undefined} /> : <div className="personList">{filteredPeople.map((person) => <button key={person.id} className={`personRow ${personStatusClass(person)} ${selectedId === person.id ? 'selected' : ''}`} onClick={() => openPersonDrawer(person.id, 'view')}><PersonAvatar person={person} /><div><strong>{displayName(person)}</strong><span>{[person.birthDate, person.birthPlace].filter(Boolean).join(' · ') || t('people.bioPending')}</span></div><span className="chevron">›</span></button>)}</div>}
           </section>
         </div>}
@@ -4026,7 +4089,7 @@ export default function GenealogyApp() {
         </button>
         <button className={section === 'family-map' ? 'active' : ''} onClick={() => setSection('family-map')} aria-label={t('sections.familyMap')} title={t('sections.familyMap')}>
           <Globe2 size={20} strokeWidth={1.9} aria-hidden="true" />
-          <small>Mapa</small>
+          <small>{t('sections.familyMap')}</small>
         </button>
         <button className={section === 'findings' ? 'active' : ''} onClick={() => setSection('findings')} aria-label={t('sections.findings')} title={t('sections.findings')}>
           {IconFindings}
@@ -4036,7 +4099,16 @@ export default function GenealogyApp() {
           {IconProfile}
           <small>{t('nav.profileShort')}</small>
         </button>
+        <button className={mobileMoreOpen ? 'active' : ''} type="button" onClick={() => setMobileMoreOpen((value) => !value)} aria-label={language === 'es' ? 'Más secciones' : 'More sections'} aria-expanded={mobileMoreOpen} title={language === 'es' ? 'Más secciones' : 'More sections'}>
+          <MoreHorizontal size={20} strokeWidth={1.9} aria-hidden="true" />
+          <small>{language === 'es' ? 'Más' : 'More'}</small>
+        </button>
       </nav>
+      {mobileMoreOpen && <div className="mobileMoreMenu" role="menu" aria-label={language === 'es' ? 'Más secciones' : 'More sections'}>
+        <button type="button" role="menuitem" className={section === 'sources' ? 'active' : ''} onClick={() => setSection('sources')}>{IconSources}<span>{t('sections.sources')}</span></button>
+        <button type="button" role="menuitem" className={section === 'data' ? 'active' : ''} onClick={() => setSection('data')}>{IconData}<span>{t('sections.data')}</span></button>
+        <button type="button" role="menuitem" className={section === 'collaborators' ? 'active' : ''} onClick={() => setSection('collaborators')}>{IconCollaborators}<span>{t('sections.collaborators')}</span></button>
+      </div>}
 
       {drawerPersonId && <PersonDrawer db={db} person={db.people.find((p) => p.id === drawerPersonId)} mode={drawerMode} onModeChange={setDrawerMode} onClose={() => { setDrawerPersonId(null); setDrawerMode('view'); }} onSave={saveExistingPerson} onFocus={openInTree} onLink={linkPerson} onRemoveRelation={(kind, otherId) => removeRelation(drawerPersonId, kind, otherId)} onDelete={deleteSelected} onAddEvent={() => setEventModal(true)} canEdit={canEdit} />}
       {personModal && <Modal title={t('modalTitles.newPiece')} onClose={() => setPersonModal(null)}><PersonForm initial={personModal.person} people={db.people} places={db.places} showRelation onCancel={() => setPersonModal(null)} onSave={savePerson} /></Modal>}

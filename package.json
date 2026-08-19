@@ -8,7 +8,10 @@
     "build": "next build",
     "start": "next start",
     "test:hallazgos": "node --test scripts/test-hallazgos.mjs",
-    "verify": "node scripts/verify.mjs"
+    "verify": "node scripts/verify.mjs",
+    "test:smoke": "playwright test --project=smoke",
+    "test:smoke:headed": "playwright test --project=smoke --headed",
+    "test:smoke:ui": "playwright test --project=smoke --ui"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.2",
@@ -19,5 +22,8 @@
     "react-dom": "19.2.5",
     "topojson-client": "^3.1.0",
     "world-atlas": "^2.0.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
   }
 }
