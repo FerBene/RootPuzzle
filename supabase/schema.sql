@@ -53,6 +53,7 @@ create table public.people (
   death_date_precision text check (death_date_precision is null or death_date_precision in ('year', 'month', 'day')),
   death_date_certainty text not null default 'exact' check (death_date_certainty in ('exact', 'approx')),
   death_place text not null default '',
+  death_place_id uuid,
   death_place_precision text check (death_place_precision is null or death_place_precision in ('country', 'region', 'city', 'locality')),
   death_place_certainty text not null default 'exact' check (death_place_certainty in ('exact', 'approx')),
   occupation text not null default '',
@@ -97,6 +98,8 @@ create table public.places (
 
 alter table public.people add constraint people_birth_place_id_fkey
   foreign key (birth_place_id) references public.places(id) on delete set null;
+alter table public.people add constraint people_death_place_id_fkey
+  foreign key (death_place_id) references public.places(id) on delete set null;
 
 -- Agregar FK circular diferida de root_person_id a public.people
 alter table public.trees
@@ -185,6 +188,7 @@ create table public.detective_suggestions (
 -- 10. Índices btree para búsquedas rápidas por tree_id (Escalabilidad y rendimiento)
 create index idx_people_tree_id on public.people(tree_id);
 create index idx_people_birth_place_id on public.people(birth_place_id);
+create index idx_people_death_place_id on public.people(death_place_id);
 create index idx_places_parent_id on public.places(parent_id);
 create index idx_sources_tree_id on public.sources(tree_id);
 create index idx_events_tree_id on public.events(tree_id);

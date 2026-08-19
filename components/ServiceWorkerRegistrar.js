@@ -7,6 +7,21 @@ export default function ServiceWorkerRegistrar() {
     if (typeof window === 'undefined') return;
     if (!('serviceWorker' in navigator)) return;
 
+    // Un service worker activo en localhost puede servir bundles anteriores y
+    // ocultar correcciones recién compiladas. En desarrollo se elimina junto
+    // con sus cachés; el registro offline se conserva únicamente en producción.
+    if (process.env.NODE_ENV !== 'production') {
+      navigator.serviceWorker.getRegistrations()
+        .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+        .catch(() => {});
+      if ('caches' in window) {
+        caches.keys()
+          .then((keys) => Promise.all(keys.filter((key) => key.startsWith('raices-')).map((key) => caches.delete(key))))
+          .catch(() => {});
+      }
+      return;
+    }
+
     const register = async () => {
       try {
         const reg = await navigator.serviceWorker.register('/sw.js');

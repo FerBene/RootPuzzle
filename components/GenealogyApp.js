@@ -151,6 +151,7 @@ const blankPerson = () => ({
   deathDay: null,
   deathDatePrecision: null,
   deathPlace: '',
+  deathPlaceId: null,
   deathPlacePrecision: null,
   birthDateCertainty: 'exact',
   birthPlaceCertainty: 'exact',
@@ -1966,12 +1967,16 @@ function CertaintyToggle({ t, value = 'exact', onChange, label }) {
 }
 
 function LifeDateField({ t, title, year, month, day, setPart, certainty, setCertainty, error, idPrefix }) {
+  const bindPart = (part) => {
+    const handler = setPart(part);
+    return { onChange: handler, onInput: handler };
+  };
   return <fieldset className={`lifeDateField ${error ? 'hasError' : ''}`}>
     <div className="lifeFieldHeader"><legend>{title}</legend><CertaintyToggle t={t} value={certainty} onChange={setCertainty} label={`${title}: precisión`} /></div>
     <div className="lifeDateInputs">
-      <label htmlFor={`${idPrefix}-day`}>Día<input id={`${idPrefix}-day`} type="number" min="1" max="31" inputMode="numeric" placeholder={t('forms.dayExample')} value={day ?? ''} onChange={setPart('day')} aria-label={`${title}, día`} /></label>
-      <label htmlFor={`${idPrefix}-month`}>Mes<input id={`${idPrefix}-month`} type="number" min="1" max="12" inputMode="numeric" placeholder={t('forms.monthExample')} value={month ?? ''} onChange={setPart('month')} aria-label={`${title}, mes`} /></label>
-      <label htmlFor={`${idPrefix}-year`}>Año<input id={`${idPrefix}-year`} type="number" min="1" max="9999" inputMode="numeric" placeholder={t('forms.yearExample')} value={year ?? ''} onChange={setPart('year')} aria-label={`${title}, año`} /></label>
+      <label htmlFor={`${idPrefix}-day`}>Día<input id={`${idPrefix}-day`} type="number" min="1" max="31" inputMode="numeric" placeholder={t('forms.dayExample')} value={day ?? ''} {...bindPart('day')} aria-label={`${title}, día`} /></label>
+      <label htmlFor={`${idPrefix}-month`}>Mes<input id={`${idPrefix}-month`} type="number" min="1" max="12" inputMode="numeric" placeholder={t('forms.monthExample')} value={month ?? ''} {...bindPart('month')} aria-label={`${title}, mes`} /></label>
+      <label htmlFor={`${idPrefix}-year`}>Año<input id={`${idPrefix}-year`} type="number" min="1" max="9999" inputMode="numeric" placeholder={t('forms.yearExample')} value={year ?? ''} {...bindPart('year')} aria-label={`${title}, año`} /></label>
     </div>
     {error && <span className="fieldError" role="alert">{error}</span>}
   </fieldset>;
@@ -2073,7 +2078,7 @@ function PersonForm({ initial, people = [], places = [], showRelation = false, o
           </div>
           <div className="lifeSection">
             <LifeDateField t={t} title={t('forms.deathDateLabel')} year={form.deathYear} month={form.deathMonth} day={form.deathDay} setPart={(part) => set(`death${part[0].toUpperCase()}${part.slice(1)}`)} certainty={form.deathDateCertainty} setCertainty={(value) => setForm((prev) => ({ ...prev, deathDateCertainty: value }))} error={errors.deathDate} idPrefix="death-date" />
-            <LifePlaceField t={t} title={t('forms.deathPlace')} places={[]} value={form.deathPlace ? { name: form.deathPlace, id: null } : null} certainty={form.deathPlaceCertainty} setCertainty={(value) => setForm((prev) => ({ ...prev, deathPlaceCertainty: value }))} onChange={(selection) => setForm((prev) => ({ ...prev, deathPlace: selection?.place?.name || '' }))} />
+            <LifePlaceField t={t} title={t('forms.deathPlace')} places={places} value={places.find((place) => place.id === form.deathPlaceId) || (form.deathPlace && { name: form.deathPlace, id: form.deathPlaceId, hierarchy: form._deathPlaceHierarchy })} certainty={form.deathPlaceCertainty} setCertainty={(value) => setForm((prev) => ({ ...prev, deathPlaceCertainty: value }))} onChange={(selection) => setForm((prev) => selection ? ({ ...prev, deathPlace: selection.place.name, deathPlaceId: selection.place.id, deathPlacePrecision: selection.precision, _deathPlaceHierarchy: selection.hierarchy }) : ({ ...prev, deathPlace: '', deathPlaceId: null, deathPlacePrecision: null, _deathPlaceHierarchy: [] }))} />
           </div>
           <label>{t('forms.occupation')}<input value={form.occupation} onChange={set('occupation')} /></label>
           <label>{t('forms.notes')}<textarea rows="5" value={form.notes} onChange={set('notes')} placeholder={t('placeholders.notes')} /></label>
@@ -3392,10 +3397,15 @@ export default function GenealogyApp() {
             setRemoteSyncError(translate(savedLanguage, 'errors.supabaseConnect', { message: 'No se pudo cargar el árbol seleccionado.' }));
           }
         }
-      } catch {
+      } catch (error) {
         setRemoteTreeDataReadyId(null);
-        if (window.location.hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) setPublicLoadError(translate(savedLanguage, 'errors.publicLoad'));
-        else setDb(defaultDatabase());
+        if (window.location.hash.startsWith(PUBLIC_TREE_HASH_PREFIX)) {
+          setPublicLoadError(translate(savedLanguage, 'errors.publicLoad'));
+        } else if (isSupabaseConfigured && authUser) {
+          setRemoteSyncError(translate(savedLanguage, 'errors.supabaseConnect', { message: error?.message || 'No se pudo inicializar la sincronización remota.' }));
+        } else {
+          setDb(defaultDatabase());
+        }
       } finally {
         setHydrated(true);
       }
@@ -3584,10 +3594,10 @@ export default function GenealogyApp() {
 
   const savePerson = (form, relations = []) => {
     const now = new Date().toISOString();
-    const { _placeHierarchy, ...personValues } = form;
+    const { _placeHierarchy, _deathPlaceHierarchy, ...personValues } = form;
     const person = { id: newId('person'), ...personValues, createdAt: now, updatedAt: now };
     updateDb((prev) => {
-      const nextPlaces = [...(prev.places || []), ...(_placeHierarchy || [])].reduce((all, place) => all.some((item) => item.id === place.id) ? all : [...all, { ...place, createdAt: place.createdAt || now, updatedAt: now }], []);
+      const nextPlaces = [...(prev.places || []), ...(_placeHierarchy || []), ...(_deathPlaceHierarchy || [])].reduce((all, place) => all.some((item) => item.id === place.id) ? all : [...all, { ...place, createdAt: place.createdAt || now, updatedAt: now }], []);
       let next = { ...prev, places: nextPlaces, people: [...prev.people, person], settings: { ...prev.settings, rootPersonId: prev.settings.rootPersonId || person.id } };
       (Array.isArray(relations) ? relations : [relations]).filter((relation) => relation?.kind && relation?.personId).forEach((relation) => {
         if (relation.kind === 'parent_of') next.parentChild = [...next.parentChild, { id: newId('pc'), parentId: person.id, childId: relation.personId }];
@@ -3605,8 +3615,8 @@ export default function GenealogyApp() {
 
   const saveExistingPerson = (personId, form) => {
     const now = new Date().toISOString();
-    const { _placeHierarchy, ...personValues } = form;
-    updateDb((prev) => ({ ...prev, places: [...(prev.places || []), ...(_placeHierarchy || [])].reduce((all, place) => all.some((item) => item.id === place.id) ? all : [...all, { ...place, createdAt: place.createdAt || now, updatedAt: now }], []), people: prev.people.map((p) => p.id === personId ? { ...p, ...personValues, id: p.id, createdAt: p.createdAt, updatedAt: now } : p) }));
+    const { _placeHierarchy, _deathPlaceHierarchy, ...personValues } = form;
+    updateDb((prev) => ({ ...prev, places: [...(prev.places || []), ...(_placeHierarchy || []), ...(_deathPlaceHierarchy || [])].reduce((all, place) => all.some((item) => item.id === place.id) ? all : [...all, { ...place, createdAt: place.createdAt || now, updatedAt: now }], []), people: prev.people.map((p) => p.id === personId ? { ...p, ...personValues, id: p.id, createdAt: p.createdAt, updatedAt: now } : p) }));
     setSelectedId(personId);
     setDrawerPersonId(personId);
     setDrawerMode('view');
