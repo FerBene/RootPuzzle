@@ -37,7 +37,7 @@ const I18N = {
     },
     actions: { newPiece: '+ Nueva pieza', newSource: '+ Nueva fuente', cancel: 'Cancelar', savePiece: 'Guardar pieza', createPiece: 'Crear pieza', saveChanges: 'Guardar cambios', saveEvent: 'Guardar evento', saveSource: 'Guardar fuente', edit: 'Editar', viewInTree: 'Ver en árbol', add: '+ Agregar', remove: 'Quitar', import: 'Importar', exportJson: 'Exportar JSON', exportGedcom: 'Exportar GEDCOM', exportPdf: 'Exportar PDF', generateLink: 'Generar enlace', activateDetective: 'Activar detective', accept: 'Aceptar', reject: 'Rechazar', acceptPiece: 'Aceptar pieza', rejectPiece: 'Rechazar', importPiece: 'Importar pieza', tools: 'Herramientas', hideTools: 'Ocultar herramientas', allPieces: 'Todas las piezas', focusedBranch: 'Rama enfocada', uploadImage: 'Cargar imagen', copy: 'Copiar', downloadPiece: 'Descargar pieza' },
     stats: { pieces: 'piezas', links: 'vínculos', events: 'eventos', sources: 'fuentes', results: 'resultados', dated: 'con fecha', pending: 'pendientes', accepted: 'aceptadas', rejected: 'rechazadas' },
-    forms: { names: 'Nombres', surnames: 'Apellidos', birthYear: 'Año de nacimiento', nickname: 'Apodo', relationship: 'Parentesco', noLinkYet: 'Sin vínculo por ahora', parentOf: 'Es padre/madre de', childOf: 'Es hijo/a de', partnerOf: 'Es pareja de', noPiecesToLink: 'Sin otras piezas para vincular', linkWith: 'Vincular con', choosePiece: 'Elegir pieza', moreData: '+ datos', profileImage: 'Imagen de perfil', email: 'Email', sex: 'Sexo', unspecified: 'Sin indicar', male: 'Masculino', female: 'Femenino', otherGender: 'Otro / no binario', birthPlace: 'Lugar de nacimiento', death: 'Fallecimiento', deathPlace: 'Lugar de fallecimiento', occupation: 'Ocupación', notes: 'Notas', type: 'Tipo', date: 'Fecha', place: 'Lugar', description: 'Descripción', title: 'Título', repository: 'Archivo / repositorio', url: 'URL' },
+    forms: { names: 'Nombres', surnames: 'Apellidos', birthYear: 'Año de nacimiento', nickname: 'Apodo', relationship: 'Parentesco', noLinkYet: 'Sin vínculo por ahora', parentOf: 'Es padre/madre de', childOf: 'Es hijo/a de', partnerOf: 'Es pareja de', noPiecesToLink: 'Sin otras piezas para vincular', linkWith: 'Vincular con', choosePiece: 'Elegir pieza', moreData: '+ datos', profileImage: 'Imagen de perfil', email: 'Email', sex: 'Sexo', gender: 'Género', unspecified: 'Sin indicar', male: 'Masculino', female: 'Femenino', otherGender: 'Otro / no binario', birthDateLabel: 'Nació el…', deathDateLabel: 'Falleció el…', birthPlace: 'Lugar de nacimiento', death: 'Fallecimiento', deathPlace: 'Lugar de fallecimiento', approximate: 'Aprox.', exact: 'Exacto', dayExample: '15', monthExample: '08', yearExample: '1942', occupation: 'Ocupación', notes: 'Notas', type: 'Tipo', date: 'Fecha', place: 'Lugar', description: 'Descripción', title: 'Título', repository: 'Archivo / repositorio', url: 'URL' },
     placeholders: { birthYear: 'Ej. 1942', email: 'nombre@dominio.com', birthPlace: 'Ciudad, provincia, país', notes: 'Hipótesis, datos pendientes, variantes del apellido...', search: 'Buscar por nombre, apodo, apellido, lugar…', repository: 'FamilySearch, archivo provincial, parroquia…', sourceExplanation: 'Acta, censo, recuerdo familiar, enlace, archivo...' },
     modalTitles: { newPiece: 'Nueva pieza', newSource: 'Nueva fuente', newEvent: 'Nuevo evento · {name}' },
     people: { bioPending: 'Datos biográficos pendientes' },
@@ -69,7 +69,7 @@ const I18N = {
     subtitles: { tree: 'View and explore your family tree.', people: 'Manage registered pieces and profiles.', timeline: 'Review events in chronological order.', familyMap: 'Explore where each family story began through time.', sources: 'Organize your research sources.', data: 'Import, export and back up your tree.', profile: 'Account and preferences.' },
     actions: { newPiece: '+ New piece', newSource: '+ New source', cancel: 'Cancel', savePiece: 'Save piece', createPiece: 'Create piece', saveChanges: 'Save changes', saveEvent: 'Save event', saveSource: 'Save source', edit: 'Edit', viewInTree: 'View in tree', add: '+ Add', remove: 'Remove', import: 'Import', exportJson: 'Export JSON', exportGedcom: 'Export GEDCOM', exportPdf: 'Export PDF', generateLink: 'Generate link', activateDetective: 'Activate detective', accept: 'Accept', reject: 'Reject', acceptPiece: 'Accept piece', rejectPiece: 'Reject', importPiece: 'Import piece', tools: 'Tools', hideTools: 'Hide tools', allPieces: 'All pieces', focusedBranch: 'Focused branch', uploadImage: 'Upload image', copy: 'Copy', downloadPiece: 'Download piece' },
     stats: { pieces: 'pieces', links: 'links', events: 'events', sources: 'sources', results: 'results', dated: 'dated', pending: 'pending', accepted: 'accepted', rejected: 'rejected' },
-    forms: { names: 'Given names', surnames: 'Surnames', birthYear: 'Birth year', nickname: 'Nickname', relationship: 'Relationship', noLinkYet: 'No link yet', parentOf: 'Is parent of', childOf: 'Is child of', partnerOf: 'Is partner of', noPiecesToLink: 'No other pieces to link', linkWith: 'Link with', choosePiece: 'Choose piece', moreData: '+ details', profileImage: 'Profile image', email: 'Email', sex: 'Sex', unspecified: 'Unspecified', male: 'Male', female: 'Female', otherGender: 'Other / non-binary', birthPlace: 'Birth place', death: 'Death', deathPlace: 'Death place', occupation: 'Occupation', notes: 'Notes', type: 'Type', date: 'Date', place: 'Place', description: 'Description', title: 'Title', repository: 'File / repository', url: 'URL' },
+    forms: { names: 'Given names', surnames: 'Surnames', birthYear: 'Birth year', nickname: 'Nickname', relationship: 'Relationship', noLinkYet: 'No link yet', parentOf: 'Is parent of', childOf: 'Is child of', partnerOf: 'Is partner of', noPiecesToLink: 'No other pieces to link', linkWith: 'Link with', choosePiece: 'Choose piece', moreData: '+ details', profileImage: 'Profile image', email: 'Email', sex: 'Sex', gender: 'Gender', unspecified: 'Unspecified', male: 'Male', female: 'Female', otherGender: 'Other / non-binary', birthDateLabel: 'Born on…', deathDateLabel: 'Died on…', birthPlace: 'Birth place', death: 'Death', deathPlace: 'Death place', approximate: 'Approx.', exact: 'Exact', dayExample: '15', monthExample: '08', yearExample: '1942', occupation: 'Occupation', notes: 'Notes', type: 'Type', date: 'Date', place: 'Place', description: 'Description', title: 'Title', repository: 'File / repository', url: 'URL' },
     placeholders: { birthYear: 'Ex. 1942', email: 'name@domain.com', birthPlace: 'City, state, country', notes: 'Hypotheses, pending data, surname variants...', search: 'Search by name, nickname, surname, place…', repository: 'FamilySearch, provincial archive, parish…', sourceExplanation: 'Certificate, census, family memory, link, file...' },
     modalTitles: { newPiece: 'New piece', newSource: 'New source', newEvent: 'New event · {name}' },
     people: { bioPending: 'Biographical data pending' },
@@ -146,7 +146,16 @@ const blankPerson = () => ({
   birthPlaceId: null,
   birthPlacePrecision: null,
   deathDate: '',
+  deathYear: null,
+  deathMonth: null,
+  deathDay: null,
+  deathDatePrecision: null,
   deathPlace: '',
+  deathPlacePrecision: null,
+  birthDateCertainty: 'exact',
+  birthPlaceCertainty: 'exact',
+  deathDateCertainty: 'exact',
+  deathPlaceCertainty: 'exact',
   occupation: '',
   notes: ''
 });
@@ -1949,20 +1958,47 @@ function PlaceSearch({ value, places = [], onChange }) {
   </div>;
 }
 
+function CertaintyToggle({ t, value = 'exact', onChange, label }) {
+  return <div className="certaintyToggle" role="group" aria-label={label}>
+    <button type="button" className={value === 'approx' ? 'active' : ''} onClick={() => onChange('approx')}>{t('forms.approximate')}</button>
+    <button type="button" className={value === 'exact' ? 'active' : ''} onClick={() => onChange('exact')}>{t('forms.exact')}</button>
+  </div>;
+}
+
+function LifeDateField({ t, title, year, month, day, setPart, certainty, setCertainty, error, idPrefix }) {
+  return <fieldset className={`lifeDateField ${error ? 'hasError' : ''}`}>
+    <div className="lifeFieldHeader"><legend>{title}</legend><CertaintyToggle t={t} value={certainty} onChange={setCertainty} label={`${title}: precisión`} /></div>
+    <div className="lifeDateInputs">
+      <label htmlFor={`${idPrefix}-day`}>Día<input id={`${idPrefix}-day`} type="number" min="1" max="31" inputMode="numeric" placeholder={t('forms.dayExample')} value={day ?? ''} onChange={setPart('day')} aria-label={`${title}, día`} /></label>
+      <label htmlFor={`${idPrefix}-month`}>Mes<input id={`${idPrefix}-month`} type="number" min="1" max="12" inputMode="numeric" placeholder={t('forms.monthExample')} value={month ?? ''} onChange={setPart('month')} aria-label={`${title}, mes`} /></label>
+      <label htmlFor={`${idPrefix}-year`}>Año<input id={`${idPrefix}-year`} type="number" min="1" max="9999" inputMode="numeric" placeholder={t('forms.yearExample')} value={year ?? ''} onChange={setPart('year')} aria-label={`${title}, año`} /></label>
+    </div>
+    {error && <span className="fieldError" role="alert">{error}</span>}
+  </fieldset>;
+}
+
+function LifePlaceField({ t, title, places, value, onChange, certainty, setCertainty }) {
+  return <fieldset className="lifePlaceField">
+    <div className="lifeFieldHeader"><legend>{title}</legend><CertaintyToggle t={t} value={certainty} onChange={setCertainty} label={`${title}: precisión`} /></div>
+    <PlaceSearch places={places} value={value} onChange={onChange} />
+  </fieldset>;
+}
+
 function PersonForm({ initial, people = [], places = [], showRelation = false, onCancel, onSave }) {
   const { t } = useI18n();
   const [form, setForm] = useState(() => {
     const legacy = datePartsFromLegacy(initial?.birthDate);
-    return { ...blankPerson(), ...(initial || {}), birthYear: initial?.birthYear ?? legacy.birthYear ?? null, birthMonth: initial?.birthMonth ?? legacy.birthMonth ?? null, birthDay: initial?.birthDay ?? legacy.birthDay ?? null, birthDatePrecision: initial?.birthDatePrecision ?? legacy.birthDatePrecision ?? null };
+    const deathLegacy = datePartsFromLegacy(initial?.deathDate);
+    return { ...blankPerson(), ...(initial || {}), birthYear: initial?.birthYear ?? legacy.birthYear ?? null, birthMonth: initial?.birthMonth ?? legacy.birthMonth ?? null, birthDay: initial?.birthDay ?? legacy.birthDay ?? null, birthDatePrecision: initial?.birthDatePrecision ?? legacy.birthDatePrecision ?? null, deathYear: initial?.deathYear ?? deathLegacy.birthYear ?? null, deathMonth: initial?.deathMonth ?? deathLegacy.birthMonth ?? null, deathDay: initial?.deathDay ?? deathLegacy.birthDay ?? null, deathDatePrecision: initial?.deathDatePrecision ?? deathLegacy.birthDatePrecision ?? null, birthDateCertainty: initial?.birthDateCertainty || 'exact', birthPlaceCertainty: initial?.birthPlaceCertainty || 'exact', deathDateCertainty: initial?.deathDateCertainty || 'exact', deathPlaceCertainty: initial?.deathPlaceCertainty || 'exact' };
   });
   const [relationKind, setRelationKind] = useState('');
-  const [relationPersonId, setRelationPersonId] = useState('');
+  const [relations, setRelations] = useState([]);
   const [errors, setErrors] = useState({});
   const imageInputRef = useRef(null);
   const relationOptions = people.filter((person) => person.id !== initial?.id).sort(comparePeopleByName);
   const set = (key) => (event) => {
     setForm((prev) => ({ ...prev, [key]: event.target.value }));
-    setErrors((prev) => ({ ...prev, [key]: '', identity: ['givenNames', 'surnames', 'nickname'].includes(key) ? '' : prev.identity, birthDate: ['birthYear', 'birthMonth', 'birthDay'].includes(key) ? '' : prev.birthDate }));
+    setErrors((prev) => ({ ...prev, [key]: '', identity: ['givenNames', 'surnames', 'nickname'].includes(key) ? '' : prev.identity, birthDate: ['birthYear', 'birthMonth', 'birthDay'].includes(key) ? '' : prev.birthDate, deathDate: ['deathYear', 'deathMonth', 'deathDay'].includes(key) ? '' : prev.deathDate }));
   };
   const setProfileImage = async (event) => {
     const file = event.target.files?.[0];
@@ -1984,11 +2020,17 @@ function PersonForm({ initial, people = [], places = [], showRelation = false, o
     const valid = !year && !month && !day || (Number.isInteger(year) && year >= 1 && year <= 9999 && (!month || (Number.isInteger(month) && month >= 1 && month <= 12)) && (!day || (Number.isInteger(month) && month >= 1 && month <= 12 && Number.isInteger(day) && day >= 1 && day <= new Date(year, month, 0).getDate())));
     const nextErrors = {};
     if (![form.givenNames, form.surnames, form.nickname].some((value) => String(value || '').trim())) nextErrors.identity = 'Completá al menos un nombre, apellido o apodo para identificar la pieza.';
+    const deathYear = form.deathYear === '' ? null : Number(form.deathYear);
+    const deathMonth = form.deathMonth === '' ? null : Number(form.deathMonth);
+    const deathDay = form.deathDay === '' ? null : Number(form.deathDay);
+    const deathValid = !deathYear && !deathMonth && !deathDay || (Number.isInteger(deathYear) && deathYear >= 1 && deathYear <= 9999 && (!deathMonth || (Number.isInteger(deathMonth) && deathMonth >= 1 && deathMonth <= 12)) && (!deathDay || (Number.isInteger(deathMonth) && deathMonth >= 1 && deathMonth <= 12 && Number.isInteger(deathDay) && deathDay >= 1 && deathDay <= new Date(deathYear, deathMonth, 0).getDate())));
     if (!valid) nextErrors.birthDate = 'Revisá la fecha: podés indicar solo el año, año y mes, o una fecha completa válida.';
-    if (relationKind && !relationPersonId) nextErrors.relationPersonId = 'Elegí con quién querés vincular esta pieza o quitá el parentesco.';
+    if (!deathValid) nextErrors.deathDate = 'Revisá la fecha de fallecimiento: puede ser solo el año, año y mes, o una fecha completa válida.';
+    if (relationKind) nextErrors.relationPersonId = 'Elegí una persona y agregá ese parentesco, o quitá el tipo de relación.';
     if (Object.keys(nextErrors).length) { setErrors(nextErrors); return; }
     const precision = day ? 'day' : month ? 'month' : year ? 'year' : null;
-    onSave({ ...form, birthYear: year, birthMonth: month, birthDay: day, birthDatePrecision: precision, birthDate: birthDateFromParts(year, month, day) }, showRelation ? { kind: relationKind, personId: relationPersonId } : null);
+    const deathPrecision = deathDay ? 'day' : deathMonth ? 'month' : deathYear ? 'year' : null;
+    onSave({ ...form, birthYear: year, birthMonth: month, birthDay: day, birthDatePrecision: precision, birthDate: birthDateFromParts(year, month, day), deathYear, deathMonth, deathDay, deathDatePrecision: deathPrecision, deathDate: birthDateFromParts(deathYear, deathMonth, deathDay) }, showRelation ? relations : []);
   };
   return (
     <form onSubmit={submit} className="formStack">
@@ -1998,17 +2040,17 @@ function PersonForm({ initial, people = [], places = [], showRelation = false, o
         <label className={errors.identity ? 'hasError' : ''}>{t('forms.surnames')}<input value={form.surnames} onChange={set('surnames')} aria-invalid={Boolean(errors.identity)} /></label>
       </div>
       {errors.identity && <p className="formError" role="alert">{errors.identity}</p>}
-      <div className="birthDateFields"><span>{t('card.birthDate')}</span><div className="formGrid three"><label>Año<input value={form.birthYear ?? ''} onChange={set('birthYear')} inputMode="numeric" placeholder={t('placeholders.birthYear')} /></label><label>Mes<input value={form.birthMonth ?? ''} onChange={set('birthMonth')} inputMode="numeric" min="1" max="12" /></label><label>Día<input value={form.birthDay ?? ''} onChange={set('birthDay')} inputMode="numeric" min="1" max="31" /></label></div></div>
-      {errors.birthDate && <p className="formError" role="alert">{errors.birthDate}</p>}
+      <div className="lifeSection">
+        <LifeDateField t={t} title={t('forms.birthDateLabel')} year={form.birthYear} month={form.birthMonth} day={form.birthDay} setPart={(part) => set(`birth${part[0].toUpperCase()}${part.slice(1)}`)} certainty={form.birthDateCertainty} setCertainty={(value) => setForm((prev) => ({ ...prev, birthDateCertainty: value }))} error={errors.birthDate} idPrefix="birth-date" />
+        <LifePlaceField t={t} title={t('forms.birthPlace')} places={places} value={places.find((place) => place.id === form.birthPlaceId) || (form.birthPlace && { name: form.birthPlace, id: form.birthPlaceId, hierarchy: form._placeHierarchy })} certainty={form.birthPlaceCertainty} setCertainty={(value) => setForm((prev) => ({ ...prev, birthPlaceCertainty: value }))} onChange={(selection) => setForm((prev) => selection ? ({ ...prev, birthPlace: selection.place.name, birthPlaceId: selection.place.id, birthPlacePrecision: selection.precision, _placeHierarchy: selection.hierarchy }) : ({ ...prev, birthPlace: '', birthPlaceId: null, birthPlacePrecision: null, _placeHierarchy: [] }))} />
+      </div>
       <div className="formGrid two">
         {showRelation ? (
-          relationOptions.length ? <label>{t('forms.relationship')}<select value={relationKind} onChange={(event) => { setRelationKind(event.target.value); setRelationPersonId(''); setErrors((prev) => ({ ...prev, relationPersonId: '' })); }}><option value="">{t('forms.noLinkYet')}</option><option value="parent_of">{t('forms.parentOf')}</option><option value="child_of">{t('forms.childOf')}</option><option value="partner_of">{t('forms.partnerOf')}</option></select></label> : <label>{t('forms.relationship')}<input disabled placeholder={t('forms.noPiecesToLink')} /></label>
+          relationOptions.length ? <div className="relationEditor"><div className="relationPickerGroup"><label>{t('forms.relationship')}<select value={relationKind} onChange={(event) => { setRelationKind(event.target.value); setErrors((prev) => ({ ...prev, relationPersonId: '' })); }}><option value="">{t('forms.noLinkYet')}</option><option value="parent_of">{t('forms.parentOf')}</option><option value="child_of">{t('forms.childOf')}</option><option value="partner_of">{t('forms.partnerOf')}</option></select></label>{relationKind && <PersonPicker people={relationOptions} onPick={(id) => { setRelations((prev) => prev.some((relation) => relation.kind === relationKind && relation.personId === id) ? prev : [...prev, { kind: relationKind, personId: id }]); setRelationKind(''); setErrors((prev) => ({ ...prev, relationPersonId: '' })); }} label="Agregar" />}</div>{relationKind && <p className="fieldError">Elegí una persona y presioná Agregar.</p>}{relations.length > 0 && <div className="relationDraftList" aria-label="Parentescos a agregar">{relations.map((relation, index) => { const linkedPerson = relationOptions.find((person) => person.id === relation.personId); const label = relation.kind === 'parent_of' ? t('forms.parentOf') : relation.kind === 'child_of' ? t('forms.childOf') : t('forms.partnerOf'); return <span className="relationDraftChip" key={`${relation.kind}-${relation.personId}-${index}`}><b>{label}</b><span>{displayName(linkedPerson)}</span><button type="button" onClick={() => setRelations((prev) => prev.filter((_, relationIndex) => relationIndex !== index))} aria-label="Quitar parentesco">×</button></span>; })}</div>}</div> : <label>{t('forms.relationship')}<input disabled placeholder={t('forms.noPiecesToLink')} /></label>
         ) : (
           <label>{t('forms.nickname')}<input value={form.nickname} onChange={set('nickname')} /></label>
         )}
       </div>
-      {showRelation && relationOptions.length > 0 && relationKind && <label className={errors.relationPersonId ? 'hasError' : ''}>{t('forms.linkWith')}<select value={relationPersonId} onChange={(event) => { setRelationPersonId(event.target.value); setErrors((prev) => ({ ...prev, relationPersonId: '' })); }} aria-invalid={Boolean(errors.relationPersonId)}><option value="">{t('forms.choosePiece')}</option>{relationOptions.map((person) => <option key={person.id} value={person.id}>{displayName(person)}</option>)}</select>{errors.relationPersonId && <span className="fieldError">{errors.relationPersonId}</span>}</label>}
-      <label>{t('forms.birthPlace')}<PlaceSearch places={places} value={places.find((place) => place.id === form.birthPlaceId) || (form.birthPlace && { name: form.birthPlace, id: form.birthPlaceId, hierarchy: form._placeHierarchy })} onChange={(selection) => setForm((prev) => selection ? ({ ...prev, birthPlace: selection.place.name, birthPlaceId: selection.place.id, birthPlacePrecision: selection.precision, _placeHierarchy: selection.hierarchy }) : ({ ...prev, birthPlace: '', birthPlaceId: null, birthPlacePrecision: null, _placeHierarchy: [] }))} /></label>
       <details className="moreData">
         <summary>{t('forms.moreData')}</summary>
         <div className="moreDataBody">
@@ -2026,12 +2068,12 @@ function PersonForm({ initial, people = [], places = [], showRelation = false, o
           {showRelation && <label>{t('forms.nickname')}<input value={form.nickname} onChange={set('nickname')} /></label>}
           <label>{t('forms.email')}<input type="email" value={form.email} onChange={set('email')} placeholder={t('placeholders.email')} /></label>
           <div className="formGrid two">
-            <label>{t('forms.sex')}<select value={form.sex} onChange={set('sex')}><option value="">{t('forms.unspecified')}</option><option value="M">{t('forms.male')}</option><option value="F">{t('forms.female')}</option><option value="X">{t('forms.otherGender')}</option></select></label>
+            <label>{t('forms.gender')}<select value={form.sex} onChange={set('sex')}><option value="">{t('forms.unspecified')}</option><option value="M">{t('forms.male')}</option><option value="F">{t('forms.female')}</option><option value="X">{t('forms.otherGender')}</option></select></label>
             <span />
           </div>
-          <div className="formGrid two">
-            <label>{t('forms.death')}<input type="date" value={form.deathDate} onChange={set('deathDate')} /></label>
-            <label>{t('forms.deathPlace')}<input value={form.deathPlace} onChange={set('deathPlace')} /></label>
+          <div className="lifeSection">
+            <LifeDateField t={t} title={t('forms.deathDateLabel')} year={form.deathYear} month={form.deathMonth} day={form.deathDay} setPart={(part) => set(`death${part[0].toUpperCase()}${part.slice(1)}`)} certainty={form.deathDateCertainty} setCertainty={(value) => setForm((prev) => ({ ...prev, deathDateCertainty: value }))} error={errors.deathDate} idPrefix="death-date" />
+            <LifePlaceField t={t} title={t('forms.deathPlace')} places={[]} value={form.deathPlace ? { name: form.deathPlace, id: null } : null} certainty={form.deathPlaceCertainty} setCertainty={(value) => setForm((prev) => ({ ...prev, deathPlaceCertainty: value }))} onChange={(selection) => setForm((prev) => ({ ...prev, deathPlace: selection?.place?.name || '' }))} />
           </div>
           <label>{t('forms.occupation')}<input value={form.occupation} onChange={set('occupation')} /></label>
           <label>{t('forms.notes')}<textarea rows="5" value={form.notes} onChange={set('notes')} placeholder={t('placeholders.notes')} /></label>
@@ -2057,14 +2099,18 @@ function EmptyState({ onAdd }) {
 function PersonPicker({ people, excludeId, onPick, label }) {
   const { t } = useI18n();
   const [value, setValue] = useState('');
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
   const options = people.filter((p) => p.id !== excludeId).sort(comparePeopleByName);
+  const filtered = options.filter((person) => !query.trim() || displayName(person).toLowerCase().includes(query.trim().toLowerCase()));
   return (
-    <div className="pickerRow">
-      <select value={value} onChange={(e) => setValue(e.target.value)}>
-        <option value="">{t('drawer.choosePerson')}</option>
-        {options.map((p) => <option key={p.id} value={p.id}>{displayName(p)}</option>)}
-      </select>
-      <button className="secondaryButton" disabled={!value} onClick={() => { onPick(value); setValue(''); }}>{label}</button>
+    <div className="pickerRow relationPickerRow">
+      <div className="relationPicker">
+        <label>{t('drawer.choosePerson')}</label>
+        <input value={query} placeholder={t('drawer.choosePerson')} autoComplete="off" onFocus={() => setOpen(true)} onBlur={() => window.setTimeout(() => setOpen(false), 150)} onChange={(event) => { const next = event.target.value; const exact = options.find((person) => displayName(person).toLowerCase() === next.trim().toLowerCase()); setQuery(next); setValue(exact?.id || ''); }} />
+        {open && <div className="relationPickerOptions" role="listbox">{filtered.length ? filtered.map((person) => <button type="button" role="option" key={person.id} onMouseDown={(event) => event.preventDefault()} onClick={() => { setValue(person.id); setQuery(displayName(person)); setOpen(false); }}><strong>{displayName(person)}</strong><span>{[person.birthDate, person.birthPlace].filter(Boolean).join(' · ') || 'Sin datos biográficos'}</span></button>) : <p>No encontramos coincidencias.</p>}</div>}
+      </div>
+      <button type="button" className="secondaryButton" disabled={!value} onClick={() => { onPick(value); setValue(''); setQuery(''); }}>{label}</button>
     </div>
   );
 }
@@ -2430,13 +2476,28 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
     const y = event.clientY - rect.top;
     const startedOnCard = Boolean(event.target.closest?.('.treeCard'));
     dragRef.current.pointers.set(event.pointerId, { x, y, clientX: event.clientX, clientY: event.clientY, startedOnCard });
-    event.currentTarget.setPointerCapture(event.pointerId);
+    const pointerCount = dragRef.current.pointers.size;
 
-    if (dragRef.current.pointers.size === 1) {
+    // Keep the browser's native click target for a single-finger card tap.
+    // Capture once the gesture is a canvas pan or a two-pointer pinch.
+    if (!startedOnCard || pointerCount >= 2) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    if (pointerCount >= 2) {
+      for (const pointerId of dragRef.current.pointers.keys()) {
+        try {
+          event.currentTarget.setPointerCapture(pointerId);
+        } catch {
+          // The pointer may have ended between the two pointerdown events.
+        }
+      }
+    }
+
+    if (pointerCount === 1) {
       // start pan
       const point = dragRef.current.pointers.values().next().value;
       dragRef.current.pan = point.startedOnCard ? null : { startX: point.clientX, startY: point.clientY, originX: viewport.x, originY: viewport.y };
-    } else if (dragRef.current.pointers.size === 2) {
+    } else if (pointerCount === 2) {
       // start pinch
       dragRef.current.gesture = 'pinch';
       dragRef.current.pan = null;
@@ -2781,12 +2842,27 @@ function PublicTreePage({ db }) {
     const y = event.clientY - rect.top;
     const startedOnCard = Boolean(event.target.closest?.('.treeCard'));
     dragRef.current.pointers.set(event.pointerId, { x, y, clientX: event.clientX, clientY: event.clientY, startedOnCard });
-    event.currentTarget.setPointerCapture(event.pointerId);
+    const pointerCount = dragRef.current.pointers.size;
 
-    if (dragRef.current.pointers.size === 1) {
+    // Keep the browser's native click target for a single-finger card tap.
+    // Capture once the gesture is a canvas pan or a two-pointer pinch.
+    if (!startedOnCard || pointerCount >= 2) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    if (pointerCount >= 2) {
+      for (const pointerId of dragRef.current.pointers.keys()) {
+        try {
+          event.currentTarget.setPointerCapture(pointerId);
+        } catch {
+          // The pointer may have ended between the two pointerdown events.
+        }
+      }
+    }
+
+    if (pointerCount === 1) {
       const point = dragRef.current.pointers.values().next().value;
       dragRef.current.pan = point.startedOnCard ? null : { startX: point.clientX, startY: point.clientY, originX: viewport.x, originY: viewport.y };
-    } else if (dragRef.current.pointers.size === 2) {
+    } else if (pointerCount === 2) {
       dragRef.current.gesture = 'pinch';
       dragRef.current.pan = null;
       suppressCardClickRef.current = Date.now() + 500;
@@ -3506,18 +3582,18 @@ export default function GenealogyApp() {
     setNewTreeName('');
   };
 
-  const savePerson = (form, relation) => {
+  const savePerson = (form, relations = []) => {
     const now = new Date().toISOString();
     const { _placeHierarchy, ...personValues } = form;
     const person = { id: newId('person'), ...personValues, createdAt: now, updatedAt: now };
     updateDb((prev) => {
       const nextPlaces = [...(prev.places || []), ...(_placeHierarchy || [])].reduce((all, place) => all.some((item) => item.id === place.id) ? all : [...all, { ...place, createdAt: place.createdAt || now, updatedAt: now }], []);
       let next = { ...prev, places: nextPlaces, people: [...prev.people, person], settings: { ...prev.settings, rootPersonId: prev.settings.rootPersonId || person.id } };
-      if (relation?.kind && relation?.personId) {
-        if (relation.kind === 'parent_of') next = { ...next, parentChild: [...next.parentChild, { id: newId('pc'), parentId: person.id, childId: relation.personId }] };
-        if (relation.kind === 'child_of') next = { ...next, parentChild: [...next.parentChild, { id: newId('pc'), parentId: relation.personId, childId: person.id }] };
-        if (relation.kind === 'partner_of') next = { ...next, partnerships: [...next.partnerships, { id: newId('partner'), personAId: person.id, personBId: relation.personId, status: '' }] };
-      }
+      (Array.isArray(relations) ? relations : [relations]).filter((relation) => relation?.kind && relation?.personId).forEach((relation) => {
+        if (relation.kind === 'parent_of') next.parentChild = [...next.parentChild, { id: newId('pc'), parentId: person.id, childId: relation.personId }];
+        if (relation.kind === 'child_of') next.parentChild = [...next.parentChild, { id: newId('pc'), parentId: relation.personId, childId: person.id }];
+        if (relation.kind === 'partner_of') next.partnerships = [...next.partnerships, { id: newId('partner'), personAId: person.id, personBId: relation.personId, status: '' }];
+      });
       return next;
     });
     setSelectedId(person.id);

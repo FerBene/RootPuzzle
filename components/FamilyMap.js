@@ -1,11 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, CirclePause, CirclePlay, Globe2, RotateCcw, UserRound } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { geoNaturalEarth1, geoPath } from 'd3-geo';
+import { CirclePause, CirclePlay, Globe2, LocateFixed, Minus, Plus, RotateCcw, UserRound } from 'lucide-react';
+import { feature, mesh } from 'topojson-client';
+import worldAtlas from 'world-atlas/countries-110m.json';
 import { displayName } from '@/lib/model';
 
 const WORLD_WIDTH = 1000;
 const WORLD_HEIGHT = 500;
+const worldProjection = geoNaturalEarth1().fitSize([WORLD_WIDTH, WORLD_HEIGHT], { type: 'Sphere' });
+const worldPath = geoPath(worldProjection);
+const worldCountries = feature(worldAtlas, worldAtlas.objects.countries).features;
+const worldBorders = mesh(worldAtlas, worldAtlas.objects.countries, (a, b) => a !== b);
 
 const yearFrom = (person) => {
   const direct = Number(person?.birthYear);
@@ -15,8 +22,8 @@ const yearFrom = (person) => {
 };
 
 const project = (latitude, longitude) => ({
-  x: ((Number(longitude) + 180) / 360) * WORLD_WIDTH,
-  y: ((90 - Number(latitude)) / 180) * WORLD_HEIGHT
+  x: worldProjection([Number(longitude), Number(latitude)])[0],
+  y: worldProjection([Number(longitude), Number(latitude)])[1]
 });
 
 const safeCoordinates = (place) => {
@@ -40,21 +47,11 @@ const branchOptionsFor = (people) => {
 
 function WorldBase() {
   return <>
-    <defs>
-      <pattern id="familyMapGrid" width="100" height="50" patternUnits="userSpaceOnUse"><path d="M 100 0 L 0 0 0 50" fill="none" stroke="currentColor" strokeOpacity=".12" strokeWidth="1" /></pattern>
-      <linearGradient id="familyMapOcean" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="currentColor" stopOpacity=".08" /><stop offset="1" stopColor="currentColor" stopOpacity=".03" /></linearGradient>
-    </defs>
-    <rect width={WORLD_WIDTH} height={WORLD_HEIGHT} fill="url(#familyMapOcean)" />
-    <rect width={WORLD_WIDTH} height={WORLD_HEIGHT} fill="url(#familyMapGrid)" />
+    <path className="familyMapSphere" d={worldPath({ type: 'Sphere' })} aria-hidden="true" />
     <g className="familyMapLand" aria-hidden="true">
-      <path d="M86 91 119 64 173 59 218 84 254 122 245 164 215 183 205 224 178 249 154 224 129 219 113 184 79 164 57 128Z" />
-      <path d="M267 276 299 287 325 324 331 371 309 419 288 459 269 438 276 394 256 354 265 319Z" />
-      <path d="M438 87 479 60 537 67 572 91 601 101 625 139 606 164 572 154 550 176 516 157 482 173 454 148 423 136Z" />
-      <path d="M558 190 595 184 626 205 663 200 706 226 750 234 782 274 771 303 731 298 699 319 665 305 627 315 599 290 574 277Z" />
-      <path d="M787 88 821 71 869 82 901 112 888 145 855 154 830 132 796 132 777 111Z" />
-      <path d="M861 373 894 363 932 381 941 413 915 441 878 433 856 405Z" />
-      <path d="M500 181 520 190 515 208 494 206Z" />
+      {worldCountries.map((country, index) => <path d={worldPath(country)} key={country.id || index} />)}
     </g>
+    <path className="familyMapBorders" d={worldPath(worldBorders)} aria-hidden="true" />
   </>;
 }
 
@@ -74,11 +71,11 @@ function FamilyMapMarkers({ locations, currentYear, selectedLocation, onSelect }
   </g>;
 }
 
-function BirthLocationPopover({ location, onClose, onViewInTree }) {
+function BirthLocationPopover({ location, mapViewport, onClose, onViewInTree }) {
   if (!location) return null;
   const point = project(location.latitude, location.longitude);
-  const left = Math.min(79, Math.max(2, (point.x / WORLD_WIDTH) * 100 - 4));
-  const top = Math.min(70, Math.max(5, (point.y / WORLD_HEIGHT) * 100 - 5));
+  const left = Math.min(79, Math.max(2, ((point.x * mapViewport.scale + mapViewport.x) / WORLD_WIDTH) * 100 - 4));
+  const top = Math.min(70, Math.max(5, ((point.y * mapViewport.scale + mapViewport.y) / WORLD_HEIGHT) * 100 - 5));
   return <div className="familyMapPopover" style={{ left: `${left}%`, top: `${top}%` }}>
     <button className="familyMapPopoverClose" type="button" onClick={onClose} aria-label="Cerrar ubicación">×</button>
     <strong>{location.label}</strong>
@@ -113,6 +110,9 @@ export default function FamilyMap({ people = [], places = [], onViewInTree }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [branchFilter, setBranchFilter] = useState('all');
+  const [mapViewport, setMapViewport] = useState({ x: 0, y: 0, scale: 1 });
+  const mapGestureRef = useRef(null);
+  const mapSvgRef = useRef(null);
   const placeById = useMemo(() => new Map(places.map((place) => [place.id, place])), [places]);
   const branchOptions = useMemo(() => branchOptionsFor(people), [people]);
   const events = useMemo(() => people.map((person) => {
@@ -142,6 +142,66 @@ export default function FamilyMap({ people = [], places = [], onViewInTree }) {
   useEffect(() => {
     setCurrentIndex(0); setSelectedLocation(null); setIsPlaying(false);
   }, [branchFilter]);
+  const mapPointFromEvent = (event) => {
+    const rect = mapSvgRef.current?.getBoundingClientRect();
+    if (!rect) return { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 };
+    return { x: ((event.clientX - rect.left) / rect.width) * WORLD_WIDTH, y: ((event.clientY - rect.top) / rect.height) * WORLD_HEIGHT };
+  };
+  const zoomMapAt = (nextScale, focalPoint = { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 }) => {
+    const scale = Math.min(5, Math.max(.75, nextScale));
+    setMapViewport((previous) => {
+      const worldX = (focalPoint.x - previous.x) / previous.scale;
+      const worldY = (focalPoint.y - previous.y) / previous.scale;
+      return { scale, x: focalPoint.x - worldX * scale, y: focalPoint.y - worldY * scale };
+    });
+  };
+  const onMapWheel = (event) => {
+    event.preventDefault();
+    zoomMapAt(mapViewport.scale * (event.deltaY > 0 ? .9 : 1.1), mapPointFromEvent(event));
+  };
+  const onMapPointerDown = (event) => {
+    const point = mapPointFromEvent(event);
+    if (!mapGestureRef.current) mapGestureRef.current = { pointers: new Map(), moved: false };
+    mapGestureRef.current.pointers.set(event.pointerId, { clientX: event.clientX, clientY: event.clientY, point });
+    const pointerCount = mapGestureRef.current.pointers.size;
+    const startedOnMarker = Boolean(event.target.closest?.('.familyMapMarker'));
+    // Preserve a one-pointer marker click; capture when panning or pinch starts.
+    if (!startedOnMarker || pointerCount >= 2) event.currentTarget.setPointerCapture?.(event.pointerId);
+    if (pointerCount === 2) {
+      const [a, b] = [...mapGestureRef.current.pointers.values()];
+      mapGestureRef.current.pinch = { distance: Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY) || 1, center: { x: (a.clientX + b.clientX) / 2, y: (a.clientY + b.clientY) / 2 }, viewport: mapViewport };
+    } else {
+      mapGestureRef.current.pan = { clientX: event.clientX, clientY: event.clientY, point, viewport: mapViewport };
+    }
+  };
+  const onMapPointerMove = (event) => {
+    const gesture = mapGestureRef.current;
+    if (!gesture?.pointers.has(event.pointerId)) return;
+    const pointer = gesture.pointers.get(event.pointerId);
+    gesture.moved = gesture.moved || Math.hypot(event.clientX - pointer.clientX, event.clientY - pointer.clientY) > 3;
+    pointer.clientX = event.clientX; pointer.clientY = event.clientY;
+    if (gesture.pointers.size >= 2 && gesture.pinch) {
+      const [a, b] = [...gesture.pointers.values()];
+      const distance = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY) || 1;
+      const rect = mapSvgRef.current?.getBoundingClientRect();
+      const center = { x: (((a.clientX + b.clientX) / 2 - (rect?.left || 0)) / (rect?.width || 1)) * WORLD_WIDTH, y: (((a.clientY + b.clientY) / 2 - (rect?.top || 0)) / (rect?.height || 1)) * WORLD_HEIGHT };
+      const scale = Math.min(5, Math.max(.75, gesture.pinch.viewport.scale * distance / gesture.pinch.distance));
+      const worldX = (center.x - gesture.pinch.viewport.x) / gesture.pinch.viewport.scale;
+      const worldY = (center.y - gesture.pinch.viewport.y) / gesture.pinch.viewport.scale;
+      setMapViewport({ scale, x: center.x - worldX * scale, y: center.y - worldY * scale });
+    } else if (gesture.pan) {
+      const rect = mapSvgRef.current?.getBoundingClientRect();
+      const dx = ((event.clientX - gesture.pan.clientX) / (rect?.width || 1)) * WORLD_WIDTH;
+      const dy = ((event.clientY - gesture.pan.clientY) / (rect?.height || 1)) * WORLD_HEIGHT;
+      setMapViewport({ ...gesture.pan.viewport, x: gesture.pan.viewport.x + dx, y: gesture.pan.viewport.y + dy });
+    }
+  };
+  const onMapPointerUp = (event) => {
+    if (!mapGestureRef.current) return;
+    mapGestureRef.current.pointers.delete(event.pointerId);
+    if (mapGestureRef.current.pointers.size < 2) mapGestureRef.current.pinch = null;
+    if (!mapGestureRef.current.pointers.size) mapGestureRef.current = null;
+  };
   useEffect(() => {
     if (!isPlaying || !years.length) return undefined;
     const timer = window.setInterval(() => setCurrentIndex((index) => {
@@ -158,14 +218,22 @@ export default function FamilyMap({ people = [], places = [], onViewInTree }) {
       <label className="familyMapFilter"><span>Rama familiar</span><select value={branchFilter} onChange={(event) => setBranchFilter(event.target.value)}><option value="all">Todo el árbol</option>{branchOptions.map((branch) => <option value={branch.value} key={branch.value}>{branch.label}</option>)}</select></label>
     </header>
     <div className="familyMapStats" aria-label="Resumen del mapa"><div><span>Año</span><strong>{currentYear || '—'}</strong></div><div><span>Personas visibles</span><strong>{visiblePeople}</strong></div><div><span>Ubicaciones pendientes</span><strong>{pendingCount}</strong></div></div>
-    {!events.length ? <div className="familyMapEmpty"><Globe2 size={30} /><h3>{people.length ? 'Todavía no hay nacimientos para recorrer' : 'Este árbol todavía no tiene personas'}</h3><p>{people.length ? 'Agregá años de nacimiento para construir la línea de tiempo familiar.' : 'Cuando agregues personas con fecha de nacimiento, aparecerán en este mapa.'}</p></div> : <>
-      <div className="familyMapCanvas" aria-label="Mapa mundial de nacimientos">
-        <svg viewBox={`0 0 ${WORLD_WIDTH} ${WORLD_HEIGHT}`} role="img" aria-label={`Mapa de nacimientos hasta ${currentYear}`}><WorldBase /><FamilyMapMarkers locations={locations} currentYear={currentYear} selectedLocation={selectedLocation} onSelect={setSelectedLocation} /></svg>
-        {selectedLocation && <BirthLocationPopover location={selectedLocation} onClose={() => setSelectedLocation(null)} onViewInTree={onViewInTree} />}
+    <>
+      <div className={`familyMapCanvas ${!events.length ? 'empty' : ''}`} aria-label="Mapa mundial de nacimientos" onWheel={onMapWheel}>
+        <svg ref={mapSvgRef} viewBox={`0 0 ${WORLD_WIDTH} ${WORLD_HEIGHT}`} role="img" aria-label={`Mapa mundial de nacimientos${currentYear ? ` hasta ${currentYear}` : ''}`} onPointerDown={onMapPointerDown} onPointerMove={onMapPointerMove} onPointerUp={onMapPointerUp} onPointerCancel={onMapPointerUp}>
+          <g transform={`translate(${mapViewport.x} ${mapViewport.y}) scale(${mapViewport.scale})`}><WorldBase /><FamilyMapMarkers locations={locations} currentYear={currentYear} selectedLocation={selectedLocation} onSelect={setSelectedLocation} /></g>
+        </svg>
+        <div className="familyMapZoomControls" aria-label="Controles del mapa">
+          <button type="button" onClick={() => zoomMapAt(mapViewport.scale * 1.2)} title="Acercar" aria-label="Acercar"><Plus size={16} /></button>
+          <button type="button" onClick={() => zoomMapAt(mapViewport.scale / 1.2)} title="Alejar" aria-label="Alejar"><Minus size={16} /></button>
+          <button type="button" onClick={() => setMapViewport({ x: 0, y: 0, scale: 1 })} title="Recentrar mapa" aria-label="Recentrar mapa"><LocateFixed size={16} /></button>
+        </div>
+        {!events.length && <div className="familyMapEmptyOverlay"><Globe2 size={25} /><strong>{people.length ? 'Agregá años de nacimiento para recorrer el mapa' : 'Tu mapa familiar empieza acá'}</strong><span>{people.length ? 'El mapa mundial queda listo para ubicar las historias.' : 'Cuando agregues personas y lugares, aparecerán sus ubicaciones.'}</span></div>}
+        {selectedLocation && <BirthLocationPopover location={selectedLocation} mapViewport={mapViewport} onClose={() => setSelectedLocation(null)} onViewInTree={onViewInTree} />}
         <div className="familyMapLegend"><span><i className="geolocatedDot" /> Ubicación confirmada</span><span><i className="pendingDot" /> Pendiente de confirmar: {currentPending}</span></div>
       </div>
       <FamilyTimeline years={years} currentIndex={currentIndex} isPlaying={isPlaying} onIndexChange={(index) => { setCurrentIndex(index); setIsPlaying(false); }} onTogglePlay={() => { if (!isPlaying && currentIndex >= years.length - 1) setCurrentIndex(0); setIsPlaying((value) => !value); }} onReset={() => { setCurrentIndex(0); setIsPlaying(false); setSelectedLocation(null); }} />
-      <div className="familyMapContext"><div><span className="eyebrow">En este año</span><h3>{currentYear}</h3></div><div className="familyMapContextList">{currentEvents.length ? currentEvents.map((event) => <button type="button" className={`familyMapContextItem ${event.verified ? '' : 'pending'}`} key={event.person.id} onClick={() => event.verified && setSelectedLocation(locations.find((location) => location.people.some((person) => person.id === event.person.id)) || null)}><span>{event.verified ? <Globe2 size={16} /> : <span className="pendingIcon">?</span>}</span><div><strong>{displayName(event.person)}</strong><small>{event.label}{!event.verified && ' · Ubicación pendiente de confirmar'}</small></div></button>) : <p className="muted">No hay nacimientos registrados en este año.</p>}</div></div>
-    </>}
+      {events.length > 0 && <div className="familyMapContext"><div><span className="eyebrow">En este año</span><h3>{currentYear}</h3></div><div className="familyMapContextList">{currentEvents.length ? currentEvents.map((event) => <button type="button" className={`familyMapContextItem ${event.verified ? '' : 'pending'}`} key={event.person.id} onClick={() => event.verified && setSelectedLocation(locations.find((location) => location.people.some((person) => person.id === event.person.id)) || null)}><span>{event.verified ? <Globe2 size={16} /> : <span className="pendingIcon">?</span>}</span><div><strong>{displayName(event.person)}</strong><small>{event.label}{!event.verified && ' · Ubicación pendiente de confirmar'}</small></div></button>) : <p className="muted">No hay nacimientos registrados en este año.</p>}</div></div>}
+    </>
   </section>;
 }

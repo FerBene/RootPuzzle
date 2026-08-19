@@ -2089,6 +2089,73 @@ input:focus, select:focus, textarea:focus { border-color: #c77a4e; box-shadow: 0
 .section-findings .topbar { display: none; }
 .section-tree .topbar { display: none; }
 
+/* Maximized canvas keeps only the restore action available. */
+.treeWorkspace.canvasMaximized .treeToolbar,
+.treeWorkspace.canvasMaximized .canvasAchievementSummary,
+.treeWorkspace.canvasMaximized .canvasNewPieceButton,
+.treeWorkspace.canvasMaximized .canvasZoomControls,
+.treeWorkspace.canvasMaximized .canvasCenterButton,
+.treeWorkspace.canvasMaximized .canvasBottomLeftControls,
+.treeWorkspace.canvasMaximized .canvasBottomControls { display: none !important; }
+.treeWorkspace.canvasMaximized .canvasTopRightControls { grid-template-columns: 1fr auto; }
+.treeWorkspace.canvasMaximized .canvasViewportControls { width: 52px; min-width: 52px; justify-content: center; padding: 4px; }
+.treeWorkspace.canvasMaximized .canvasMaximizeButton { display: inline-grid !important; }
+@media (max-width: 760px) {
+  .treeWorkspace.canvasMaximized .canvasTopRightControls { grid-template-columns: 1fr; grid-template-areas: 'viewport'; }
+  .treeWorkspace.canvasMaximized .canvasViewportControls { grid-area: viewport; justify-self: end; }
+}
+
+/* Maximized canvas keeps the complete action bar available. */
+.treeWorkspace.canvasMaximized .treeToolbar { display: flex !important; }
+.treeWorkspace.canvasMaximized .canvasAchievementSummary { display: block !important; }
+.treeWorkspace.canvasMaximized .canvasNewPieceButton { display: inline-flex !important; }
+.treeWorkspace.canvasMaximized .canvasZoomControls { display: flex !important; }
+.treeWorkspace.canvasMaximized .canvasCenterButton,
+.treeWorkspace.canvasMaximized .canvasMaximizeButton { display: inline-grid !important; }
+.treeWorkspace.canvasMaximized .canvasBottomLeftControls { display: flex !important; }
+.treeWorkspace.canvasMaximized .canvasBottomControls { display: flex !important; }
+.treeWorkspace.canvasMaximized .canvasViewportControls { width: auto; min-width: 0; justify-content: initial; }
+.treeWorkspace.canvasMaximized .canvasViewportControls .canvasZoomControls { min-width: 156px; }
+@media (max-width: 760px) {
+  .treeWorkspace.canvasMaximized .canvasTopRightControls { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: 'summary new' 'viewport viewport'; }
+  .treeWorkspace.canvasMaximized .canvasViewportControls { width: 100%; justify-content: space-between; }
+  .treeWorkspace.canvasMaximized .canvasViewportControls .canvasZoomControls { min-width: 0; }
+}
+
+/* Multi-relation editor shared by new pieces and existing profiles. */
+.relationEditor { display: grid; gap: 8px; grid-column: 1 / -1; }.relationEditor .relationPickerGroup { grid-column: auto; }.relationEditor .relationPickerRow { margin: 0; }.relationPickerRow .relationPicker { flex: 1 1 auto; }.relationPickerRow > .secondaryButton { align-self: end; min-height: 42px; white-space: nowrap; }
+.relationDraftList { display: flex; flex-wrap: wrap; gap: 6px; }.relationDraftChip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 6px 8px; border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line)); border-radius: 8px; color: var(--accent); background: var(--accent-2); font-size: 10px; }.relationDraftChip b { font-size: 9px; }.relationDraftChip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.relationDraftChip button { width: 20px; height: 20px; padding: 0; border: 0; border-radius: 50%; color: inherit; background: transparent; font-size: 16px; line-height: 1; }.relationDraftChip button:hover { background: rgba(0,0,0,.08); }
+.appShell.darkMode .relationDraftChip { border-color: #527b72; color: #a9e8dc; background: #254d49; }.appShell.darkMode .relationDraftChip button:hover { background: rgba(255,255,255,.1); }
+@media (max-width: 520px) { .relationPickerRow { align-items: stretch; flex-direction: column; }.relationPickerRow > .secondaryButton { width: 100%; }.relationEditor .relationPickerGroup { grid-template-columns: 1fr; } }
+
+/* Hallazgos compactos: los nombres quedan disponibles como tooltip, no dentro de la caja. */
+.achievementSummaryTitle,
+.achievementSummaryMetricName { display: none !important; }
+.achievementSummaryToggle { width: auto; justify-content: center; }
+.achievementSummaryMetric { grid-template-columns: 28px auto; justify-content: start; }
+@media (max-width: 760px) {
+  .canvasAchievementSummary .achievementSummary,
+  .achievementSummary { width: max-content; }
+  .achievementSummaryToggle { width: auto; }
+}
+
+/* Life facts: compact date/place pairs with explicit certainty. */
+.lifeSection { display: grid; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--surface-2) 42%, var(--surface)); }
+.lifeDateField, .lifePlaceField { min-width: 0; margin: 0; padding: 0; border: 0; }.lifeFieldHeader { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 7px; }.lifeFieldHeader legend { padding: 0; color: var(--ink); font-size: 11px; font-weight: 850; }
+.certaintyToggle { display: inline-flex; flex: 0 0 auto; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }.certaintyToggle button { padding: 4px 7px; border: 0; border-radius: 999px; color: var(--muted); background: transparent; font-size: 9px; font-weight: 850; }.certaintyToggle button.active { color: var(--accent); background: var(--accent-2); }
+.lifeDateInputs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }.lifeDateInputs label { display: grid; gap: 4px; color: var(--muted); font-size: 9px; font-weight: 750; }.lifeDateInputs input { width: 100%; min-width: 0; }.lifeDateInputs input::placeholder { color: color-mix(in srgb, var(--muted) 72%, transparent); }
+.lifePlaceField .placeSearch { gap: 0; }.lifePlaceField .placeSearchInput { background: var(--surface); }.lifePlaceField .selectedPlace { margin-top: 7px; }
+.appShell.darkMode .lifeSection { border-color: #504137; background: #29231e; }.appShell.darkMode .certaintyToggle { border-color: #675346; background: #211d19; }.appShell.darkMode .certaintyToggle button.active { color: #a9e8dc; background: #254d49; }.appShell.darkMode .lifeFieldHeader legend { color: #f5ede5; }
+@media (max-width: 520px) { .lifeSection { padding: 10px; }.lifeFieldHeader { align-items: flex-start; flex-direction: column; gap: 6px; }.certaintyToggle { align-self: flex-start; }.lifeDateInputs { gap: 6px; } }
+
+/* Relationship picker: typeahead and native select in one continuous field. */
+.relationPickerGroup { display: grid; grid-template-columns: minmax(170px, .78fr) minmax(0, 1.22fr); gap: 10px; align-items: start; grid-column: 1 / -1; }
+.relationPicker, .relationPickerGroup > label { display: grid; gap: 5px; min-width: 0; color: var(--muted); font-size: 10px; font-weight: 700; }
+.relationPicker { position: relative; }.relationPicker input { width: 100%; }.relationPickerOptions { position: absolute; z-index: 5; top: 100%; left: 0; right: 0; display: grid; max-height: 240px; overflow-y: auto; margin-top: 5px; padding: 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 14px 30px rgba(31,37,33,.16); }
+.relationPickerOptions button { display: grid; gap: 3px; padding: 9px 10px; border: 0; border-radius: 7px; color: var(--ink); background: transparent; text-align: left; }.relationPickerOptions button:hover, .relationPickerOptions button:focus-visible { background: var(--surface-2); }.relationPickerOptions button strong, .relationPickerOptions button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.relationPickerOptions button strong { font-size: 11px; }.relationPickerOptions button span { color: var(--muted); font-size: 9px; font-weight: 400; }.relationPickerOptions p { margin: 0; padding: 10px; color: var(--muted); font-size: 11px; }
+.appShell.darkMode .relationPickerOptions { border-color: #675346; background: #211d19; box-shadow: 0 14px 30px rgba(0,0,0,.4); }.appShell.darkMode .relationPickerOptions button { color: #f5ede5; }.appShell.darkMode .relationPickerOptions button:hover, .appShell.darkMode .relationPickerOptions button:focus-visible { background: #403229; }.appShell.darkMode .relationPickerOptions button span { color: #c7b9ae; }
+@media (max-width: 520px) { .relationPickerGroup { grid-template-columns: 1fr; gap: 9px; } }
+
 /* New-piece flow refinements */
 .modalBackdrop { align-items: center; overflow-y: auto; overscroll-behavior: contain; }
 .modal { width: min(760px, 96vw); max-height: min(760px, calc(100dvh - 32px)); padding: 24px; }
@@ -2125,8 +2192,14 @@ input:focus, select:focus, textarea:focus { border-color: #c77a4e; box-shadow: 0
 .familyMapStats span { color: var(--muted); font-size: 10px; font-weight: 800; }
 .familyMapStats strong { font-family: Georgia, serif; font-size: 23px; }
 .familyMapCanvas { position: relative; min-height: 390px; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; color: #8f9c9a; background: radial-gradient(circle at 70% 20%, rgba(181,102,54,.1), transparent 32%), #e9f0ed; box-shadow: var(--shadow); }
-.familyMapCanvas svg { display: block; width: 100%; height: 100%; min-height: 390px; color: #587873; }
-.familyMapLand path { fill: #b6c8bc; stroke: #78978b; stroke-width: 1.4; stroke-linejoin: round; }
+.familyMapCanvas svg { display: block; width: 100%; height: 100%; min-height: 390px; color: #587873; cursor: grab; touch-action: none; user-select: none; }
+.familyMapCanvas svg:active { cursor: grabbing; }
+.familyMapZoomControls { position: absolute; top: 12px; right: 12px; z-index: 2; display: flex; gap: 4px; padding: 4px; border: 1px solid rgba(14,35,38,.12); border-radius: 10px; background: rgba(255,255,255,.88); box-shadow: 0 8px 20px rgba(31,37,33,.12); }
+.familyMapZoomControls button { width: 32px; height: 32px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 7px; color: var(--accent); background: transparent; cursor: pointer; }
+.familyMapZoomControls button:hover, .familyMapZoomControls button:focus-visible { background: var(--accent-2); }
+.familyMapSphere { fill: rgba(255,255,255,.18); stroke: rgba(120,151,139,.35); stroke-width: 1; }
+.familyMapLand path { fill: #b6c8bc; stroke: rgba(120,151,139,.28); stroke-width: .65; stroke-linejoin: round; }
+.familyMapBorders { fill: none; stroke: #78978b; stroke-width: .8; stroke-linejoin: round; pointer-events: none; }
 .familyMapMarker { cursor: pointer; outline: none; }
 .familyMapMarkerHalo { fill: #b56636; fill-opacity: .22; stroke: #fffaf3; stroke-width: 2; transition: r .16s ease, fill-opacity .16s ease; }
 .familyMapMarkerDot { fill: #a9542c; stroke: #fffaf3; stroke-width: 2; }
@@ -2152,9 +2225,44 @@ input:focus, select:focus, textarea:focus { border-color: #c77a4e; box-shadow: 0
 .familyTimelineYears { display: flex; justify-content: space-between; gap: 5px; overflow-x: auto; }.familyTimelineYears button { min-width: 0; padding: 3px 4px; border: 0; border-radius: 6px; color: var(--muted); background: transparent; font-size: 10px; font-weight: 800; white-space: nowrap; }.familyTimelineYears button:hover, .familyTimelineYears button.active { color: #a9572e; background: #f2ddd0; }
 .familyMapContext { display: grid; grid-template-columns: minmax(130px, .25fr) minmax(0, 1fr); gap: 18px; padding: 17px 19px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface-2); }.familyMapContext h3 { margin: 2px 0 0; font-family: Georgia, serif; font-size: 27px; }.familyMapContextList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }.familyMapContextItem { display: grid; grid-template-columns: 25px minmax(0, 1fr); gap: 8px; align-items: center; min-width: 0; padding: 8px; border: 1px solid transparent; border-radius: 9px; color: var(--ink); background: var(--surface); text-align: left; }.familyMapContextItem:hover { border-color: #c77a4e; background: #fffaf3; }.familyMapContextItem > span { display: grid; place-items: center; color: #a9572e; }.familyMapContextItem strong, .familyMapContextItem small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }.familyMapContextItem strong { font-size: 11px; }.familyMapContextItem small { margin-top: 2px; color: var(--muted); font-size: 9px; }.familyMapContextItem.pending { cursor: default; }.familyMapContextItem.pending > span { color: #a68a62; }.pendingIcon { width: 19px; height: 19px; display: grid; place-items: center; border: 1px dashed currentColor; border-radius: 50%; font-size: 11px; font-weight: 900; }
 .familyMapEmpty { display: grid; place-items: center; gap: 7px; min-height: 390px; padding: 30px; border: 1px dashed var(--line); border-radius: 18px; color: var(--muted); text-align: center; background: var(--surface-2); }.familyMapEmpty h3, .familyMapEmpty p { margin: 0; }.familyMapEmpty h3 { color: var(--ink); font-family: Georgia, serif; font-size: 22px; }.familyMapEmpty p { max-width: 430px; font-size: 12px; line-height: 1.5; }
-.appShell.darkMode .familyMapTitleIcon { border-color: #675346; color: #f1a478; background: #3a2d25; }.appShell.darkMode .familyMapCanvas { background: radial-gradient(circle at 70% 20%, rgba(213,173,101,.12), transparent 32%), #172a2b; }.appShell.darkMode .familyMapCanvas svg { color: #8fb6ae; }.appShell.darkMode .familyMapLand path { fill: #34504c; stroke: #527b72; }.appShell.darkMode .familyMapMarkerHalo { stroke: #172a2b; }.appShell.darkMode .familyMapMarkerDot { fill: #e08a5b; stroke: #172a2b; }.appShell.darkMode .familyMapMarker.current .familyMapMarkerHalo { fill: #d5ad65; }.appShell.darkMode .familyMapMarker.selected .familyMapMarkerHalo { fill: #8fd5c8; }.appShell.darkMode .familyMapMarker:focus-visible .familyMapMarkerDot { stroke: #fff6ef; }.appShell.darkMode .familyMapMarkerCount { fill: #fff6ef; }.appShell.darkMode .familyMapLegend { border-color: rgba(143,213,200,.22); color: #c4ddd7; background: rgba(19,35,36,.88); }.appShell.darkMode .familyMapPopover { border-color: #675346; color: #f5ede5; background: rgba(33,29,25,.98); box-shadow: 0 18px 38px rgba(0,0,0,.42); }.appShell.darkMode .familyMapPopoverClose { color: #c7b9ae; }.appShell.darkMode .familyMapPopoverClose:hover { color: #fff8f2; background: #403229; }.appShell.darkMode .familyMapPopoverPerson { border-color: #504137; }.appShell.darkMode .familyMapPopoverPerson small { color: #c7b9ae; }.appShell.darkMode .familyMapContextItem:hover { background: #403229; }.appShell.darkMode .familyMapEmpty { background: #1b2425; }.appShell.darkMode .familyMapTitle p:not(.eyebrow), .appShell.darkMode .familyMapContextItem small { color: #c7b9ae; }
+.appShell.darkMode .familyMapTitleIcon { border-color: #675346; color: #f1a478; background: #3a2d25; }.appShell.darkMode .familyMapCanvas { background: radial-gradient(circle at 70% 20%, rgba(213,173,101,.12), transparent 32%), #172a2b; }.appShell.darkMode .familyMapCanvas svg { color: #8fb6ae; }.appShell.darkMode .familyMapSphere { fill: rgba(19,35,36,.4); stroke: #527b72; }.appShell.darkMode .familyMapLand path { fill: #34504c; stroke: rgba(82,123,114,.5); }.appShell.darkMode .familyMapBorders { stroke: #527b72; }.appShell.darkMode .familyMapMarkerHalo { stroke: #172a2b; }.appShell.darkMode .familyMapMarkerDot { fill: #e08a5b; stroke: #172a2b; }.appShell.darkMode .familyMapMarker.current .familyMapMarkerHalo { fill: #d5ad65; }.appShell.darkMode .familyMapMarker.selected .familyMapMarkerHalo { fill: #8fd5c8; }.appShell.darkMode .familyMapMarker:focus-visible .familyMapMarkerDot { stroke: #fff6ef; }.appShell.darkMode .familyMapMarkerCount { fill: #fff6ef; }.appShell.darkMode .familyMapLegend { border-color: rgba(143,213,200,.22); color: #c4ddd7; background: rgba(19,35,36,.88); }.appShell.darkMode .familyMapPopover { border-color: #675346; color: #f5ede5; background: rgba(33,29,25,.98); box-shadow: 0 18px 38px rgba(0,0,0,.42); }.appShell.darkMode .familyMapPopoverClose { color: #c7b9ae; }.appShell.darkMode .familyMapPopoverClose:hover { color: #fff8f2; background: #403229; }.appShell.darkMode .familyMapPopoverPerson { border-color: #504137; }.appShell.darkMode .familyMapPopoverPerson small { color: #c7b9ae; }.appShell.darkMode .familyMapContextItem:hover { background: #403229; }.appShell.darkMode .familyMapEmpty { background: #1b2425; }.appShell.darkMode .familyMapTitle p:not(.eyebrow), .appShell.darkMode .familyMapContextItem small { color: #c7b9ae; }
+.appShell.darkMode .familyMapZoomControls { border-color: #55453b; background: rgba(48,40,32,.94); }.appShell.darkMode .familyMapZoomControls button { color: #a9e8dc; }.appShell.darkMode .familyMapZoomControls button:hover, .appShell.darkMode .familyMapZoomControls button:focus-visible { background: #254d49; }
 @media (prefers-reduced-motion: reduce) { .familyMapMarkerPulse { animation: none; }.familyMapMarkerHalo { transition: none; } }
 @media (max-width: 760px) { .familyMapPage { gap: 12px; }.familyMapHeader { align-items: stretch; flex-direction: column; gap: 12px; }.familyMapTitleIcon { width: 44px; height: 44px; }.familyMapTitle h2 { font-size: 31px; }.familyMapFilter { flex-basis: auto; }.familyMapStats div { padding: 10px 9px; }.familyMapStats span { font-size: 9px; }.familyMapStats strong { font-size: 20px; }.familyMapCanvas, .familyMapCanvas svg, .familyMapEmpty { min-height: 290px; }.familyMapLegend { left: 8px; right: 8px; bottom: 8px; gap: 6px 10px; }.familyMapPopover { left: 12px !important; top: 12px !important; width: calc(100% - 24px); }.familyTimeline { padding: 13px 12px 11px; }.familyTimelineHeader { align-items: stretch; flex-direction: column; gap: 9px; }.familyTimelineActions { display: grid; grid-template-columns: 1fr 1fr; }.familyTimelineActions button { justify-content: center; }.familyTimelineYears { justify-content: start; }.familyMapContext { grid-template-columns: 1fr; gap: 10px; padding: 14px 12px; }.familyMapContextList { grid-template-columns: 1fr; }.familyMapContextItem { min-height: 48px; } }
+
+/* Compact family map: keep the world visible while the page remains the only scroll container. */
+.familyMapPage { gap: 10px; padding-bottom: 12px; }
+.familyMapTitleIcon { width: 44px; height: 44px; border-radius: 13px; }
+.familyMapTitle h2 { font-size: clamp(25px, 3vw, 34px); }
+.familyMapStats div { padding: 9px 13px; }
+.familyMapStats strong { font-size: 20px; }
+.familyMapCanvas { height: clamp(270px, 42vh, 420px); min-height: 270px; }
+.familyMapCanvas svg { height: 100%; min-height: 0; }
+.familyMapCanvas.empty { background: radial-gradient(circle at 70% 20%, rgba(181,102,54,.1), transparent 32%), #e9f0ed; }
+.familyMapEmptyOverlay { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 5px; padding: 24px; color: #48615e; text-align: center; pointer-events: none; }
+.familyMapEmptyOverlay strong { font-size: 13px; }
+.familyMapEmptyOverlay span { max-width: 330px; font-size: 10px; }
+.familyTimeline { gap: 7px; padding: 11px 14px 9px; }
+.familyTimelineHeader strong { font-size: 23px; }
+.familyTimelineActions button { min-height: 32px; padding: 6px 9px; }
+.familyMapContext { padding: 12px 14px; }
+.familyMapContext h3 { font-size: 23px; }
+.familyMapContextItem { padding: 7px; }
+.appShell.darkMode .familyMapEmptyOverlay { color: #c4ddd7; }
+@media (max-width: 760px) {
+  .familyMapPage { gap: 9px; }
+  .familyMapHeader { gap: 9px; }
+  .familyMapTitleIcon { width: 40px; height: 40px; }
+  .familyMapTitle h2 { font-size: 27px; }
+  .familyMapTitle p:not(.eyebrow) { font-size: 11px; }
+  .familyMapCanvas { height: clamp(245px, 48vh, 330px); min-height: 245px; }
+  .familyMapLegend { font-size: 9px; }
+  .familyTimeline { padding: 10px 11px 8px; }
+  .familyTimelineHeader { flex-direction: row; align-items: center; gap: 7px; }
+  .familyTimelineActions { display: flex; }
+  .familyTimelineActions button { min-height: 30px; padding: 5px 7px; }
+  .familyTimelineActions button span { display: none; }
+}
 .findingsPage { max-width: 1180px; margin: 0 auto; padding: 4px 0 34px; }
 .findingsIntro { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; margin-bottom: 24px; }
 .findingsIntro h2 { margin: 0 0 5px; font-size: clamp(34px, 4vw, 48px); letter-spacing: -.045em; }
@@ -2290,4 +2398,92 @@ input:focus, select:focus, textarea:focus { border-color: #c77a4e; box-shadow: 0
 .appShell.darkMode .findingCard:hover,
 .appShell.darkMode .findingCard.selected,
 .appShell.darkMode .recentItem:hover { border-color: #b77756; background: #302820; }
+
+/* Hallazgos: compact panel with a high-contrast active trigger. */
+.achievementSummaryToggle.activeToggle {
+  border-color: #0e4b50;
+  color: #ffffff;
+  background: #0e4b50;
+}
+.achievementSummaryToggle.activeToggle svg { color: #ffffff; }
+.achievementSummaryToggle.activeToggle .achievementSummaryCount {
+  color: #0e4b50;
+  background: #f3e6cc;
+}
+.achievementSummaryToggle.activeToggle:hover,
+.achievementSummaryToggle.activeToggle:focus-visible {
+  border-color: #173f43;
+  color: #ffffff;
+  background: #173f43;
+}
+.achievementSummaryPanel {
+  width: max-content;
+  min-width: 174px;
+  max-width: min(260px, calc(100vw - 24px));
+}
+.achievementSummaryMetric { grid-template-columns: 28px auto; }
+.appShell.darkMode .achievementSummaryToggle.activeToggle {
+  border-color: #8fd5c8;
+  color: #10211f;
+  background: #8fd5c8;
+}
+.appShell.darkMode .achievementSummaryToggle.activeToggle svg { color: #10211f; }
+.appShell.darkMode .achievementSummaryToggle.activeToggle .achievementSummaryCount {
+  color: #10211f;
+  background: #f5ede5;
+}
+.appShell.darkMode .achievementSummaryToggle.activeToggle:hover,
+.appShell.darkMode .achievementSummaryToggle.activeToggle:focus-visible {
+  border-color: #b0e9dd;
+  color: #10211f;
+  background: #b0e9dd;
+}
+@media (max-width: 760px) {
+  .achievementSummaryPanel { min-width: 160px; }
+}
+
+/* Hallazgos: badge-safe layout across desktop, tablet and mobile. */
+.findingCardTop { min-width: 0; }
+.findingCardTop .findingIcon,
+.findingIcon:has(.achievementBadge-card) {
+  width: 74px;
+  height: 74px;
+  flex: 0 0 74px;
+}
+.findingCardTop .achievementBadge-card { width: 74px; height: 74px; }
+.findingArrow { flex: 0 0 auto; margin-left: 8px; }
+.findingCard { overflow: hidden; }
+.detailHeading .findingIcon,
+.detailHeading .detailBadge { flex: 0 0 78px; }
+.levelBadge { flex: 0 0 64px; }
+.achievementBadge-timeline { flex: 0 0 58px; }
+.recentItem > .achievementBadge-recent { flex: 0 0 70px; }
+.conquestCopy { min-width: 0; }
+.conquestCopy p { overflow-wrap: anywhere; }
+@media (max-width: 980px) and (min-width: 761px) {
+  .findingCardTop .findingIcon,
+  .findingIcon:has(.achievementBadge-card),
+  .findingCardTop .achievementBadge-card { width: 62px; height: 62px; flex-basis: 62px; }
+  .findingCard { padding: 16px 14px; }
+  .findingName { font-size: 15px; }
+}
+@media (max-width: 760px) {
+  .findingCard { grid-template-columns: 70px minmax(0, 1fr) auto; }
+  .findingCardTop .findingIcon,
+  .findingIcon:has(.achievementBadge-card),
+  .findingCardTop .achievementBadge-card { width: 64px; height: 64px; flex-basis: 64px; }
+  .findingCardTop { width: 64px; }
+  .findingCard .findingTitle,
+  .findingCard .findingName,
+  .findingCard .findingMetric,
+  .findingCard .findingProgress,
+  .findingCard > small { min-width: 0; }
+  .findingCard > small b { overflow-wrap: anywhere; }
+  .detailHeading .findingIcon,
+  .detailHeading .detailBadge { flex-basis: 64px; width: 64px; height: 64px; }
+  .detailHeading .achievementBadge-detail { width: 64px; height: 64px; }
+  .levelBadge { flex-basis: 54px; }
+  .achievementBadge-timeline { flex-basis: 48px; }
+  .recentItem > .achievementBadge-recent { flex-basis: 60px; }
+}
 

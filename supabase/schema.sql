@@ -42,10 +42,19 @@ create table public.people (
   birth_month integer,
   birth_day integer,
   birth_date_precision text check (birth_date_precision is null or birth_date_precision in ('year', 'month', 'day')),
+  birth_date_certainty text not null default 'exact' check (birth_date_certainty in ('exact', 'approx')),
   birth_place_id uuid,
   birth_place_precision text check (birth_place_precision is null or birth_place_precision in ('country', 'region', 'city', 'locality')),
+  birth_place_certainty text not null default 'exact' check (birth_place_certainty in ('exact', 'approx')),
   death_date text not null default '',
+  death_year integer,
+  death_month integer,
+  death_day integer,
+  death_date_precision text check (death_date_precision is null or death_date_precision in ('year', 'month', 'day')),
+  death_date_certainty text not null default 'exact' check (death_date_certainty in ('exact', 'approx')),
   death_place text not null default '',
+  death_place_precision text check (death_place_precision is null or death_place_precision in ('country', 'region', 'city', 'locality')),
+  death_place_certainty text not null default 'exact' check (death_place_certainty in ('exact', 'approx')),
   occupation text not null default '',
   notes text not null default '',
   created_at timestamp with time zone not null default now(),
@@ -59,6 +68,15 @@ alter table public.people add constraint people_birth_date_parts_check check (
   and (birth_month is null or birth_month between 1 and 12)
   and (birth_day is null or birth_day between 1 and 31)
   and (birth_day is null or birth_day <= case when birth_year between 1 and 9999 and birth_month between 1 and 12 then extract(day from (date_trunc('month', make_date(birth_year, birth_month, 1)) + interval '1 month - 1 day')) else 31 end)
+);
+
+alter table public.people add constraint people_death_date_parts_check check (
+  (death_month is null or death_year is not null)
+  and (death_day is null or death_month is not null)
+  and (death_year is null or death_year between 1 and 9999)
+  and (death_month is null or death_month between 1 and 12)
+  and (death_day is null or death_day between 1 and 31)
+  and (death_day is null or death_day <= case when death_year between 1 and 9999 and death_month between 1 and 12 then extract(day from (date_trunc('month', make_date(death_year, death_month, 1)) + interval '1 month - 1 day')) else 31 end)
 );
 
 -- 3b. Lugares geográficos normalizados; independientes del proveedor.
