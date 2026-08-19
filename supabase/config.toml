@@ -1,0 +1,2 @@
+[functions.geocode-place]
+verify_jwt = true

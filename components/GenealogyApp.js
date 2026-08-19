@@ -1,12 +1,14 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { achievementCategories, calculateCompleteAncestors, calculateCountries, calculateGenerations, calculateOldestYear, getTotalUnlockedAchievements, resolveAchievementProgress } from '@/lib/hallazgos';
 import { defaultDatabase, displayName, emptyDatabase, newId, normalizeDatabase, relativesFor, STORAGE_KEY } from '@/lib/model';
 import { exportGedcom, importGedcom } from '@/lib/gedcom';
+import { placeLabel, searchPlaces } from '@/lib/geocoding';
 import { acceptTreeInvitation, createRemoteTree, createTreeInvitation, deleteRemoteTree, getRemoteTree, listAccessibleTrees, listTreeInvitations, remoteTreeStorageKey, renameRemoteTree, revokeTreeInvitation, saveRemoteTree } from '@/lib/supabaseStore';
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
 import { AlertTriangle, ArrowDownFromLine, ArrowUpFromLine, Award, BookOpen, CalendarDays, Check, ChevronDown, ChevronsLeft, ChevronsRight, Clock3, Compass, Copy, Database, Eye, EyeOff, FileDown, GitBranch, Globe2, Hourglass, Image as ImageIcon, Layers3, LocateFixed, LockKeyhole, Maximize2, Minimize2, Moon, MoreHorizontal, Puzzle, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sprout, Sun, Trash2, TreePine, UserCircle, UserPlus, UsersRound, Waypoints, ZoomIn, ZoomOut } from 'lucide-react';
+import FamilyMap from '@/components/FamilyMap';
 
 const iconProps = { size: 20, strokeWidth: 1.9, 'aria-hidden': true };
 const IconHome = <Sprout {...iconProps} className="rootsNavIcon" />;
@@ -23,16 +25,17 @@ const I18N = {
     appSubtitle: 'Genealogía web',
     loading: { openingTree: 'Abriendo tu árbol' },
     nav: { expand: 'Expandir menú', collapse: 'Colapsar menú', navigation: 'Navegación', rootsShort: 'Raíces', timelineShort: 'Historia', profileShort: 'Perfil' },
-    sections: { tree: 'Mis raíces', people: 'Piezas', timeline: 'Historia', findings: 'Hallazgos', sources: 'Fuentes', data: 'Datos', profile: 'Mi perfil' },
+    sections: { tree: 'Mis raíces', people: 'Piezas', timeline: 'Historia', familyMap: 'Mapa familiar', findings: 'Hallazgos', sources: 'Fuentes', data: 'Datos', profile: 'Mi perfil' },
     subtitles: {
       tree: 'Visualiza y navega el árbol familiar.',
       people: 'Gestiona las piezas registradas y sus perfiles.',
       timeline: 'Revisa los eventos en orden cronológico.',
+      familyMap: 'Explora dónde comenzó cada historia familiar a través del tiempo.',
       sources: 'Organiza las fuentes documentales de tu investigación.',
       data: 'Importa, exporta y respalda tu árbol.',
       profile: 'Cuenta y preferencias.'
     },
-    actions: { newPiece: '+ Nueva pieza', newSource: '+ Nueva fuente', cancel: 'Cancelar', savePiece: 'Guardar pieza', saveEvent: 'Guardar evento', saveSource: 'Guardar fuente', edit: 'Editar', viewInTree: 'Ver en árbol', add: '+ Agregar', remove: 'Quitar', import: 'Importar', exportJson: 'Exportar JSON', exportGedcom: 'Exportar GEDCOM', exportPdf: 'Exportar PDF', generateLink: 'Generar enlace', activateDetective: 'Activar detective', accept: 'Aceptar', reject: 'Rechazar', acceptPiece: 'Aceptar pieza', rejectPiece: 'Rechazar', importPiece: 'Importar pieza', tools: 'Herramientas', hideTools: 'Ocultar herramientas', allPieces: 'Todas las piezas', focusedBranch: 'Rama enfocada', uploadImage: 'Cargar imagen', copy: 'Copiar', downloadPiece: 'Descargar pieza' },
+    actions: { newPiece: '+ Nueva pieza', newSource: '+ Nueva fuente', cancel: 'Cancelar', savePiece: 'Guardar pieza', createPiece: 'Crear pieza', saveChanges: 'Guardar cambios', saveEvent: 'Guardar evento', saveSource: 'Guardar fuente', edit: 'Editar', viewInTree: 'Ver en árbol', add: '+ Agregar', remove: 'Quitar', import: 'Importar', exportJson: 'Exportar JSON', exportGedcom: 'Exportar GEDCOM', exportPdf: 'Exportar PDF', generateLink: 'Generar enlace', activateDetective: 'Activar detective', accept: 'Aceptar', reject: 'Rechazar', acceptPiece: 'Aceptar pieza', rejectPiece: 'Rechazar', importPiece: 'Importar pieza', tools: 'Herramientas', hideTools: 'Ocultar herramientas', allPieces: 'Todas las piezas', focusedBranch: 'Rama enfocada', uploadImage: 'Cargar imagen', copy: 'Copiar', downloadPiece: 'Descargar pieza' },
     stats: { pieces: 'piezas', links: 'vínculos', events: 'eventos', sources: 'fuentes', results: 'resultados', dated: 'con fecha', pending: 'pendientes', accepted: 'aceptadas', rejected: 'rechazadas' },
     forms: { names: 'Nombres', surnames: 'Apellidos', birthYear: 'Año de nacimiento', nickname: 'Apodo', relationship: 'Parentesco', noLinkYet: 'Sin vínculo por ahora', parentOf: 'Es padre/madre de', childOf: 'Es hijo/a de', partnerOf: 'Es pareja de', noPiecesToLink: 'Sin otras piezas para vincular', linkWith: 'Vincular con', choosePiece: 'Elegir pieza', moreData: '+ datos', profileImage: 'Imagen de perfil', email: 'Email', sex: 'Sexo', unspecified: 'Sin indicar', male: 'Masculino', female: 'Femenino', otherGender: 'Otro / no binario', birthPlace: 'Lugar de nacimiento', death: 'Fallecimiento', deathPlace: 'Lugar de fallecimiento', occupation: 'Ocupación', notes: 'Notas', type: 'Tipo', date: 'Fecha', place: 'Lugar', description: 'Descripción', title: 'Título', repository: 'Archivo / repositorio', url: 'URL' },
     placeholders: { birthYear: 'Ej. 1942', email: 'nombre@dominio.com', birthPlace: 'Ciudad, provincia, país', notes: 'Hipótesis, datos pendientes, variantes del apellido...', search: 'Buscar por nombre, apodo, apellido, lugar…', repository: 'FamilySearch, archivo provincial, parroquia…', sourceExplanation: 'Acta, censo, recuerdo familiar, enlace, archivo...' },
@@ -62,9 +65,9 @@ const I18N = {
     appSubtitle: 'Genealogy web',
     loading: { openingTree: 'Opening your tree' },
     nav: { expand: 'Expand menu', collapse: 'Collapse menu', navigation: 'Navigation', rootsShort: 'Roots', timelineShort: 'History', profileShort: 'Profile' },
-    sections: { tree: 'My roots', people: 'Pieces', timeline: 'History', findings: 'Findings', sources: 'Sources', data: 'Data', profile: 'My profile' },
-    subtitles: { tree: 'View and explore your family tree.', people: 'Manage registered pieces and profiles.', timeline: 'Review events in chronological order.', sources: 'Organize your research sources.', data: 'Import, export and back up your tree.', profile: 'Account and preferences.' },
-    actions: { newPiece: '+ New piece', newSource: '+ New source', cancel: 'Cancel', savePiece: 'Save piece', saveEvent: 'Save event', saveSource: 'Save source', edit: 'Edit', viewInTree: 'View in tree', add: '+ Add', remove: 'Remove', import: 'Import', exportJson: 'Export JSON', exportGedcom: 'Export GEDCOM', exportPdf: 'Export PDF', generateLink: 'Generate link', activateDetective: 'Activate detective', accept: 'Accept', reject: 'Reject', acceptPiece: 'Accept piece', rejectPiece: 'Reject', importPiece: 'Import piece', tools: 'Tools', hideTools: 'Hide tools', allPieces: 'All pieces', focusedBranch: 'Focused branch', uploadImage: 'Upload image', copy: 'Copy', downloadPiece: 'Download piece' },
+    sections: { tree: 'My roots', people: 'Pieces', timeline: 'History', familyMap: 'Family map', findings: 'Findings', sources: 'Sources', data: 'Data', profile: 'My profile' },
+    subtitles: { tree: 'View and explore your family tree.', people: 'Manage registered pieces and profiles.', timeline: 'Review events in chronological order.', familyMap: 'Explore where each family story began through time.', sources: 'Organize your research sources.', data: 'Import, export and back up your tree.', profile: 'Account and preferences.' },
+    actions: { newPiece: '+ New piece', newSource: '+ New source', cancel: 'Cancel', savePiece: 'Save piece', createPiece: 'Create piece', saveChanges: 'Save changes', saveEvent: 'Save event', saveSource: 'Save source', edit: 'Edit', viewInTree: 'View in tree', add: '+ Add', remove: 'Remove', import: 'Import', exportJson: 'Export JSON', exportGedcom: 'Export GEDCOM', exportPdf: 'Export PDF', generateLink: 'Generate link', activateDetective: 'Activate detective', accept: 'Accept', reject: 'Reject', acceptPiece: 'Accept piece', rejectPiece: 'Reject', importPiece: 'Import piece', tools: 'Tools', hideTools: 'Hide tools', allPieces: 'All pieces', focusedBranch: 'Focused branch', uploadImage: 'Upload image', copy: 'Copy', downloadPiece: 'Download piece' },
     stats: { pieces: 'pieces', links: 'links', events: 'events', sources: 'sources', results: 'results', dated: 'dated', pending: 'pending', accepted: 'accepted', rejected: 'rejected' },
     forms: { names: 'Given names', surnames: 'Surnames', birthYear: 'Birth year', nickname: 'Nickname', relationship: 'Relationship', noLinkYet: 'No link yet', parentOf: 'Is parent of', childOf: 'Is child of', partnerOf: 'Is partner of', noPiecesToLink: 'No other pieces to link', linkWith: 'Link with', choosePiece: 'Choose piece', moreData: '+ details', profileImage: 'Profile image', email: 'Email', sex: 'Sex', unspecified: 'Unspecified', male: 'Male', female: 'Female', otherGender: 'Other / non-binary', birthPlace: 'Birth place', death: 'Death', deathPlace: 'Death place', occupation: 'Occupation', notes: 'Notes', type: 'Type', date: 'Date', place: 'Place', description: 'Description', title: 'Title', repository: 'File / repository', url: 'URL' },
     placeholders: { birthYear: 'Ex. 1942', email: 'name@domain.com', birthPlace: 'City, state, country', notes: 'Hypotheses, pending data, surname variants...', search: 'Search by name, nickname, surname, place…', repository: 'FamilySearch, provincial archive, parish…', sourceExplanation: 'Certificate, census, family memory, link, file...' },
@@ -109,6 +112,7 @@ const sections = [
   ['tree', 'sections.tree', IconHome],
   ['people', 'sections.people', IconPieces],
   ['timeline', 'sections.timeline', IconTimeline],
+  ['family-map', 'sections.familyMap', <Globe2 {...iconProps} />],
   ['findings', 'sections.findings', <Award {...iconProps} />],
   ['collaborators', 'sections.collaborators', IconCollaborators]
 ];
@@ -118,6 +122,7 @@ const sectionHashMap = {
   tree: 'tree',
   people: 'people',
   timeline: 'timeline',
+  'family-map': 'family-map',
   collaborators: 'collaborators',
   sources: 'sources',
   data: 'data',
@@ -134,6 +139,12 @@ const blankPerson = () => ({
   sex: '',
   birthDate: '',
   birthPlace: '',
+  birthYear: null,
+  birthMonth: null,
+  birthDay: null,
+  birthDatePrecision: null,
+  birthPlaceId: null,
+  birthPlacePrecision: null,
   deathDate: '',
   deathPlace: '',
   occupation: '',
@@ -1849,15 +1860,18 @@ function Stat({ value, label }) {
 }
 
 function Modal({ title, onClose, children }) {
+  const titleId = useId();
   useEffect(() => {
     const onKey = (event) => event.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = previousOverflow; };
   }, [onClose]);
   return (
-    <div className="modalBackdrop" onMouseDown={onClose}>
-      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="modalHeader"><h2>{title}</h2><button className="iconButton" onClick={onClose}>×</button></div>
+    <div className="modalBackdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby={titleId} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="modalHeader"><h2 id={titleId}>{title}</h2><button className="iconButton" type="button" onClick={onClose} aria-label="Cerrar ventana">×</button></div>
         {children}
       </div>
     </div>
@@ -1878,14 +1892,78 @@ function AppLoader({ message = 'Abriendo tu árbol', animated = true }) {
   );
 }
 
-function PersonForm({ initial, people = [], showRelation = false, onCancel, onSave }) {
+const datePartsFromLegacy = (value) => {
+  const raw = String(value || '').trim();
+  let match = raw.match(/^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/);
+  if (!match) match = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/) && [raw, RegExp.$3, RegExp.$2, RegExp.$1];
+  if (!match) return {};
+  const year = Number(match[1] || match[3]);
+  const month = match[2] ? Number(match[2]) : null;
+  const day = match[3] ? Number(match[3]) : (match[4] ? Number(match[4]) : null);
+  return { birthYear: year || null, birthMonth: month, birthDay: day, birthDatePrecision: day ? 'day' : month ? 'month' : 'year' };
+};
+
+const birthDateFromParts = (year, month, day) => year ? `${year}${month ? `-${String(month).padStart(2, '0')}` : ''}${day ? `-${String(day).padStart(2, '0')}` : ''}` : '';
+
+function PlaceSearch({ value, places = [], onChange }) {
+  const { language } = useI18n();
+  const [query, setQuery] = useState(value?.name || '');
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => { setQuery(value?.name || ''); }, [value?.id]);
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (value && trimmed === value.name) return undefined;
+    if (trimmed.length < 2) { setResults([]); return undefined; }
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try { setResults(await searchPlaces(trimmed, { signal: controller.signal, language })); } catch (error) { if (error.name !== 'AbortError') setResults([]); } finally { setLoading(false); }
+    }, 450);
+    return () => { controller.abort(); clearTimeout(timer); };
+  }, [query, language, value]);
+  const choose = (result) => {
+    const ids = new Map(places.map((place) => [`${place.externalProvider}:${place.externalId}`, place.id]));
+    const hierarchy = result.hierarchy.map((node) => ({ ...node, id: ids.get(`${node.externalProvider}:${node.externalId}`) || newId('place') }));
+    const hierarchyWithParents = hierarchy.map((node, index) => ({ ...node, parentId: index ? hierarchy[index - 1].id : null }));
+    const selected = hierarchyWithParents.find((node) => node.externalId === result.externalId) || hierarchyWithParents.at(-1);
+    onChange({ place: selected, hierarchy: hierarchyWithParents, precision: selected?.type === 'country' ? 'country' : selected?.type === 'region' ? 'region' : selected?.type === 'locality' ? 'locality' : 'city' });
+    setQuery(placeLabel(result)); setResults([]);
+  };
+  const hierarchy = value?.hierarchy || (() => {
+    if (!value?.id) return [];
+    const byId = new Map(places.map((place) => [place.id, place]));
+    const chain = [];
+    let current = value;
+    const seen = new Set();
+    while (current && !seen.has(current.id)) {
+      chain.unshift(current);
+      seen.add(current.id);
+      current = byId.get(current.parentId);
+    }
+    return chain;
+  })();
+  return <div className="placeSearch"><div className="placeSearchInput"><Search size={15} aria-hidden="true" /><input value={query} onChange={(event) => { setQuery(event.target.value); if (value) onChange(null); }} placeholder="Buscar un lugar…" />{loading && <span className="muted">…</span>}</div>
+    {results.length > 0 && <div className="placeResults">{results.map((result) => <button type="button" key={result.externalId} onClick={() => choose(result)}><strong>{result.name}</strong><span>{result.context || result.type}</span></button>)}</div>}
+    {value && <div className="selectedPlace"><span><strong>{value.name}</strong>{hierarchy.length > 1 && <small> · {hierarchy.filter((item) => item.id !== value.id).map((item) => item.name).join(' · ')}</small>}</span><button type="button" className="textButton" onClick={() => { setQuery(''); onChange(null); }}>Quitar</button></div>}
+  </div>;
+}
+
+function PersonForm({ initial, people = [], places = [], showRelation = false, onCancel, onSave }) {
   const { t } = useI18n();
-  const [form, setForm] = useState({ ...blankPerson(), ...(initial || {}) });
+  const [form, setForm] = useState(() => {
+    const legacy = datePartsFromLegacy(initial?.birthDate);
+    return { ...blankPerson(), ...(initial || {}), birthYear: initial?.birthYear ?? legacy.birthYear ?? null, birthMonth: initial?.birthMonth ?? legacy.birthMonth ?? null, birthDay: initial?.birthDay ?? legacy.birthDay ?? null, birthDatePrecision: initial?.birthDatePrecision ?? legacy.birthDatePrecision ?? null };
+  });
   const [relationKind, setRelationKind] = useState('');
   const [relationPersonId, setRelationPersonId] = useState('');
+  const [errors, setErrors] = useState({});
   const imageInputRef = useRef(null);
   const relationOptions = people.filter((person) => person.id !== initial?.id).sort(comparePeopleByName);
-  const set = (key) => (event) => setForm((prev) => ({ ...prev, [key]: event.target.value }));
+  const set = (key) => (event) => {
+    setForm((prev) => ({ ...prev, [key]: event.target.value }));
+    setErrors((prev) => ({ ...prev, [key]: '', identity: ['givenNames', 'surnames', 'nickname'].includes(key) ? '' : prev.identity, birthDate: ['birthYear', 'birthMonth', 'birthDay'].includes(key) ? '' : prev.birthDate }));
+  };
   const setProfileImage = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -1900,23 +1978,37 @@ function PersonForm({ initial, people = [], showRelation = false, onCancel, onSa
   };
   const submit = (event) => {
     event.preventDefault();
-    onSave(form, showRelation ? { kind: relationKind, personId: relationPersonId } : null);
+    const year = form.birthYear === '' ? null : Number(form.birthYear);
+    const month = form.birthMonth === '' ? null : Number(form.birthMonth);
+    const day = form.birthDay === '' ? null : Number(form.birthDay);
+    const valid = !year && !month && !day || (Number.isInteger(year) && year >= 1 && year <= 9999 && (!month || (Number.isInteger(month) && month >= 1 && month <= 12)) && (!day || (Number.isInteger(month) && month >= 1 && month <= 12 && Number.isInteger(day) && day >= 1 && day <= new Date(year, month, 0).getDate())));
+    const nextErrors = {};
+    if (![form.givenNames, form.surnames, form.nickname].some((value) => String(value || '').trim())) nextErrors.identity = 'Completá al menos un nombre, apellido o apodo para identificar la pieza.';
+    if (!valid) nextErrors.birthDate = 'Revisá la fecha: podés indicar solo el año, año y mes, o una fecha completa válida.';
+    if (relationKind && !relationPersonId) nextErrors.relationPersonId = 'Elegí con quién querés vincular esta pieza o quitá el parentesco.';
+    if (Object.keys(nextErrors).length) { setErrors(nextErrors); return; }
+    const precision = day ? 'day' : month ? 'month' : year ? 'year' : null;
+    onSave({ ...form, birthYear: year, birthMonth: month, birthDay: day, birthDatePrecision: precision, birthDate: birthDateFromParts(year, month, day) }, showRelation ? { kind: relationKind, personId: relationPersonId } : null);
   };
   return (
     <form onSubmit={submit} className="formStack">
+      <div className="formIntro"><strong>{initial?.id ? 'Actualizá los datos de esta persona' : 'Empezá con los datos que conozcas'}</strong><span>Los campos restantes pueden completarse más adelante desde la ficha.</span></div>
       <div className="formGrid two">
-        <label>{t('forms.names')}<input value={form.givenNames} onChange={set('givenNames')} autoFocus /></label>
-        <label>{t('forms.surnames')}<input value={form.surnames} onChange={set('surnames')} /></label>
+        <label className={errors.identity ? 'hasError' : ''}>{t('forms.names')}<input value={form.givenNames} onChange={set('givenNames')} autoFocus aria-invalid={Boolean(errors.identity)} /></label>
+        <label className={errors.identity ? 'hasError' : ''}>{t('forms.surnames')}<input value={form.surnames} onChange={set('surnames')} aria-invalid={Boolean(errors.identity)} /></label>
       </div>
+      {errors.identity && <p className="formError" role="alert">{errors.identity}</p>}
+      <div className="birthDateFields"><span>{t('card.birthDate')}</span><div className="formGrid three"><label>Año<input value={form.birthYear ?? ''} onChange={set('birthYear')} inputMode="numeric" placeholder={t('placeholders.birthYear')} /></label><label>Mes<input value={form.birthMonth ?? ''} onChange={set('birthMonth')} inputMode="numeric" min="1" max="12" /></label><label>Día<input value={form.birthDay ?? ''} onChange={set('birthDay')} inputMode="numeric" min="1" max="31" /></label></div></div>
+      {errors.birthDate && <p className="formError" role="alert">{errors.birthDate}</p>}
       <div className="formGrid two">
-        <label>{t('forms.birthYear')}<input value={form.birthDate} onChange={set('birthDate')} inputMode="numeric" placeholder={t('placeholders.birthYear')} /></label>
         {showRelation ? (
-          relationOptions.length ? <label>{t('forms.relationship')}<select value={relationKind} onChange={(event) => setRelationKind(event.target.value)}><option value="">{t('forms.noLinkYet')}</option><option value="parent_of">{t('forms.parentOf')}</option><option value="child_of">{t('forms.childOf')}</option><option value="partner_of">{t('forms.partnerOf')}</option></select></label> : <label>{t('forms.relationship')}<input disabled placeholder={t('forms.noPiecesToLink')} /></label>
+          relationOptions.length ? <label>{t('forms.relationship')}<select value={relationKind} onChange={(event) => { setRelationKind(event.target.value); setRelationPersonId(''); setErrors((prev) => ({ ...prev, relationPersonId: '' })); }}><option value="">{t('forms.noLinkYet')}</option><option value="parent_of">{t('forms.parentOf')}</option><option value="child_of">{t('forms.childOf')}</option><option value="partner_of">{t('forms.partnerOf')}</option></select></label> : <label>{t('forms.relationship')}<input disabled placeholder={t('forms.noPiecesToLink')} /></label>
         ) : (
           <label>{t('forms.nickname')}<input value={form.nickname} onChange={set('nickname')} /></label>
         )}
       </div>
-      {showRelation && relationOptions.length > 0 && <label>{t('forms.linkWith')}<select value={relationPersonId} onChange={(event) => setRelationPersonId(event.target.value)}><option value="">{t('forms.choosePiece')}</option>{relationOptions.map((person) => <option key={person.id} value={person.id}>{displayName(person)}</option>)}</select></label>}
+      {showRelation && relationOptions.length > 0 && relationKind && <label className={errors.relationPersonId ? 'hasError' : ''}>{t('forms.linkWith')}<select value={relationPersonId} onChange={(event) => { setRelationPersonId(event.target.value); setErrors((prev) => ({ ...prev, relationPersonId: '' })); }} aria-invalid={Boolean(errors.relationPersonId)}><option value="">{t('forms.choosePiece')}</option>{relationOptions.map((person) => <option key={person.id} value={person.id}>{displayName(person)}</option>)}</select>{errors.relationPersonId && <span className="fieldError">{errors.relationPersonId}</span>}</label>}
+      <label>{t('forms.birthPlace')}<PlaceSearch places={places} value={places.find((place) => place.id === form.birthPlaceId) || (form.birthPlace && { name: form.birthPlace, id: form.birthPlaceId, hierarchy: form._placeHierarchy })} onChange={(selection) => setForm((prev) => selection ? ({ ...prev, birthPlace: selection.place.name, birthPlaceId: selection.place.id, birthPlacePrecision: selection.precision, _placeHierarchy: selection.hierarchy }) : ({ ...prev, birthPlace: '', birthPlaceId: null, birthPlacePrecision: null, _placeHierarchy: [] }))} /></label>
       <details className="moreData">
         <summary>{t('forms.moreData')}</summary>
         <div className="moreDataBody">
@@ -1935,7 +2027,7 @@ function PersonForm({ initial, people = [], showRelation = false, onCancel, onSa
           <label>{t('forms.email')}<input type="email" value={form.email} onChange={set('email')} placeholder={t('placeholders.email')} /></label>
           <div className="formGrid two">
             <label>{t('forms.sex')}<select value={form.sex} onChange={set('sex')}><option value="">{t('forms.unspecified')}</option><option value="M">{t('forms.male')}</option><option value="F">{t('forms.female')}</option><option value="X">{t('forms.otherGender')}</option></select></label>
-            <label>{t('forms.birthPlace')}<input value={form.birthPlace} onChange={set('birthPlace')} placeholder={t('placeholders.birthPlace')} /></label>
+            <span />
           </div>
           <div className="formGrid two">
             <label>{t('forms.death')}<input type="date" value={form.deathDate} onChange={set('deathDate')} /></label>
@@ -1945,7 +2037,7 @@ function PersonForm({ initial, people = [], showRelation = false, onCancel, onSa
           <label>{t('forms.notes')}<textarea rows="5" value={form.notes} onChange={set('notes')} placeholder={t('placeholders.notes')} /></label>
         </div>
       </details>
-      <div className="modalActions"><button type="button" className="secondaryButton" onClick={onCancel}>{t('actions.cancel')}</button><button className="primaryButton">{t('actions.savePiece')}</button></div>
+      <div className="modalActions"><button type="button" className="secondaryButton" onClick={onCancel}>{t('actions.cancel')}</button><button className="primaryButton">{initial?.id ? t('actions.saveChanges') : t('actions.createPiece')}</button></div>
     </form>
   );
 }
@@ -2016,7 +2108,7 @@ function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus
 
         {isEditing ? <div className="drawerEdit">
           <div className="modeNotice editing">{t('drawer.editingNotice')}</div>
-          <PersonForm initial={person} onCancel={() => onModeChange('view')} onSave={(form) => onSave(person.id, form)} />
+          <PersonForm initial={person} places={db.places} onCancel={() => onModeChange('view')} onSave={(form) => onSave(person.id, form)} />
         </div> : <div className="drawerView">
           <div className="modeNotice viewing">{t('drawer.viewingNotice')}</div>
           <div className="detailTop">
@@ -2157,12 +2249,13 @@ function TreeConnector({ type, style }) {
   return <div className={`treeConnector ${type}`} style={style} aria-hidden="true"><span /></div>;
 }
 
-function VisibilityControl({ t, open, onOpenChange, showAllPeople, showAncestors, showDescendants, showGeneration, onToggle }) {
+function VisibilityControl({ t, open, onOpenChange, showAllPeople, showAncestors, showDescendants, showGeneration, temporalScale, onToggle }) {
   const options = [
     { key: 'ancestors', active: showAncestors, label: t('tree.ancestry'), Icon: Waypoints },
     { key: 'descendants', active: showDescendants, label: t('tree.descendants'), Icon: ArrowDownFromLine },
     { key: 'generation', active: showGeneration, label: t('tree.generation'), Icon: UsersRound },
-    { key: 'allPeople', active: showAllPeople, label: t('actions.allPieces'), Icon: GitBranch }
+    { key: 'allPeople', active: showAllPeople, label: t('actions.allPieces'), Icon: GitBranch },
+    { key: 'temporalScale', active: temporalScale, label: t('tree.temporalScale'), Icon: Clock3 }
   ];
   const activeCount = options.filter((option) => option.active).length;
   const toggle = (key) => onToggle(key);
@@ -2233,6 +2326,7 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
   const [toolsOpen, setToolsOpen] = useState(false);
   const dragRef = useRef(null);
   const canvasRef = useRef(null);
+  const suppressCardClickRef = useRef(0);
   const backgroundInputRef = useRef(null);
   const baseLayout = useMemo(() => showAllPeople ? buildAllPeopleLayout(db, person?.id, language, cardMetrics) : buildAncestorLayout(db, person?.id, { showAncestors, showDescendants, showGeneration }, language, cardMetrics), [db, person?.id, showAllPeople, showAncestors, showDescendants, showGeneration, language, cardMetrics]);
   const layout = useMemo(() => temporalScale ? buildTemporalLayout(baseLayout, cardMetrics) : baseLayout, [baseLayout, temporalScale, cardMetrics]);
@@ -2328,20 +2422,25 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
 
   // Enhanced pointer handling to support pan and pinch-to-zoom
   const onPointerDown = (event) => {
+    if (event.target.closest?.('.canvasTopRightControls, .canvasBottomControls, .canvasBottomLeftControls')) return;
     // initialize pointers map if not present
-    if (!dragRef.current) dragRef.current = { pointers: new Map(), pinch: null };
+    if (!dragRef.current) dragRef.current = { pointers: new Map(), pinch: null, pan: null, gesture: null };
     const rect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    dragRef.current.pointers.set(event.pointerId, { x, y, clientX: event.clientX, clientY: event.clientY });
+    const startedOnCard = Boolean(event.target.closest?.('.treeCard'));
+    dragRef.current.pointers.set(event.pointerId, { x, y, clientX: event.clientX, clientY: event.clientY, startedOnCard });
     event.currentTarget.setPointerCapture(event.pointerId);
 
     if (dragRef.current.pointers.size === 1) {
       // start pan
       const point = dragRef.current.pointers.values().next().value;
-      dragRef.current.pan = { startX: point.clientX, startY: point.clientY, originX: viewport.x, originY: viewport.y };
+      dragRef.current.pan = point.startedOnCard ? null : { startX: point.clientX, startY: point.clientY, originX: viewport.x, originY: viewport.y };
     } else if (dragRef.current.pointers.size === 2) {
       // start pinch
+      dragRef.current.gesture = 'pinch';
+      dragRef.current.pan = null;
+      suppressCardClickRef.current = Date.now() + 500;
       const iter = dragRef.current.pointers.values();
       const a = iter.next().value;
       const b = iter.next().value;
@@ -2408,7 +2507,10 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
   const onPointerUp = (event) => {
     if (!dragRef.current) return;
     dragRef.current.pointers.delete(event.pointerId);
-    if (dragRef.current.pointers.size < 2) dragRef.current.pinch = null;
+    if (dragRef.current.pointers.size < 2) {
+      dragRef.current.pinch = null;
+      dragRef.current.pan = null;
+    }
     if (dragRef.current.pointers.size === 0) dragRef.current = null;
   };
 
@@ -2450,7 +2552,7 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
           </label>
         </div>
       </div>
-      <div ref={canvasRef} className={`treeCanvas ${temporalScale ? 'temporalCanvas' : ''} ${canvasBackground ? 'hasCanvasBackground' : ''}`} style={canvasBackground ? { '--canvas-bg-image': `url(${canvasBackground})` } : undefined} onWheel={(event) => { event.preventDefault(); setZoom(viewport.scale + (event.deltaY > 0 ? -0.08 : 0.08)); }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
+      <div ref={canvasRef} className={`treeCanvas ${temporalScale ? 'temporalCanvas' : ''} ${canvasBackground ? 'hasCanvasBackground' : ''}`} style={canvasBackground ? { '--canvas-bg-image': `url(${canvasBackground})` } : undefined} onWheel={(event) => { event.preventDefault(); setZoom(viewport.scale + (event.deltaY > 0 ? -0.08 : 0.08)); }} onPointerDownCapture={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onClickCapture={(event) => { if (suppressCardClickRef.current > Date.now() && event.target.closest?.('.treeCard')) { event.preventDefault(); event.stopPropagation(); } }}>
         {temporalScale && layout.temporal && <div className="temporalGuideLayer" aria-hidden="true">
           {layout.temporal.ticks.map((tick, index) => <div key={tick.year} className={`temporalGuideLine ${index % 2 ? 'alternate' : ''}`} style={{ top: viewport.y + tick.y * viewport.scale }} />)}
           {layout.temporal.hasUnknownDates && <div className="temporalGuideLine unknown" style={{ top: viewport.y + layout.temporal.unknownY * viewport.scale }} />}
@@ -2462,26 +2564,30 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
           {layout.temporal.hasUnknownDates && <div className="temporalTick unknown" style={{ top: viewport.y + layout.temporal.unknownY * viewport.scale }}><span>{t('tree.unknownDate')}</span></div>}
         </div>}
         <div className="canvasTopRightControls">
-          <AchievementSummary db={db} t={t} open={achievementSummaryOpen} onOpenChange={setAchievementSummaryOpen} />
-          <div className="canvasFloatingControls">
-          <div className="canvasZoomControls" onPointerDown={(event) => event.stopPropagation()} aria-label={t('tree.tools')}>
-            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale - 0.12)} title={t('tree.zoomOut')} aria-label={t('tree.zoomOut')}>
-              <ZoomOut size={18} strokeWidth={2} aria-hidden="true" />
-            </button>
-            <span>{Math.round(viewport.scale * 100)}%</span>
-            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale + 0.12)} title={t('tree.zoomIn')} aria-label={t('tree.zoomIn')}>
-              <ZoomIn size={18} strokeWidth={2} aria-hidden="true" />
-            </button>
+          <div className="canvasAchievementSummary">
+            <AchievementSummary db={db} t={t} open={achievementSummaryOpen} onOpenChange={setAchievementSummaryOpen} />
           </div>
-          <button className="iconButton canvasCenterButton" type="button" onPointerDown={(event) => event.stopPropagation()} onClick={fitActiveCards} title={t('tree.center')} aria-label={t('tree.center')}>
-            <LocateFixed size={18} strokeWidth={2} aria-hidden="true" />
-          </button>
-          {onAdd && <button className="primaryButton canvasNewPieceButton" type="button" onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onClick={onAdd}>
-            {t('actions.newPiece')}
-          </button>}
-          <button className={`iconButton canvasMaximizeButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')} aria-label={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')}>
-            {isCanvasMaximized ? <Minimize2 size={18} strokeWidth={2} aria-hidden="true" /> : <Maximize2 size={18} strokeWidth={2} aria-hidden="true" />}
-          </button>
+          <div className="canvasActionDock">
+            {onAdd && <button className="primaryButton canvasNewPieceButton" type="button" onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onClick={onAdd}>
+              {t('actions.newPiece')}
+            </button>}
+            <div className="canvasViewportControls" aria-label={t('tree.tools')}>
+              <div className="canvasZoomControls" onPointerDown={(event) => event.stopPropagation()}>
+                <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale - 0.12)} title={t('tree.zoomOut')} aria-label={t('tree.zoomOut')}>
+                  <ZoomOut size={18} strokeWidth={2} aria-hidden="true" />
+                </button>
+                <span>{Math.round(viewport.scale * 100)}%</span>
+                <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale + 0.12)} title={t('tree.zoomIn')} aria-label={t('tree.zoomIn')}>
+                  <ZoomIn size={18} strokeWidth={2} aria-hidden="true" />
+                </button>
+              </div>
+              <button className="iconButton canvasCenterButton" type="button" onPointerDown={(event) => event.stopPropagation()} onClick={fitActiveCards} title={t('tree.center')} aria-label={t('tree.center')}>
+                <LocateFixed size={18} strokeWidth={2} aria-hidden="true" />
+              </button>
+              <button className={`iconButton canvasMaximizeButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')} aria-label={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')}>
+                {isCanvasMaximized ? <Minimize2 size={18} strokeWidth={2} aria-hidden="true" /> : <Maximize2 size={18} strokeWidth={2} aria-hidden="true" />}
+              </button>
+            </div>
           </div>
         </div>
         <div className="canvasBottomLeftControls">
@@ -2490,11 +2596,8 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
             if (key === 'descendants') setShowDescendants((value) => !value);
             if (key === 'generation') setShowGeneration((value) => !value);
             if (key === 'allPeople') setShowAllPeople((value) => !value);
-          }} />
-          <button className={`secondaryButton iconTextButton canvasScaleButton ${temporalScale ? 'activeToggle' : ''}`} type="button" onPointerDown={(event) => event.stopPropagation()} onClick={() => setTemporalScale((value) => !value)} title={t('tree.temporalScale')}>
-            <Hourglass size={16} strokeWidth={2} aria-hidden="true" />
-            <span>{t('tree.scale')}</span>
-          </button>
+            if (key === 'temporalScale') setTemporalScale((value) => !value);
+          }} temporalScale={temporalScale} />
         </div>
         <div className="canvasBottomControls" onPointerDown={(event) => event.stopPropagation()}>
           <button className={`iconButton ${canvasBackground ? 'activeToggle' : ''}`} type="button" onClick={() => backgroundInputRef.current?.click()} title={t('tree.background')} aria-label={t('tree.changeBackground')}>
@@ -2617,6 +2720,7 @@ function PublicTreePage({ db }) {
   const [showContributionForm, setShowContributionForm] = useState(false);
   const dragRef = useRef(null);
   const canvasRef = useRef(null);
+  const suppressCardClickRef = useRef(0);
   const layout = useMemo(() => buildAllPeopleLayout(db, '', language, cardMetrics), [db, language, cardMetrics]);
 
   // Allow free scaling in public view as well
@@ -2670,17 +2774,22 @@ function PublicTreePage({ db }) {
 
   // Pointer handling for public canvas: support pan and pinch-to-zoom
   const onPointerDown = (event) => {
-    if (!dragRef.current) dragRef.current = { pointers: new Map(), pinch: null };
+    if (event.target.closest?.('.canvasTopRightControls, .canvasBottomControls, .canvasBottomLeftControls')) return;
+    if (!dragRef.current) dragRef.current = { pointers: new Map(), pinch: null, pan: null, gesture: null };
     const rect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    dragRef.current.pointers.set(event.pointerId, { x, y, clientX: event.clientX, clientY: event.clientY });
+    const startedOnCard = Boolean(event.target.closest?.('.treeCard'));
+    dragRef.current.pointers.set(event.pointerId, { x, y, clientX: event.clientX, clientY: event.clientY, startedOnCard });
     event.currentTarget.setPointerCapture(event.pointerId);
 
     if (dragRef.current.pointers.size === 1) {
       const point = dragRef.current.pointers.values().next().value;
-      dragRef.current.pan = { startX: point.clientX, startY: point.clientY, originX: viewport.x, originY: viewport.y };
+      dragRef.current.pan = point.startedOnCard ? null : { startX: point.clientX, startY: point.clientY, originX: viewport.x, originY: viewport.y };
     } else if (dragRef.current.pointers.size === 2) {
+      dragRef.current.gesture = 'pinch';
+      dragRef.current.pan = null;
+      suppressCardClickRef.current = Date.now() + 500;
       const iter = dragRef.current.pointers.values();
       const a = iter.next().value;
       const b = iter.next().value;
@@ -2741,7 +2850,10 @@ function PublicTreePage({ db }) {
   const onPointerUp = (event) => {
     if (!dragRef.current) return;
     dragRef.current.pointers.delete(event.pointerId);
-    if (dragRef.current.pointers.size < 2) dragRef.current.pinch = null;
+    if (dragRef.current.pointers.size < 2) {
+      dragRef.current.pinch = null;
+      dragRef.current.pan = null;
+    }
     if (dragRef.current.pointers.size === 0) dragRef.current = null;
   };
 
@@ -2760,7 +2872,7 @@ function PublicTreePage({ db }) {
             <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale + 0.12)} title={t('tree.zoomIn')}>+</button>
           </div>
         </div>
-        <div ref={canvasRef} className="treeCanvas publicCanvas" onWheel={(event) => { event.preventDefault(); setZoom(viewport.scale + (event.deltaY > 0 ? -0.08 : 0.08)); }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
+        <div ref={canvasRef} className="treeCanvas publicCanvas" onWheel={(event) => { event.preventDefault(); setZoom(viewport.scale + (event.deltaY > 0 ? -0.08 : 0.08)); }} onPointerDownCapture={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onClickCapture={(event) => { if (suppressCardClickRef.current > Date.now() && event.target.closest?.('.treeCard')) { event.preventDefault(); event.stopPropagation(); } }}>
           <div className="treePanLayer" style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})` }}>
             <div className="treeContent" style={{ width: layout.width, height: layout.height, '--tree-card-width': `${cardMetrics.width}px`, '--tree-card-height': `${cardMetrics.height}px` }}>
               {(layout.groups || []).map((group) => <div key={group.id} className={`familyGroupBand ${group.kind}`} style={{ left: group.x, top: group.y, width: group.width, height: group.height }}><span>{group.label}</span></div>)}
@@ -3396,9 +3508,11 @@ export default function GenealogyApp() {
 
   const savePerson = (form, relation) => {
     const now = new Date().toISOString();
-    const person = { id: newId('person'), ...form, createdAt: now, updatedAt: now };
+    const { _placeHierarchy, ...personValues } = form;
+    const person = { id: newId('person'), ...personValues, createdAt: now, updatedAt: now };
     updateDb((prev) => {
-      let next = { ...prev, people: [...prev.people, person], settings: { ...prev.settings, rootPersonId: prev.settings.rootPersonId || person.id } };
+      const nextPlaces = [...(prev.places || []), ...(_placeHierarchy || [])].reduce((all, place) => all.some((item) => item.id === place.id) ? all : [...all, { ...place, createdAt: place.createdAt || now, updatedAt: now }], []);
+      let next = { ...prev, places: nextPlaces, people: [...prev.people, person], settings: { ...prev.settings, rootPersonId: prev.settings.rootPersonId || person.id } };
       if (relation?.kind && relation?.personId) {
         if (relation.kind === 'parent_of') next = { ...next, parentChild: [...next.parentChild, { id: newId('pc'), parentId: person.id, childId: relation.personId }] };
         if (relation.kind === 'child_of') next = { ...next, parentChild: [...next.parentChild, { id: newId('pc'), parentId: relation.personId, childId: person.id }] };
@@ -3415,7 +3529,8 @@ export default function GenealogyApp() {
 
   const saveExistingPerson = (personId, form) => {
     const now = new Date().toISOString();
-    updateDb((prev) => ({ ...prev, people: prev.people.map((p) => p.id === personId ? { ...p, ...form, id: p.id, createdAt: p.createdAt, updatedAt: now } : p) }));
+    const { _placeHierarchy, ...personValues } = form;
+    updateDb((prev) => ({ ...prev, places: [...(prev.places || []), ...(_placeHierarchy || [])].reduce((all, place) => all.some((item) => item.id === place.id) ? all : [...all, { ...place, createdAt: place.createdAt || now, updatedAt: now }], []), people: prev.people.map((p) => p.id === personId ? { ...p, ...personValues, id: p.id, createdAt: p.createdAt, updatedAt: now } : p) }));
     setSelectedId(personId);
     setDrawerPersonId(personId);
     setDrawerMode('view');
@@ -3485,6 +3600,12 @@ export default function GenealogyApp() {
   const openInTree = (id) => {
     setFocusedId(id);
     setSelectedId(id);
+    setSection('tree');
+  };
+
+  const openFamilyMapPerson = (id) => {
+    setFocusedId(id);
+    openPersonDrawer(id, 'view');
     setSection('tree');
   };
 
@@ -3701,8 +3822,8 @@ export default function GenealogyApp() {
         <header className="topbar">
           <div className="topbarTitle">
             <p className="eyebrow">{db.settings.treeName}</p>
-            {section !== 'tree' && section !== 'findings' && <h1>{section === 'collaborators' ? 'Colaboradores' : t(`sections.${section}`)}</h1>}
-            {section !== 'findings' && <p className="topbarSubtitle">{section === 'collaborators' ? 'Administrá el acceso al árbol activo.' : t(`subtitles.${section}`)}</p>}
+            {section !== 'tree' && section !== 'findings' && section !== 'family-map' && <h1>{section === 'collaborators' ? 'Colaboradores' : t(`sections.${section}`)}</h1>}
+            {section !== 'findings' && section !== 'family-map' && <p className="topbarSubtitle">{section === 'collaborators' ? 'Administrá el acceso al árbol activo.' : t(`subtitles.${section}`)}</p>}
           </div>
           <div className="topbarActions">
             {showTopbarStats && <div className="topbarStats">
@@ -3718,6 +3839,8 @@ export default function GenealogyApp() {
         {section === 'tree' && <TreeView db={db} focusedId={focusedId} setFocusedId={(id) => { setFocusedId(id); setSelectedId(id); }} onOpenPerson={(id) => openPersonDrawer(id, 'view')} onAdd={canEdit ? () => setPersonModal({ mode: 'new' }) : undefined} />}
 
         {section === 'findings' && <FindingsView db={db} />}
+
+        {section === 'family-map' && <FamilyMap people={db.people} places={db.places} onViewInTree={openFamilyMapPerson} />}
 
         {section === 'timeline' && <TimelineView db={db} onOpenPerson={(id) => { setSelectedId(id); setFocusedId(id); setSection('people'); }} />}
 
@@ -3815,6 +3938,10 @@ export default function GenealogyApp() {
           {IconTimeline}
           <small>{t('nav.timelineShort')}</small>
         </button>
+        <button className={section === 'family-map' ? 'active' : ''} onClick={() => setSection('family-map')} aria-label={t('sections.familyMap')} title={t('sections.familyMap')}>
+          <Globe2 size={20} strokeWidth={1.9} aria-hidden="true" />
+          <small>Mapa</small>
+        </button>
         <button className={section === 'findings' ? 'active' : ''} onClick={() => setSection('findings')} aria-label={t('sections.findings')} title={t('sections.findings')}>
           {IconFindings}
           <small>{t('sections.findings')}</small>
@@ -3826,7 +3953,7 @@ export default function GenealogyApp() {
       </nav>
 
       {drawerPersonId && <PersonDrawer db={db} person={db.people.find((p) => p.id === drawerPersonId)} mode={drawerMode} onModeChange={setDrawerMode} onClose={() => { setDrawerPersonId(null); setDrawerMode('view'); }} onSave={saveExistingPerson} onFocus={openInTree} onLink={linkPerson} onRemoveRelation={(kind, otherId) => removeRelation(drawerPersonId, kind, otherId)} onDelete={deleteSelected} onAddEvent={() => setEventModal(true)} canEdit={canEdit} />}
-      {personModal && <Modal title={t('modalTitles.newPiece')} onClose={() => setPersonModal(null)}><PersonForm initial={personModal.person} people={db.people} showRelation onCancel={() => setPersonModal(null)} onSave={savePerson} /></Modal>}
+      {personModal && <Modal title={t('modalTitles.newPiece')} onClose={() => setPersonModal(null)}><PersonForm initial={personModal.person} people={db.people} places={db.places} showRelation onCancel={() => setPersonModal(null)} onSave={savePerson} /></Modal>}
       {eventModal && selected && <EventForm person={selected} onClose={() => setEventModal(false)} onSave={addEvent} />}
       {sourceModal && <SourceForm onClose={() => setSourceModal(false)} onSave={(source) => { updateDb((prev) => ({ ...prev, sources: [...prev.sources, { id: newId('source'), ...source }] })); setSourceModal(false); }} />}
       {personDeleteModalOpen && selected && <Modal title={t('deletion.personTitle')} onClose={() => setPersonDeleteModalOpen(false)}>

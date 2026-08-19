@@ -7,6 +7,7 @@ drop table if exists public.partnerships cascade;
 drop table if exists public.events cascade;
 drop table if exists public.detective_suggestions cascade;
 drop table if exists public.sources cascade;
+drop table if exists public.places cascade;
 drop table if exists public.people cascade;
 drop table if exists public.trees cascade;
 
@@ -37,6 +38,12 @@ create table public.people (
   sex text not null default '',
   birth_date text not null default '',
   birth_place text not null default '',
+  birth_year integer,
+  birth_month integer,
+  birth_day integer,
+  birth_date_precision text check (birth_date_precision is null or birth_date_precision in ('year', 'month', 'day')),
+  birth_place_id uuid,
+  birth_place_precision text check (birth_place_precision is null or birth_place_precision in ('country', 'region', 'city', 'locality')),
   death_date text not null default '',
   death_place text not null default '',
   occupation text not null default '',
@@ -44,6 +51,34 @@ create table public.people (
   created_at timestamp with time zone not null default now(),
   updated_at timestamp with time zone not null default now()
 );
+
+alter table public.people add constraint people_birth_date_parts_check check (
+  (birth_month is null or birth_year is not null)
+  and (birth_day is null or birth_month is not null)
+  and (birth_year is null or birth_year between 1 and 9999)
+  and (birth_month is null or birth_month between 1 and 12)
+  and (birth_day is null or birth_day between 1 and 31)
+  and (birth_day is null or birth_day <= case when birth_year between 1 and 9999 and birth_month between 1 and 12 then extract(day from (date_trunc('month', make_date(birth_year, birth_month, 1)) + interval '1 month - 1 day')) else 31 end)
+);
+
+-- 3b. Lugares geográficos normalizados; independientes del proveedor.
+create table public.places (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  type text not null check (type in ('country', 'region', 'city', 'locality', 'other')),
+  parent_id uuid references public.places(id) on delete set null,
+  country_code text,
+  latitude double precision,
+  longitude double precision,
+  external_provider text not null,
+  external_id text not null,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  constraint places_external_reference_unique unique (external_provider, external_id)
+);
+
+alter table public.people add constraint people_birth_place_id_fkey
+  foreign key (birth_place_id) references public.places(id) on delete set null;
 
 -- Agregar FK circular diferida de root_person_id a public.people
 alter table public.trees
@@ -131,6 +166,8 @@ create table public.detective_suggestions (
 
 -- 10. Índices btree para búsquedas rápidas por tree_id (Escalabilidad y rendimiento)
 create index idx_people_tree_id on public.people(tree_id);
+create index idx_people_birth_place_id on public.people(birth_place_id);
+create index idx_places_parent_id on public.places(parent_id);
 create index idx_sources_tree_id on public.sources(tree_id);
 create index idx_events_tree_id on public.events(tree_id);
 create index idx_partnerships_tree_id on public.partnerships(tree_id);
@@ -141,6 +178,7 @@ create index idx_detective_suggestions_tree_id on public.detective_suggestions(t
 -- 11. Habilitar Row Level Security (RLS) en todas las tablas
 alter table public.trees enable row level security;
 alter table public.people enable row level security;
+alter table public.places enable row level security;
 alter table public.sources enable row level security;
 alter table public.events enable row level security;
 alter table public.partnerships enable row level security;
@@ -153,7 +191,7 @@ do $$
 declare
   tbl text;
 begin
-  for tbl in select unnest(array['trees', 'people', 'sources', 'events', 'partnerships', 'parent_child', 'citations', 'detective_suggestions'])
+  for tbl in select unnest(array['trees', 'people', 'places', 'sources', 'events', 'partnerships', 'parent_child', 'citations', 'detective_suggestions'])
   loop
     execute format('create policy "Allow public read access" on public.%I for select to public using (true);', tbl);
     execute format('create policy "Allow public insert access" on public.%I for insert to public with check (true);', tbl);
@@ -166,6 +204,7 @@ $$;
 -- 13. Otorgar permisos GRANT directos a los roles anon y authenticated
 grant select, insert, update, delete on public.trees to anon, authenticated;
 grant select, insert, update, delete on public.people to anon, authenticated;
+grant select, insert, update, delete on public.places to anon, authenticated;
 grant select, insert, update, delete on public.sources to anon, authenticated;
 grant select, insert, update, delete on public.events to anon, authenticated;
 grant select, insert, update, delete on public.partnerships to anon, authenticated;
@@ -186,7 +225,7 @@ do $$
 declare
   tbl text;
 begin
-  for tbl in select unnest(array['trees', 'people', 'sources', 'events', 'partnerships', 'citations', 'detective_suggestions'])
+  for tbl in select unnest(array['trees', 'people', 'places', 'sources', 'events', 'partnerships', 'citations', 'detective_suggestions'])
   loop
     execute format('create trigger set_updated_at before update on public.%I for each row execute function public.handle_updated_at();', tbl);
   end loop;
