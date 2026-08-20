@@ -2006,14 +2006,18 @@ function ImageCropper({ source, onClose, onConfirm }) {
   </Modal>;
 }
 
+function AppBrand({ variant = 'sidebar', subtitle = 'Genealogía web', showSubtitle = true, className = '' }) {
+  return <div className={`appBrand appBrand-${variant} ${className}`.trim()} aria-label={showSubtitle ? `Root Puzzle — ${subtitle}` : 'Root Puzzle'}>
+    <div className="brandMark"><img src="/raices-logo.png" alt="" /></div>
+    {variant !== 'compact' && <div className="brandText"><strong>Root Puzzle</strong>{showSubtitle && <span>{subtitle}</span>}</div>}
+  </div>;
+}
+
 function AppLoader({ message = 'Abriendo tu árbol', animated = true }) {
   return (
     <main className={`loading ${animated ? 'loadingAnimated' : ''}`}>
       <div className="loadingCard" role={animated ? 'status' : 'alert'} aria-live="polite">
-        <div className="loadingLogoWrap" aria-hidden="true">
-          <span className="loadingRing" />
-          <img className="loadingLogo" src="/raices-logo.png" alt="" />
-        </div>
+        <div className="loadingBrandWrap"><AppBrand variant="loading" /><span className="loadingRing" aria-hidden="true" /></div>
         <span>{message}</span>
       </div>
     </main>
@@ -3175,7 +3179,7 @@ function PublicTreePage({ db }) {
   return (
     <main className="publicShell">
       <header className="publicHeader">
-        <div><p className="eyebrow">{t('public.publicTree')}</p><h1>{db.settings.treeName}</h1><p>{db.people.length} {t('public.readOnly')}</p></div>
+        <div className="publicHeaderBrand"><AppBrand variant="public" subtitle={t('appSubtitle')} /><div><p className="eyebrow">{t('public.publicTree')}</p><h1>{db.settings.treeName}</h1><p>{db.people.length} {t('public.readOnly')}</p></div></div>
         <div className="topbarActions"><button className="primaryButton puzzleButton" onClick={() => openContribution('')}>{t('public.contribute')}</button></div>
       </header>
       <section className="treeWorkspace publicTreeWorkspace">
@@ -3374,7 +3378,7 @@ function AuthScreen({ language, onLanguageChange }) {
   };
   const reset = () => { setError(''); setMessage(''); setMode('login'); };
   return <main className="authShell"><section className="authCard">
-    <div className="authBrand"><div className="authBrandMark"><img src="/raices-logo.png" alt="" /></div><span>Root Puzzle</span></div>
+    <AppBrand variant="auth" className="authBrand" subtitle={t('appSubtitle')} />
     <div className="authIntro"><p className="eyebrow">{t('sections.tree')}</p><h1>{t('auth.welcome')}</h1><p>{t('auth.subtitle')}</p></div>
     {mode !== 'reset' && <div className="authTabs"><button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => { reset(); setMode('login'); }}>{t('auth.login')}</button><button type="button" className={mode === 'register' ? 'active' : ''} onClick={() => { reset(); setMode('register'); }}>{t('auth.register')}</button></div>}
     <form className="authForm" onSubmit={submit}>
@@ -4152,8 +4156,7 @@ export default function GenealogyApp() {
     <main className={`appShell ${darkMode ? 'darkMode' : ''} ${sidebarCollapsed ? 'sidebarCollapsed' : ''}`}>
       <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
         <div className="brand">
-          <div className="brandMark"><img src="/raices-logo.png" alt="" /></div>
-          <div className="brandText"><strong>Root Puzzle</strong><span>{t('appSubtitle')}</span></div>
+          <AppBrand subtitle={t('appSubtitle')} />
           <button className="sidebarCollapseButton" type="button" onClick={() => setSidebarCollapsed((value) => !value)} aria-label={sidebarCollapsed ? t('nav.expand') : t('nav.collapse')} title={sidebarCollapsed ? t('nav.expand') : t('nav.collapse')}>
             {sidebarCollapsed ? <ChevronsRight size={18} strokeWidth={1.9} aria-hidden="true" /> : <ChevronsLeft size={18} strokeWidth={1.9} aria-hidden="true" />}
           </button>
