@@ -9,6 +9,9 @@ import { displayName } from '@/lib/model';
 
 const WORLD_WIDTH = 1000;
 const WORLD_HEIGHT = 500;
+const MAP_MIN_SCALE = 0.75;
+const MAP_MAX_SCALE = 24;
+const MAP_CLUSTER_DISTANCE = 28;
 const TIME_STEPS = [1, 5, 10];
 const PLAYBACK_SPEEDS = { slow: 1200, normal: 800, fast: 500 };
 const worldProjection = geoNaturalEarth1().fitSize([WORLD_WIDTH, WORLD_HEIGHT], { type: 'Sphere' });
@@ -27,6 +30,55 @@ const project = (latitude, longitude) => ({
   x: worldProjection([Number(longitude), Number(latitude)])[0],
   y: worldProjection([Number(longitude), Number(latitude)])[1]
 });
+
+const clampMapScale = (scale) => Math.min(MAP_MAX_SCALE, Math.max(MAP_MIN_SCALE, scale));
+const viewportDifference = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y) + Math.abs(a.scale - b.scale);
+
+const viewportForLocations = (locations) => {
+  if (!locations.length) return { x: 0, y: 0, scale: 1 };
+  const points = locations.map((location) => project(location.latitude, location.longitude));
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+  const width = Math.max(150, maxX - minX);
+  const height = Math.max(100, maxY - minY);
+  const padding = 90;
+  const scale = clampMapScale(Math.min((WORLD_WIDTH - padding * 2) / width, (WORLD_HEIGHT - padding * 2) / height));
+  return { scale, x: WORLD_WIDTH / 2 - centerX * scale, y: WORLD_HEIGHT / 2 - centerY * scale };
+};
+
+const clusterLocationsForViewport = (locations, viewport) => {
+  const clusters = [];
+  locations.forEach((location) => {
+    const point = project(location.latitude, location.longitude);
+    const screenPoint = { x: point.x * viewport.scale + viewport.x, y: point.y * viewport.scale + viewport.y };
+    const cluster = clusters.find((candidate) => Math.hypot(candidate.screenPoint.x - screenPoint.x, candidate.screenPoint.y - screenPoint.y) < MAP_CLUSTER_DISTANCE);
+    if (!cluster) {
+      clusters.push({ locations: [location], screenPoint });
+      return;
+    }
+    cluster.locations.push(location);
+    cluster.screenPoint = cluster.locations.reduce((sum, item) => {
+      const projected = project(item.latitude, item.longitude);
+      return { x: sum.x + projected.x * viewport.scale + viewport.x, y: sum.y + projected.y * viewport.scale + viewport.y };
+    }, { x: 0, y: 0 });
+    cluster.screenPoint.x /= cluster.locations.length;
+    cluster.screenPoint.y /= cluster.locations.length;
+  });
+  return clusters.map((cluster) => {
+    if (cluster.locations.length === 1) return cluster.locations[0];
+    const people = cluster.locations.flatMap((location) => location.people);
+    const currentPeople = cluster.locations.flatMap((location) => location.currentPeople);
+    const labels = [...new Set(cluster.locations.map((location) => location.label))];
+    const first = cluster.locations[0];
+    return { ...first, key: `cluster:${cluster.locations.map((location) => location.key).join('|')}`, label: labels.length === 1 ? labels[0] : `${cluster.locations.length} ubicaciones cercanas`, people, currentPeople, isCluster: true };
+  });
+};
 
 const safeCoordinates = (place) => {
   const latitude = Number(place?.latitude);
@@ -71,17 +123,20 @@ function WorldBase() {
   </>;
 }
 
-function FamilyMapMarkers({ locations, currentEventIds, selectedLocation, onSelect }) {
+function FamilyMapMarkers({ locations, currentEventIds, selectedLocation, onSelect, mapScale = 1 }) {
   return <g className="familyMapMarkers" aria-label="Nacimientos ubicados en el mapa">
     {locations.map((location) => {
       const point = project(location.latitude, location.longitude);
       const current = location.currentPeople.some((person) => currentEventIds.has(person.id));
       const selected = selectedLocation?.key === location.key;
-      return <g key={location.key} className={`familyMapMarker ${current ? 'current' : ''} ${selected ? 'selected' : ''}`} transform={`translate(${point.x} ${point.y})`} role="button" tabIndex="0" aria-label={`${location.label}: ${location.people.length} personas`} onClick={() => onSelect(location)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(location); } }}>
-        {current && <circle className="familyMapMarkerPulse" r="15" />}
-        <circle className="familyMapMarkerHalo" r={selected ? 13 : 10} />
-        <circle className="familyMapMarkerDot" r={selected ? 7 : 5} />
-        {location.people.length > 1 && <text className="familyMapMarkerCount" x="9" y="-8">{location.people.length}</text>}
+      return <g key={location.key} className={`familyMapMarker ${location.isCluster ? 'cluster' : ''} ${current ? 'current' : ''} ${selected ? 'selected' : ''}`} transform={`translate(${point.x} ${point.y})`} role="button" tabIndex="0" aria-label={`${location.label}: ${location.people.length} personas`} onClick={() => onSelect(location)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(location); } }}>
+        <g transform={`scale(${1 / mapScale})`}>
+          <circle className="familyMapMarkerHitArea" r="22" />
+          {current && <circle className="familyMapMarkerPulse" r="15" />}
+          <circle className="familyMapMarkerHalo" r={selected ? 13 : 10} />
+          <circle className="familyMapMarkerDot" r={selected ? 7 : 5} />
+          {location.people.length > 1 && <text className="familyMapMarkerCount" x="9" y="-8">{location.people.length}</text>}
+        </g>
       </g>;
     })}
   </g>;
@@ -137,6 +192,9 @@ export default function FamilyMap({ people = [], places = [], onViewInTree, acti
   const [mapViewport, setMapViewport] = useState({ x: 0, y: 0, scale: 1 });
   const mapGestureRef = useRef(null);
   const mapSvgRef = useRef(null);
+  const mapViewportRef = useRef(mapViewport);
+  const mapAnimationRef = useRef(null);
+  const viewportInitializedRef = useRef(false);
   const placeById = useMemo(() => new Map(places.map((place) => [place.id, place])), [places]);
   const branchOptions = useMemo(() => branchOptionsFor(people), [people]);
   const filteredPeople = useMemo(() => people.filter((person) => branchFilter === 'all' || String(person.surnames || '').toLowerCase().includes(branchFilter.toLowerCase())), [people, branchFilter]);
@@ -171,6 +229,7 @@ export default function FamilyMap({ people = [], places = [], onViewInTree, acti
   const pendingCount = visibleEvents.filter((event) => !event.verified).length;
   const locationsPendingInStep = currentEvents.filter((event) => !event.verified).length;
   const peopleWithoutYear = filteredPeople.filter((person) => !yearFrom(person)).length;
+  const displayLocations = useMemo(() => clusterLocationsForViewport(locations, mapViewport), [locations, mapViewport]);
 
   useEffect(() => {
     setCurrentIndex(0); setSelectedLocation(null); setIsPlaying(false);
@@ -178,13 +237,19 @@ export default function FamilyMap({ people = [], places = [], onViewInTree, acti
   useEffect(() => {
     setCurrentIndex(0); setSelectedLocation(null); setIsPlaying(false);
   }, [timeStep]);
+  useEffect(() => { mapViewportRef.current = mapViewport; }, [mapViewport]);
+  const stopViewportAnimation = () => {
+    if (mapAnimationRef.current) window.cancelAnimationFrame(mapAnimationRef.current);
+    mapAnimationRef.current = null;
+  };
   const mapPointFromEvent = (event) => {
     const rect = mapSvgRef.current?.getBoundingClientRect();
     if (!rect) return { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 };
     return { x: ((event.clientX - rect.left) / rect.width) * WORLD_WIDTH, y: ((event.clientY - rect.top) / rect.height) * WORLD_HEIGHT };
   };
   const zoomMapAt = (nextScale, focalPoint = { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 }) => {
-    const scale = Math.min(5, Math.max(.75, nextScale));
+    stopViewportAnimation();
+    const scale = clampMapScale(nextScale);
     setMapViewport((previous) => {
       const worldX = (focalPoint.x - previous.x) / previous.scale;
       const worldY = (focalPoint.y - previous.y) / previous.scale;
@@ -196,6 +261,7 @@ export default function FamilyMap({ people = [], places = [], onViewInTree, acti
     zoomMapAt(mapViewport.scale * (event.deltaY > 0 ? .9 : 1.1), mapPointFromEvent(event));
   };
   const onMapPointerDown = (event) => {
+    stopViewportAnimation();
     const point = mapPointFromEvent(event);
     if (!mapGestureRef.current) mapGestureRef.current = { pointers: new Map(), moved: false };
     mapGestureRef.current.pointers.set(event.pointerId, { clientX: event.clientX, clientY: event.clientY, point });
@@ -221,7 +287,7 @@ export default function FamilyMap({ people = [], places = [], onViewInTree, acti
       const distance = Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY) || 1;
       const rect = mapSvgRef.current?.getBoundingClientRect();
       const center = { x: (((a.clientX + b.clientX) / 2 - (rect?.left || 0)) / (rect?.width || 1)) * WORLD_WIDTH, y: (((a.clientY + b.clientY) / 2 - (rect?.top || 0)) / (rect?.height || 1)) * WORLD_HEIGHT };
-      const scale = Math.min(5, Math.max(.75, gesture.pinch.viewport.scale * distance / gesture.pinch.distance));
+      const scale = clampMapScale(gesture.pinch.viewport.scale * distance / gesture.pinch.distance);
       const worldX = (center.x - gesture.pinch.viewport.x) / gesture.pinch.viewport.scale;
       const worldY = (center.y - gesture.pinch.viewport.y) / gesture.pinch.viewport.scale;
       setMapViewport({ scale, x: center.x - worldX * scale, y: center.y - worldY * scale });
@@ -257,6 +323,33 @@ export default function FamilyMap({ people = [], places = [], onViewInTree, acti
     return () => window.cancelAnimationFrame(frameId);
   }, [isPlaying, currentIndex, years.length, playbackSpeed]);
   useEffect(() => { if (currentIndex >= years.length && years.length) setCurrentIndex(years.length - 1); }, [currentIndex, years.length]);
+  useEffect(() => {
+    const target = viewportForLocations(locations);
+    const start = mapViewportRef.current;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    stopViewportAnimation();
+    if (!viewportInitializedRef.current || reducedMotion || viewportDifference(start, target) < 0.5) {
+      setMapViewport(target);
+      viewportInitializedRef.current = true;
+      return undefined;
+    }
+    const startedAt = performance.now();
+    const duration = 560;
+    const easeInOut = (value) => value < 0.5 ? 4 * value * value * value : 1 - Math.pow(-2 * value + 2, 3) / 2;
+    const tick = (now) => {
+      const progress = Math.min(1, (now - startedAt) / duration);
+      const eased = easeInOut(progress);
+      setMapViewport({
+        x: start.x + (target.x - start.x) * eased,
+        y: start.y + (target.y - start.y) * eased,
+        scale: start.scale + (target.scale - start.scale) * eased
+      });
+      if (progress < 1) mapAnimationRef.current = window.requestAnimationFrame(tick);
+      else mapAnimationRef.current = null;
+    };
+    mapAnimationRef.current = window.requestAnimationFrame(tick);
+    return stopViewportAnimation;
+  }, [locations]);
 
   return <section className="familyMapPage">
     <header className="familyMapHeader">
@@ -271,12 +364,12 @@ export default function FamilyMap({ people = [], places = [], onViewInTree, acti
     <>
       <div className={`familyMapCanvas ${!events.length ? 'empty' : ''}`} aria-label="Mapa mundial de nacimientos" onWheel={onMapWheel}>
         <svg ref={mapSvgRef} viewBox={`0 0 ${WORLD_WIDTH} ${WORLD_HEIGHT}`} role="img" aria-label={`Mapa mundial de nacimientos${currentYear ? ` hasta ${currentYear}` : ''}`} onPointerDown={onMapPointerDown} onPointerMove={onMapPointerMove} onPointerUp={onMapPointerUp} onPointerCancel={onMapPointerUp}>
-          <g transform={`translate(${mapViewport.x} ${mapViewport.y}) scale(${mapViewport.scale})`}><WorldBase /><FamilyMapMarkers locations={locations} currentEventIds={currentEventIds} selectedLocation={selectedLocation} onSelect={setSelectedLocation} /></g>
+          <g transform={`translate(${mapViewport.x} ${mapViewport.y}) scale(${mapViewport.scale})`}><WorldBase /><FamilyMapMarkers locations={displayLocations} currentEventIds={currentEventIds} selectedLocation={selectedLocation} onSelect={setSelectedLocation} mapScale={mapViewport.scale} /></g>
         </svg>
         <div className="familyMapZoomControls" aria-label="Controles del mapa">
           <button type="button" onClick={() => zoomMapAt(mapViewport.scale * 1.2)} title="Acercar" aria-label="Acercar"><Plus size={16} /></button>
           <button type="button" onClick={() => zoomMapAt(mapViewport.scale / 1.2)} title="Alejar" aria-label="Alejar"><Minus size={16} /></button>
-          <button type="button" onClick={() => setMapViewport({ x: 0, y: 0, scale: 1 })} title="Recentrar mapa" aria-label="Recentrar mapa"><LocateFixed size={16} /></button>
+          <button type="button" onClick={() => { stopViewportAnimation(); setMapViewport(viewportForLocations(locations)); }} title="Centrar ubicaciones" aria-label="Centrar ubicaciones"><LocateFixed size={16} /></button>
         </div>
         {!events.length && <div className="familyMapEmptyOverlay"><Globe2 size={25} /><strong>{people.length ? (peopleWithoutYear ? 'Agregá años de nacimiento para recorrer el mapa' : 'No hay personas en esta rama') : 'Tu mapa familiar empieza acá'}</strong><span>{people.length ? (peopleWithoutYear ? `${peopleWithoutYear} ${peopleWithoutYear === 1 ? 'persona no tiene' : 'personas no tienen'} un año de nacimiento válido.` : 'Probá con otra rama familiar.') : 'Cuando agregues personas y lugares, aparecerán sus ubicaciones.'}</span></div>}
         {events.length > 0 && !locations.length && <div className="familyMapEmptyOverlay"><Globe2 size={25} /><strong>No hay ubicaciones confirmadas todavía</strong><span>Las personas tienen años de nacimiento, pero sus lugares todavía no tienen coordenadas confirmadas.</span></div>}

@@ -644,6 +644,8 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .profileCard { display: flex; align-items: center; gap: 14px; padding: 16px; }
 .profileCard > div { min-width: 0; }
 .profileCard strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(16px, 2vw, 20px); }
+.profilePhotoActions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+.profilePhotoHint { display: block; margin-top: 7px; color: var(--muted); font-size: 11px; line-height: 1.35; }
 .profileSettings { display: grid; gap: 12px; }
 .profileTools { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 22px 22px; }
 .profileTools .iconTextButton { min-height: 40px; }
@@ -2012,6 +2014,18 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
   .treeCard .treeCardMetaItem b { font-size: 11.5px; }
   .treeCard .branchMeta { display: none; }
 }
+.imageCropper { display: grid; justify-items: center; gap: 14px; padding: 4px 0 2px; }
+.imageCropHint { max-width: 320px; margin: 0; text-align: center; line-height: 1.4; }
+.imageCropFrame { position: relative; width: 280px; height: 280px; overflow: hidden; border-radius: 18px; background: #182524; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18), 0 16px 34px rgba(14,35,38,.18); cursor: grab; touch-action: none; user-select: none; }
+.imageCropFrame:active { cursor: grabbing; }
+.imageCropFrame img { position: absolute; top: 0; left: 0; max-width: none; transform-origin: 0 0; pointer-events: none; }
+.imageCropGrid { position: absolute; inset: 0; pointer-events: none; border: 1px solid rgba(255,255,255,.7); box-shadow: inset 0 0 0 1px rgba(0,0,0,.2), inset 0 0 0 999px rgba(4,15,14,.06); }
+.imageCropGrid::before, .imageCropGrid::after { content: ''; position: absolute; pointer-events: none; }
+.imageCropGrid::before { inset: 33.33% 0; border-top: 1px solid rgba(255,255,255,.28); border-bottom: 1px solid rgba(255,255,255,.28); }
+.imageCropGrid::after { inset: 0 33.33%; border-left: 1px solid rgba(255,255,255,.28); border-right: 1px solid rgba(255,255,255,.28); }
+.imageCropZoom { display: grid; grid-template-columns: auto minmax(150px, 240px); align-items: center; gap: 10px; color: var(--muted); font-size: 12px; font-weight: 800; }
+.imageCropZoom input { accent-color: var(--accent); }
+@media (max-width: 420px) { .imageCropFrame { width: min(280px, calc(100vw - 56px)); height: min(280px, calc(100vw - 56px)); } }
 
 /* Shared visual language for the rest of the app. */
 :root {
@@ -2265,13 +2279,16 @@ input:focus, select:focus, textarea:focus { border-color: #c77a4e; box-shadow: 0
 .familyMapLand path { fill: #b6c8bc; stroke: rgba(120,151,139,.28); stroke-width: .65; stroke-linejoin: round; }
 .familyMapBorders { fill: none; stroke: #78978b; stroke-width: .8; stroke-linejoin: round; pointer-events: none; }
 .familyMapMarker { cursor: pointer; outline: none; }
+.familyMapMarkerHitArea { fill: transparent; pointer-events: all; }
 .familyMapMarkerHalo { fill: #b56636; fill-opacity: .22; stroke: #fffaf3; stroke-width: 2; transition: r .16s ease, fill-opacity .16s ease; }
 .familyMapMarkerDot { fill: #a9542c; stroke: #fffaf3; stroke-width: 2; }
 .familyMapMarker.current .familyMapMarkerHalo { fill: #d58a54; fill-opacity: .52; }
 .familyMapMarker.selected .familyMapMarkerHalo { fill: #315d4d; fill-opacity: .45; }
+.familyMapMarker.cluster .familyMapMarkerHalo { r: 13px; fill-opacity: .34; }
+.familyMapMarker.cluster .familyMapMarkerDot { r: 6px; }
 .familyMapMarker:focus-visible .familyMapMarkerDot { stroke: #2c211b; stroke-width: 3; }
 .familyMapMarkerPulse { fill: none; stroke: #d58a54; stroke-width: 2; opacity: .7; animation: familyMapPulse 1.8s ease-out infinite; }
-.familyMapMarkerCount { fill: #fffaf3; font-size: 11px; font-weight: 900; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+.familyMapMarkerCount { fill: #fffaf3; font-size: 16px; font-weight: 950; letter-spacing: -.02em; text-anchor: middle; dominant-baseline: middle; paint-order: stroke fill; stroke: rgba(14,35,38,.86); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
 @keyframes familyMapPulse { from { r: 7px; opacity: .8; } to { r: 22px; opacity: 0; } }
 .familyMapLegend { position: absolute; left: 14px; bottom: 12px; display: flex; flex-wrap: wrap; gap: 10px; padding: 7px 9px; border: 1px solid rgba(255,255,255,.58); border-radius: 9px; color: #48615e; background: rgba(248,252,250,.84); backdrop-filter: blur(8px); font-size: 10px; font-weight: 700; }
 .familyMapLegend span { display: inline-flex; align-items: center; gap: 5px; }

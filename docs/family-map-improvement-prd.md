@@ -336,3 +336,75 @@ git diff --check
 ## Criterio de finalización
 
 La mejora estará lista cuando el recorrido temporal sea uniforme y explicable, las métricas no presenten alcances contradictorios, los estados incompletos sean accionables y la sección pueda utilizarse con teclado, movimiento reducido, tema oscuro y mobile sin regresiones.
+## Fase 2 — Precisión y exploración de ubicaciones
+
+### Problema específico
+
+La vista temporal funciona, pero la exploración geográfica se degrada cuando varias personas nacieron en lugares cercanos:
+
+- el zoom máximo actual no permite separar puntos próximos;
+- los marcadores y sus cantidades pueden superponerse;
+- el mapa puede iniciar mostrando todo el mundo aunque los datos estén concentrados en una región;
+- no existe una acción explícita para volver a encuadrar todas las ubicaciones;
+- una concentración de personas no tiene una presentación clara al acercarse.
+
+### Objetivos adicionales
+
+1. Permitir inspeccionar ubicaciones cercanas con zoom suficiente.
+2. Hacer que la primera vista se adapte a la distribución real de la familia.
+3. Evitar que puntos superpuestos oculten personas o información.
+4. Mantener la relación entre mapa, timeline y ficha del árbol.
+5. Conservar una experiencia usable con mouse, teclado y gestos táctiles.
+
+### Requisitos funcionales adicionales
+
+#### FR-14 — Autoencuadre
+
+- Al cargar el mapa o cambiar de rama, debe encuadrarse según las ubicaciones visibles.
+- El encuadre debe incluir margen suficiente para no pegar los puntos al borde.
+- Con una ubicación se debe usar un zoom regional moderado.
+- Sin ubicaciones confirmadas se conserva la vista mundial.
+- El botón de centrar debe restaurar el encuadre calculado.
+
+#### FR-15 — Zoom profundo
+
+- El zoom máximo debe ser suficiente para inspeccionar puntos cercanos; la implementación inicial usará un límite de 24x.
+- Rueda, botones y pinch deben conservar el punto focal.
+- El zoom no debe permitir una escala inútilmente pequeña.
+- El control de centrar debe tener etiqueta accesible.
+
+#### FR-16 — Agrupamiento visual
+
+- Las ubicaciones se agrupan sólo cuando la distancia visual actual no permite distinguirlas.
+- Un grupo debe comunicar su cantidad sin superponer etiquetas ilegibles.
+- Al acercarse, los puntos deben dejar de agruparse automáticamente cuando exista separación visual suficiente.
+- Las ubicaciones coincidentes pueden seguir abriendo un detalle conjunto con todas las personas asociadas.
+- La posición real de cada ubicación debe conservarse en los datos.
+
+#### FR-17 — Detalle de concentración
+
+- Seleccionar un grupo debe abrir un panel legible con todas las personas asociadas.
+- Cada persona debe conservar la acción “Ver en el árbol”.
+- Las personas sin coordenadas deben continuar visibles en estadísticas y novedades del período.
+
+### Criterios de aceptación adicionales
+
+- [ ] Una familia concentrada en una región abre enfocada en esa región.
+- [ ] Dos ubicaciones cercanas pueden separarse mediante zoom hasta una escala útil.
+- [ ] Ninguna cantidad principal queda superpuesta de forma ilegible.
+- [ ] El botón de centrar vuelve al encuadre de los puntos visibles.
+- [ ] El zoom con rueda y pinch mantiene el foco bajo el cursor o entre los dedos.
+- [ ] Los puntos y grupos se pueden activar con teclado.
+- [ ] El mapa funciona con cero, una, varias y muchas ubicaciones.
+- [ ] El cambio de rama y el avance temporal recalculan el contenido sin mezclar ubicaciones anteriores.
+- [ ] Se conserva el acceso a la ficha de cada persona.
+- [ ] Se mantienen los temas claro y oscuro y el movimiento reducido.
+
+### Diseño técnico de la fase 2
+
+- Reutilizar `d3-geo`, la proyección existente y el `viewBox` actual.
+- No cambiar el snapshot ni agregar campos.
+- Derivar el encuadre a partir de las ubicaciones visibles.
+- Agrupar por distancia visual en píxeles, no sólo por coordenadas redondeadas.
+- Mantener marcadores SVG enfocables con `aria-label`.
+- Mantener el agrupamiento dinámico sin animaciones obligatorias para usuarios con movimiento reducido.

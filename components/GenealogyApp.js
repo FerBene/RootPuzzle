@@ -37,13 +37,13 @@ const I18N = {
     },
     actions: { newPiece: '+ Nueva pieza', newSource: '+ Nueva fuente', cancel: 'Cancelar', savePiece: 'Guardar pieza', createPiece: 'Crear pieza', saveChanges: 'Guardar cambios', saveEvent: 'Guardar evento', saveSource: 'Guardar fuente', edit: 'Editar', viewInTree: 'Ver en árbol', add: '+ Agregar', remove: 'Quitar', import: 'Importar', exportJson: 'Exportar JSON', exportGedcom: 'Exportar GEDCOM', exportPdf: 'Exportar PDF', generateLink: 'Generar enlace', activateDetective: 'Activar detective', accept: 'Aceptar', reject: 'Rechazar', acceptPiece: 'Aceptar pieza', rejectPiece: 'Rechazar', importPiece: 'Importar pieza', tools: 'Herramientas', hideTools: 'Ocultar herramientas', allPieces: 'Todas las piezas', focusedBranch: 'Rama enfocada', uploadImage: 'Cargar imagen', copy: 'Copiar', downloadPiece: 'Descargar pieza' },
     stats: { pieces: 'piezas', links: 'vínculos', events: 'eventos', sources: 'fuentes', results: 'resultados', dated: 'con fecha', pending: 'pendientes', accepted: 'aceptadas', rejected: 'rechazadas' },
-    forms: { names: 'Nombres', surnames: 'Apellidos', birthYear: 'Año de nacimiento', nickname: 'Apodo', relationship: 'Parentesco', noLinkYet: 'Sin vínculo por ahora', parentOf: 'Es padre/madre de', childOf: 'Es hijo/a de', partnerOf: 'Es pareja de', noPiecesToLink: 'Sin otras piezas para vincular', linkWith: 'Vincular con', choosePiece: 'Elegir pieza', moreData: '+ datos', profileImage: 'Imagen de perfil', email: 'Email', sex: 'Sexo', gender: 'Género', unspecified: 'Sin indicar', male: 'Masculino', female: 'Femenino', otherGender: 'Otro / no binario', birthDateLabel: 'Nació el…', deathDateLabel: 'Falleció el…', birthPlace: 'Lugar de nacimiento', death: 'Fallecimiento', deathPlace: 'Lugar de fallecimiento', approximate: 'Aprox.', exact: 'Exacto', dayExample: '15', monthExample: '08', yearExample: '1942', occupation: 'Ocupación', notes: 'Notas', type: 'Tipo', date: 'Fecha', place: 'Lugar', description: 'Descripción', title: 'Título', repository: 'Archivo / repositorio', url: 'URL' },
+    forms: { names: 'Nombres', surnames: 'Apellidos', birthYear: 'Año de nacimiento', nickname: 'Apodo', relationship: 'Parentesco', noLinkYet: 'Sin vínculo por ahora', parentOf: 'Es padre/madre de', childOf: 'Es hijo/a de', partnerOf: 'Es pareja de', noPiecesToLink: 'Sin otras piezas para vincular', linkWith: 'Vincular con', choosePiece: 'Elegir pieza', moreData: '+ datos', profileImage: 'Imagen de perfil', cropTitle: 'Ajustar imagen', cropHint: 'Arrastrá para centrar y usá el zoom para encuadrar.', zoom: 'Zoom', useImage: 'Usar imagen', chooseAnother: 'Elegir otra', email: 'Email', sex: 'Sexo', gender: 'Género', unspecified: 'Sin indicar', male: 'Masculino', female: 'Femenino', otherGender: 'Otro / no binario', birthDateLabel: 'Nació el…', deathDateLabel: 'Falleció el…', birthPlace: 'Lugar de nacimiento', death: 'Fallecimiento', deathPlace: 'Lugar de fallecimiento', approximate: 'Aprox.', exact: 'Exacto', dayExample: '15', monthExample: '08', yearExample: '1942', occupation: 'Ocupación', notes: 'Notas', type: 'Tipo', date: 'Fecha', place: 'Lugar', description: 'Descripción', title: 'Título', repository: 'Archivo / repositorio', url: 'URL' },
     placeholders: { birthYear: 'Ej. 1942', email: 'nombre@dominio.com', birthPlace: 'Ciudad, provincia, país', notes: 'Hipótesis, datos pendientes, variantes del apellido...', search: 'Buscar por nombre, apodo, apellido, lugar…', repository: 'FamilySearch, archivo provincial, parroquia…', sourceExplanation: 'Acta, censo, recuerdo familiar, enlace, archivo...' },
     modalTitles: { newPiece: 'Nueva pieza', newSource: 'Nueva fuente', newEvent: 'Nuevo evento · {name}' },
     people: { bioPending: 'Datos biográficos pendientes' },
     tree: { branch: 'Rama', filters: 'Filtros de rama', visibility: 'Visibilidad', achievementsSummary: 'Resumen de hallazgos', tools: 'Herramientas del lienzo', scale: 'Escala', temporalScale: 'Escala temporal', background: 'Fondo', changeBackground: 'Cambiar fondo', center: 'Centrar', zoomIn: 'Acercar', zoomOut: 'Alejar', maximize: 'Maximizar lienzo', restore: 'Restaurar vista', ancestry: 'Ascendencia y tíos', descendants: 'Descendencia', generation: 'Misma generación (hermanos y primos)', noDate: 'Fecha pendiente', unknownDate: 'Sin fecha', birthAxis: 'Nacimiento', hint: 'Arrastrá el lienzo para moverte. Usá la rueda o los botones para acercar y alejar.', cardTitle: 'Click: ver ficha. Doble click: centrar árbol.', siblings: 'Hermanos', partners: 'Parejas', auntsUncles: 'Tíos', cousins: 'Primos', familyGroup: 'Grupo familiar', selectTree: 'Árbol', newTree: 'Nuevo árbol', createTree: 'Crear árbol', role: 'Rol' },
     card: { birthDate: 'Fecha de nacimiento', familyBranch: 'Rama familiar', sources: 'Fuentes', noBranch: 'Rama pendiente', missingName: 'Nombre pendiente' },
-    profile: { account: 'Cuenta', title: 'Mi perfil', subtitle: 'Accedé a tu perfil y ajustes', localNoEmail: 'Cuenta local sin email', localAccount: 'Cuenta local', visualPreference: 'Preferencia visual', darkActive: 'Interfaz oscura activa', lightActive: 'Interfaz clara activa', language: 'Idioma', esSelected: 'Español seleccionado', enSelected: 'English selected', changeToEnglish: 'Cambiar idioma a inglés', changeToSpanish: 'Cambiar idioma a español', notice: 'Perfil básico local. Para sincronizar y tener cuenta, configurá Supabase.', darkToLight: 'Cambiar a modo claro', lightToDark: 'Cambiar a modo oscuro' },
+    profile: { account: 'Cuenta', title: 'Mi perfil', subtitle: 'Accedé a tu perfil y ajustes', localNoEmail: 'Cuenta local sin email', localAccount: 'Cuenta local', visualPreference: 'Preferencia visual', darkActive: 'Interfaz oscura activa', lightActive: 'Interfaz clara activa', language: 'Idioma', esSelected: 'Español seleccionado', enSelected: 'English selected', changeToEnglish: 'Cambiar idioma a inglés', changeToSpanish: 'Cambiar idioma a español', photo: 'Foto de perfil', photoHint: 'Se guarda en este navegador y se adapta como avatar cuadrado.', uploadPhoto: 'Cargar foto', removePhoto: 'Quitar foto', notice: 'Perfil básico local. Para sincronizar y tener cuenta, configurá Supabase.', darkToLight: 'Cambiar a modo claro', lightToDark: 'Cambiar a modo oscuro' },
     empty: { title: 'Empezá por una pieza', body: 'El árbol se construye alrededor de piezas y vínculos. Podés cargar datos incompletos e ir documentándolos a medida que investigás.', firstPiece: '+ Agregar primera pieza' },
     drawer: { viewMode: 'Modo vista', editMode: 'Modo edición', personalFile: 'Ficha personal', editPerson: 'Editar persona', editing: 'Editando', view: 'Vista', deletePerson: 'Eliminar persona', editingNotice: 'Estás modificando los datos de esta persona. Guardar actualiza la ficha y vuelve al modo vista.', viewingNotice: 'Estás viendo la ficha. Usá Editar para cambiar datos.', person: 'Persona', datesToResearch: 'Fechas por investigar', family: 'Familia', parents: 'Padres', partners: 'Parejas', children: 'Hijos', addParent: 'Agregar padre/madre', addPartner: 'Agregar pareja', addChild: 'Agregar hijo/a', timeline: 'Línea de tiempo', noEvents: 'Todavía no hay eventos registrados.', noData: 'Sin datos', choosePerson: 'Elegir persona…', removeLink: 'Eliminar vínculo' },
     facts: { nickname: 'Apodo', email: 'Email', birth: 'Nacimiento', death: 'Fallecimiento', occupation: 'Ocupación', notes: 'Notas' },
@@ -69,13 +69,13 @@ const I18N = {
     subtitles: { tree: 'View and explore your family tree.', people: 'Manage registered pieces and profiles.', timeline: 'Review events in chronological order.', familyMap: 'Explore where each family story began through time.', sources: 'Organize your research sources.', data: 'Import, export and back up your tree.', profile: 'Account and preferences.' },
     actions: { newPiece: '+ New piece', newSource: '+ New source', cancel: 'Cancel', savePiece: 'Save piece', createPiece: 'Create piece', saveChanges: 'Save changes', saveEvent: 'Save event', saveSource: 'Save source', edit: 'Edit', viewInTree: 'View in tree', add: '+ Add', remove: 'Remove', import: 'Import', exportJson: 'Export JSON', exportGedcom: 'Export GEDCOM', exportPdf: 'Export PDF', generateLink: 'Generate link', activateDetective: 'Activate detective', accept: 'Accept', reject: 'Reject', acceptPiece: 'Accept piece', rejectPiece: 'Reject', importPiece: 'Import piece', tools: 'Tools', hideTools: 'Hide tools', allPieces: 'All pieces', focusedBranch: 'Focused branch', uploadImage: 'Upload image', copy: 'Copy', downloadPiece: 'Download piece' },
     stats: { pieces: 'pieces', links: 'links', events: 'events', sources: 'sources', results: 'results', dated: 'dated', pending: 'pending', accepted: 'accepted', rejected: 'rejected' },
-    forms: { names: 'Given names', surnames: 'Surnames', birthYear: 'Birth year', nickname: 'Nickname', relationship: 'Relationship', noLinkYet: 'No link yet', parentOf: 'Is parent of', childOf: 'Is child of', partnerOf: 'Is partner of', noPiecesToLink: 'No other pieces to link', linkWith: 'Link with', choosePiece: 'Choose piece', moreData: '+ details', profileImage: 'Profile image', email: 'Email', sex: 'Sex', gender: 'Gender', unspecified: 'Unspecified', male: 'Male', female: 'Female', otherGender: 'Other / non-binary', birthDateLabel: 'Born on…', deathDateLabel: 'Died on…', birthPlace: 'Birth place', death: 'Death', deathPlace: 'Death place', approximate: 'Approx.', exact: 'Exact', dayExample: '15', monthExample: '08', yearExample: '1942', occupation: 'Occupation', notes: 'Notes', type: 'Type', date: 'Date', place: 'Place', description: 'Description', title: 'Title', repository: 'File / repository', url: 'URL' },
+    forms: { names: 'Given names', surnames: 'Surnames', birthYear: 'Birth year', nickname: 'Nickname', relationship: 'Relationship', noLinkYet: 'No link yet', parentOf: 'Is parent of', childOf: 'Is child of', partnerOf: 'Is partner of', noPiecesToLink: 'No other pieces to link', linkWith: 'Link with', choosePiece: 'Choose piece', moreData: '+ details', profileImage: 'Profile image', cropTitle: 'Adjust image', cropHint: 'Drag to center and use zoom to frame it.', zoom: 'Zoom', useImage: 'Use image', chooseAnother: 'Choose another', email: 'Email', sex: 'Sex', gender: 'Gender', unspecified: 'Unspecified', male: 'Male', female: 'Female', otherGender: 'Other / non-binary', birthDateLabel: 'Born on…', deathDateLabel: 'Died on…', birthPlace: 'Birth place', death: 'Death', deathPlace: 'Death place', approximate: 'Approx.', exact: 'Exact', dayExample: '15', monthExample: '08', yearExample: '1942', occupation: 'Occupation', notes: 'Notes', type: 'Type', date: 'Date', place: 'Place', description: 'Description', title: 'Title', repository: 'File / repository', url: 'URL' },
     placeholders: { birthYear: 'Ex. 1942', email: 'name@domain.com', birthPlace: 'City, state, country', notes: 'Hypotheses, pending data, surname variants...', search: 'Search by name, nickname, surname, place…', repository: 'FamilySearch, provincial archive, parish…', sourceExplanation: 'Certificate, census, family memory, link, file...' },
     modalTitles: { newPiece: 'New piece', newSource: 'New source', newEvent: 'New event · {name}' },
     people: { bioPending: 'Biographical data pending' },
     tree: { branch: 'Branch', filters: 'Branch filters', visibility: 'Visibility', achievementsSummary: 'Findings summary', tools: 'Canvas tools', scale: 'Scale', temporalScale: 'Timeline scale', background: 'Background', changeBackground: 'Change background', center: 'Center', zoomIn: 'Zoom in', zoomOut: 'Zoom out', maximize: 'Maximize canvas', restore: 'Restore view', ancestry: 'Ancestors & aunts/uncles', descendants: 'Descendants', generation: 'Same generation (siblings & cousins)', noDate: 'Date pending', unknownDate: 'No date', birthAxis: 'Birth', hint: 'Drag the canvas to move. Use the wheel or buttons to zoom.', cardTitle: 'Click: view profile. Double click: focus tree.', siblings: 'Siblings', partners: 'Partners', auntsUncles: 'Aunts/uncles', cousins: 'Cousins', familyGroup: 'Family group', selectTree: 'Tree', newTree: 'New tree', createTree: 'Create tree', role: 'Role' },
     card: { birthDate: 'Birth date', familyBranch: 'Family branch', sources: 'Sources', noBranch: 'Branch pending', missingName: 'Name pending' },
-    profile: { account: 'Account', title: 'My profile', subtitle: 'Access your profile and settings', localNoEmail: 'Local account without email', localAccount: 'Local account', visualPreference: 'Visual preference', darkActive: 'Dark interface active', lightActive: 'Light interface active', language: 'Language', esSelected: 'Spanish selected', enSelected: 'English selected', changeToEnglish: 'Switch language to English', changeToSpanish: 'Switch language to Spanish', notice: 'Local basic profile. Configure Supabase to sync and create an account.', darkToLight: 'Switch to light mode', lightToDark: 'Switch to dark mode' },
+    profile: { account: 'Account', title: 'My profile', subtitle: 'Access your profile and settings', localNoEmail: 'Local account without email', localAccount: 'Local account', visualPreference: 'Visual preference', darkActive: 'Dark interface active', lightActive: 'Light interface active', language: 'Language', esSelected: 'Spanish selected', enSelected: 'English selected', changeToEnglish: 'Switch language to English', changeToSpanish: 'Switch language to Spanish', photo: 'Profile photo', photoHint: 'Saved in this browser and adapted as a square avatar.', uploadPhoto: 'Upload photo', removePhoto: 'Remove photo', notice: 'Local basic profile. Configure Supabase to sync and create an account.', darkToLight: 'Switch to light mode', lightToDark: 'Switch to dark mode' },
     empty: { title: 'Start with one piece', body: 'The tree is built around pieces and links. You can add incomplete data and document it as you research.', firstPiece: '+ Add first piece' },
     drawer: { viewMode: 'View mode', editMode: 'Edit mode', personalFile: 'Personal profile', editPerson: 'Edit person', editing: 'Editing', view: 'View', deletePerson: 'Delete person', editingNotice: 'You are editing this person. Saving updates the profile and returns to view mode.', viewingNotice: 'You are viewing the profile. Use Edit to change data.', person: 'Person', datesToResearch: 'Dates to research', family: 'Family', parents: 'Parents', partners: 'Partners', children: 'Children', addParent: 'Add parent', addPartner: 'Add partner', addChild: 'Add child', timeline: 'Timeline', noEvents: 'No events registered yet.', noData: 'No data', choosePerson: 'Choose person…', removeLink: 'Remove link' },
     facts: { nickname: 'Nickname', email: 'Email', birth: 'Birth', death: 'Death', occupation: 'Occupation', notes: 'Notes' },
@@ -174,7 +174,7 @@ const downloadText = (filename, text, type = 'text/plain') => {
   URL.revokeObjectURL(url);
 };
 
-const readProfileImage = (file) => new Promise((resolve, reject) => {
+const readImageSource = (file) => new Promise((resolve, reject) => {
   const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
   const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
   const extension = String(file?.name || '').split('.').pop()?.toLowerCase();
@@ -192,38 +192,41 @@ const readProfileImage = (file) => new Promise((resolve, reject) => {
   reader.onload = () => {
     const img = new Image();
     img.onerror = () => reject(new Error('No pude procesar la imagen.'));
-    img.onload = () => {
-      const makeBlob = (maxSize, quality) => new Promise((blobResolve) => {
-        const ratio = Math.min(1, maxSize / Math.max(img.width, img.height));
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.max(1, Math.round(img.width * ratio));
-        canvas.height = Math.max(1, Math.round(img.height * ratio));
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(blobResolve, 'image/webp', quality);
-      });
-      (async () => {
-        for (const maxSize of [800, 700, 600, 500, 400]) {
-          for (const quality of [0.82, 0.74, 0.66, 0.58, 0.5, 0.42]) {
-            const blob = await makeBlob(maxSize, quality);
-            if (blob && blob.size < 100 * 1024) {
-              const dataUrl = await new Promise((dataResolve, dataReject) => {
-                const dataReader = new FileReader();
-                dataReader.onload = () => dataResolve(dataReader.result);
-                dataReader.onerror = () => dataReject(new Error('No pude preparar la vista previa.'));
-                dataReader.readAsDataURL(blob);
-              });
-              resolve({ file: new File([blob], `${crypto.randomUUID()}.webp`, { type: 'image/webp' }), dataUrl });
-              return;
-            }
-          }
-        }
-        reject(new Error('No pude comprimir la imagen por debajo de 100 KB.'));
-      })().catch(reject);
-    };
+    img.onload = () => resolve({ img, dataUrl: reader.result });
     img.src = reader.result;
   };
   reader.readAsDataURL(file);
+});
+
+const encodeCroppedImage = ({ img, x, y, size }) => new Promise((resolve, reject) => {
+  const cropSize = Math.max(1, Math.min(img.width, img.height, size));
+  const sx = Math.max(0, Math.min(img.width - cropSize, x));
+  const sy = Math.max(0, Math.min(img.height - cropSize, y));
+  const makeBlob = (outputSize, quality) => new Promise((blobResolve) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = outputSize; canvas.height = outputSize;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, outputSize, outputSize);
+    canvas.toBlob(blobResolve, 'image/webp', quality);
+  });
+  (async () => {
+    for (const outputSize of [800, 700, 600, 500, 400]) {
+      for (const quality of [0.82, 0.74, 0.66, 0.58, 0.5, 0.42]) {
+        const blob = await makeBlob(outputSize, quality);
+        if (blob && blob.size < 100 * 1024) {
+          const dataUrl = await new Promise((dataResolve, dataReject) => {
+            const reader = new FileReader();
+            reader.onload = () => dataResolve(reader.result);
+            reader.onerror = () => dataReject(new Error('No pude preparar la vista previa.'));
+            reader.readAsDataURL(blob);
+          });
+          resolve({ file: new File([blob], `${crypto.randomUUID()}.webp`, { type: 'image/webp' }), dataUrl });
+          return;
+        }
+      }
+    }
+    reject(new Error('No pude comprimir la imagen por debajo de 100 KB.'));
+  })().catch(reject);
 });
 
 const readCanvasBackgroundImage = (file) => new Promise((resolve, reject) => {
@@ -278,6 +281,7 @@ const UNKNOWN_BIRTH_YEAR_OFFSET = 30;
 const THEME_STORAGE_KEY = 'raices.theme';
 const LANGUAGE_STORAGE_KEY = 'rootPuzzle.language';
 const CANVAS_BACKGROUND_STORAGE_KEY = 'raices.canvasBackground';
+const PROFILE_IMAGE_STORAGE_PREFIX = 'rootPuzzle.profileImage.';
 const PUBLIC_TREE_HASH_PREFIX = '#public-tree=';
 
 const parseDateRank = (value) => {
@@ -1939,6 +1943,55 @@ function Modal({ title, onClose, children }) {
   );
 }
 
+function ImageCropper({ source, onClose, onConfirm }) {
+  const { t } = useI18n();
+  const frameRef = useRef(null);
+  const frameSize = 280;
+  const baseScale = Math.max(frameSize / source.img.width, frameSize / source.img.height);
+  const [zoom, setZoom] = useState(1);
+  const [position, setPosition] = useState({ x: (frameSize - source.img.width * baseScale) / 2, y: (frameSize - source.img.height * baseScale) / 2 });
+  const dragRef = useRef(null);
+  const scale = baseScale * zoom;
+  const rendered = { width: source.img.width * scale, height: source.img.height * scale };
+  const clampPosition = (next) => ({
+    x: Math.min(0, Math.max(frameSize - rendered.width, next.x)),
+    y: Math.min(0, Math.max(frameSize - rendered.height, next.y))
+  });
+  const startDrag = (event) => {
+    event.preventDefault();
+    dragRef.current = { x: event.clientX, y: event.clientY, position };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+  const moveDrag = (event) => {
+    if (!dragRef.current) return;
+    setPosition(clampPosition({ x: dragRef.current.position.x + event.clientX - dragRef.current.x, y: dragRef.current.position.y + event.clientY - dragRef.current.y }));
+  };
+  const finishDrag = () => { dragRef.current = null; };
+  const changeZoom = (event) => {
+    const nextZoom = Number(event.target.value);
+    const ratio = nextZoom / zoom;
+    setZoom(nextZoom);
+    setPosition((current) => clampPosition({ x: frameSize / 2 - (frameSize / 2 - current.x) * ratio, y: frameSize / 2 - (frameSize / 2 - current.y) * ratio }));
+  };
+  const confirm = async () => {
+    const cropX = -position.x / scale;
+    const cropY = -position.y / scale;
+    const cropSize = frameSize / scale;
+    await onConfirm(await encodeCroppedImage({ img: source.img, x: cropX, y: cropY, size: cropSize }));
+  };
+  return <Modal title={t('forms.cropTitle')} onClose={onClose}>
+    <div className="imageCropper">
+      <p className="muted imageCropHint">{t('forms.cropHint')}</p>
+      <div ref={frameRef} className="imageCropFrame" onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={finishDrag} onPointerCancel={finishDrag} role="application" aria-label={t('forms.cropTitle')}>
+        <img src={source.dataUrl} alt="" draggable="false" style={{ width: rendered.width, height: rendered.height, transform: `translate(${position.x}px, ${position.y}px)` }} />
+        <span className="imageCropGrid" aria-hidden="true" />
+      </div>
+      <label className="imageCropZoom">{t('forms.zoom')}<input type="range" min="1" max="3" step="0.01" value={zoom} onChange={changeZoom} /></label>
+      <div className="modalActions"><button type="button" className="secondaryButton" onClick={onClose}>{t('actions.cancel')}</button><button type="button" className="primaryButton" onClick={confirm}>{t('forms.useImage')}</button></div>
+    </div>
+  </Modal>;
+}
+
 function AppLoader({ message = 'Abriendo tu árbol', animated = true }) {
   return (
     <main className={`loading ${animated ? 'loadingAnimated' : ''}`}>
@@ -2051,6 +2104,7 @@ function PersonForm({ initial, people = [], places = [], showRelation = false, o
   const [relations, setRelations] = useState([]);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [cropSource, setCropSource] = useState(null);
   useEffect(() => {
     if (!Object.keys(errors).length) return;
     document.querySelector('[aria-invalid="true"]')?.focus();
@@ -2065,14 +2119,17 @@ function PersonForm({ initial, people = [], places = [], showRelation = false, o
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      const { file: compressedFile, dataUrl } = await readProfileImage(file);
-      setForm((prev) => ({ ...prev, profileImage: dataUrl, _profileImageFile: compressedFile, _profileImageError: '' }));
+      setCropSource(await readImageSource(file));
       setErrors((prev) => ({ ...prev, profileImage: '' }));
     } catch (error) {
       setErrors((prev) => ({ ...prev, profileImage: error.message || t('errors.imageLoad') }));
     } finally {
       event.target.value = '';
     }
+  };
+  const applyProfileImage = ({ file, dataUrl }) => {
+    setForm((prev) => ({ ...prev, profileImage: dataUrl, _profileImageFile: file, _profileImageError: '' }));
+    setCropSource(null);
   };
   const submit = async (event) => {
     event.preventDefault();
@@ -2153,6 +2210,7 @@ function PersonForm({ initial, people = [], places = [], showRelation = false, o
       </details>
       {errors.submit && <p className="formError" role="alert">{errors.submit}</p>}
       <div className="modalActions"><button type="button" className="secondaryButton" onClick={onCancel} disabled={saving}>{t('actions.cancel')}</button><button className="primaryButton" disabled={saving}>{saving ? 'Guardando…' : initial?.id ? t('actions.saveChanges') : t('actions.createPiece')}</button></div>
+      {cropSource && <ImageCropper source={cropSource} onClose={() => setCropSource(null)} onConfirm={applyProfileImage} />}
     </form>
   );
 }
@@ -3389,11 +3447,34 @@ export default function GenealogyApp() {
   const [authUser, setAuthUser] = useState(null);
   const [authReady, setAuthReady] = useState(!isSupabaseConfigured);
   const [publicTreeUrl, setPublicTreeUrl] = useState('');
+  const [accountProfileImage, setAccountProfileImage] = useState('');
+  const [accountCropSource, setAccountCropSource] = useState(null);
   const importRef = useRef(null);
+  const accountImageInputRef = useRef(null);
   const gedcomRef = useRef(null);
   const pieceImportRef = useRef(null);
   const i18n = useMemo(() => ({ language, t: (key, vars) => translate(language, key, vars) }), [language]);
   const t = i18n.t;
+
+  const profileImageStorageKey = `${PROFILE_IMAGE_STORAGE_PREFIX}${authUser?.id || 'local'}`;
+  useEffect(() => {
+    try { setAccountProfileImage(localStorage.getItem(profileImageStorageKey) || ''); } catch { setAccountProfileImage(''); }
+  }, [profileImageStorageKey]);
+  const chooseAccountProfileImage = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try { setAccountCropSource(await readImageSource(file)); } catch (error) { window.alert(error.message || t('errors.imageLoad')); }
+    finally { event.target.value = ''; }
+  };
+  const saveAccountProfileImage = ({ dataUrl }) => {
+    setAccountProfileImage(dataUrl);
+    setAccountCropSource(null);
+    try { localStorage.setItem(profileImageStorageKey, dataUrl); } catch { /* Keep the avatar in memory if storage is full. */ }
+  };
+  const removeAccountProfileImage = () => {
+    setAccountProfileImage('');
+    try { localStorage.removeItem(profileImageStorageKey); } catch { /* Ignore storage failures. */ }
+  };
 
   useEffect(() => {
     setMobileMoreOpen(false);
@@ -3956,7 +4037,7 @@ export default function GenealogyApp() {
     givenNames: accountName,
     surnames: '',
     email: accountEmail,
-    profileImage: accountMetadata.avatar_url || accountMetadata.picture || ''
+    profileImage: accountProfileImage || accountMetadata.avatar_url || accountMetadata.picture || ''
   };
   const activeTree = accessibleTrees.find((tree) => tree.id === remoteTreeId);
   const topbarAction = !canEdit ? null : section === 'sources'
@@ -4090,6 +4171,12 @@ export default function GenealogyApp() {
               <div>
                 <strong>{displayName(accountProfile)}</strong>
                 <div className="muted small">{accountProfile.email || t('profile.localNoEmail')}</div>
+                <div className="profilePhotoActions">
+                  <button type="button" className="secondaryButton compactTextButton" onClick={() => accountImageInputRef.current?.click()}>{t('profile.uploadPhoto')}</button>
+                  {accountProfileImage && <button type="button" className="textButton compactTextButton" onClick={removeAccountProfileImage}>{t('profile.removePhoto')}</button>}
+                  <input ref={accountImageInputRef} hidden type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={chooseAccountProfileImage} />
+                </div>
+                <small className="profilePhotoHint">{t('profile.photoHint')}</small>
               </div>
             </div>
             <div className="profileSettings">
@@ -4112,6 +4199,7 @@ export default function GenealogyApp() {
               <div className="profileNotice"><small>{t('profile.notice')}</small></div>
             </div>
           </div>
+          {accountCropSource && <ImageCropper source={accountCropSource} onClose={() => setAccountCropSource(null)} onConfirm={saveAccountProfileImage} />}
           <div className="profileTools">
             <button className="secondaryButton iconTextButton" type="button" onClick={() => setSection('sources')}>
               {IconSources}
