@@ -2444,6 +2444,12 @@ function TreeConnector({ type, style }) {
   return <div className={`treeConnector ${type}`} style={style} aria-hidden="true"><span /></div>;
 }
 
+function CanvasIconButton({ Icon, label, active = false, className = '', children, ...props }) {
+  return <button {...props} className={`iconButton canvasIconButton ${active ? 'activeToggle' : ''} ${className}`.trim()} type="button" title={label} aria-label={label}>
+    {children || <Icon size={18} strokeWidth={2} aria-hidden="true" />}
+  </button>;
+}
+
 function VisibilityControl({ t, open, onOpenChange, showAllPeople, showAncestors, showDescendants, showGeneration, temporalScale, onToggle }) {
   const options = [
     { key: 'ancestors', active: showAncestors, label: t('tree.ancestry'), Icon: Waypoints },
@@ -2815,20 +2821,12 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
             </button>}
             <div className="canvasViewportControls" aria-label={t('tree.tools')}>
               <div className="canvasZoomControls" onPointerDown={(event) => event.stopPropagation()}>
-                <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale - 0.12)} title={t('tree.zoomOut')} aria-label={t('tree.zoomOut')}>
-                  <ZoomOut size={18} strokeWidth={2} aria-hidden="true" />
-                </button>
+                <CanvasIconButton Icon={ZoomOut} label={t('tree.zoomOut')} onClick={() => setZoom(viewport.scale - 0.12)} />
                 <span>{Math.round(viewport.scale * 100)}%</span>
-                <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale + 0.12)} title={t('tree.zoomIn')} aria-label={t('tree.zoomIn')}>
-                  <ZoomIn size={18} strokeWidth={2} aria-hidden="true" />
-                </button>
+                <CanvasIconButton Icon={ZoomIn} label={t('tree.zoomIn')} onClick={() => setZoom(viewport.scale + 0.12)} />
               </div>
-              <button className="iconButton canvasCenterButton" type="button" onPointerDown={(event) => event.stopPropagation()} onClick={fitActiveCards} title={t('tree.center')} aria-label={t('tree.center')}>
-                <LocateFixed size={18} strokeWidth={2} aria-hidden="true" />
-              </button>
-              <button className={`iconButton canvasMaximizeButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')} aria-label={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')}>
-                {isCanvasMaximized ? <Minimize2 size={18} strokeWidth={2} aria-hidden="true" /> : <Maximize2 size={18} strokeWidth={2} aria-hidden="true" />}
-              </button>
+              <CanvasIconButton Icon={LocateFixed} className="canvasCenterButton" label={t('tree.center')} onPointerDown={(event) => event.stopPropagation()} onClick={fitActiveCards} />
+              <CanvasIconButton Icon={isCanvasMaximized ? Minimize2 : Maximize2} className="canvasMaximizeButton" active={isCanvasMaximized} label={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')} onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => event.stopPropagation()} onClick={() => setCanvasMaximized((value) => !value)} />
             </div>
           </div>
         </div>
@@ -2842,14 +2840,10 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
           }} temporalScale={temporalScale} />
         </div>
         <div className="canvasBottomControls" onPointerDown={(event) => event.stopPropagation()}>
-          <button className={`iconButton ${canvasBackground ? 'activeToggle' : ''}`} type="button" onClick={() => backgroundInputRef.current?.click()} title={t('tree.background')} aria-label={t('tree.changeBackground')}>
-            <ImageIcon size={18} strokeWidth={2} aria-hidden="true" />
-          </button>
+          <CanvasIconButton Icon={ImageIcon} active={Boolean(canvasBackground)} label={t('tree.changeBackground')} onClick={() => backgroundInputRef.current?.click()} />
           {canvasBackground && <button className="textButton compactTextButton" type="button" onClick={() => setCanvasBackground('')}>{t('actions.remove')}</button>}
           <input ref={backgroundInputRef} hidden type="file" accept="image/*" onChange={loadCanvasBackground} />
-          <button className="iconButton" type="button" onClick={exportCurrentCanvasPdf} title={t('actions.exportPdf')} aria-label={t('actions.exportPdf')}>
-            <FileDown size={18} strokeWidth={2} aria-hidden="true" />
-          </button>
+          <CanvasIconButton Icon={FileDown} label={t('actions.exportPdf')} onClick={exportCurrentCanvasPdf} />
         </div>
         <div className="treePanLayer" style={{ transform: `translate(${viewport.x + (temporalScale && layout.temporal ? TEMPORAL_AXIS_WIDTH + TEMPORAL_AXIS_GAP : 0)}px, ${viewport.y}px) scale(${viewport.scale})` }}>
           <div className="treeContent" style={{ width: layout.width, height: layout.height, '--tree-card-width': `${cardMetrics.width}px`, '--tree-card-height': `${cardMetrics.height}px` }}>

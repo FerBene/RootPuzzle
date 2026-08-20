@@ -873,7 +873,7 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 }
 
 /* Tree-first layout */
-.section-tree.mainArea { padding-top: 20px; }
+.section-tree.mainArea { padding: 10px 14px 18px; }
 .section-tree .topbar { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; margin-bottom: 12px; }
 .section-tree .topbarTitle { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .section-tree .topbarTitle .eyebrow { margin: 0; max-width: none; white-space: nowrap; }
@@ -901,6 +901,71 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .section-tree .zoomControls span { min-width: 38px; }
 .section-tree .treeCanvas { flex: 1 1 auto; height: auto; min-height: 0; }
 .section-tree .treeHint { padding: 7px 12px 9px; }
+
+/* The canvas owns its contextual controls; keep the external toolbar out of the way. */
+.section-tree .treeToolbar { display: none !important; }
+.section-tree .canvasTopRightControls { display: grid !important; }
+.section-tree .canvasBottomLeftControls { display: flex !important; }
+.section-tree .canvasBottomControls { display: flex !important; }
+
+/* Keep the canvas controls visible even in the maximized workspace. */
+.section-tree .treeToolbar { display: none !important; }
+.section-tree .canvasTopRightControls { display: grid !important; }
+.section-tree .canvasBottomLeftControls,
+.section-tree .canvasBottomControls { display: flex !important; }
+
+/* Canvas control system: one surface, one touch target, predictable states. */
+.section-tree .canvasViewportControls,
+.section-tree .canvasBottomControls,
+.section-tree .visibilityControl {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.section-tree .canvasViewportControls { gap: 4px; padding: 4px; border-radius: 12px; }
+.section-tree .canvasZoomControls { gap: 2px; padding: 0; border: 0; background: transparent; box-shadow: none; }
+.section-tree .canvasIconButton,
+.section-tree .visibilityToggle,
+.section-tree .visibilityOption {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--muted);
+  background: transparent;
+  box-shadow: none;
+}
+.section-tree .canvasIconButton:hover,
+.section-tree .canvasIconButton:focus-visible,
+.section-tree .visibilityToggle:hover,
+.section-tree .visibilityToggle:focus-visible,
+.section-tree .visibilityOption:hover,
+.section-tree .visibilityOption:focus-visible {
+  border-color: var(--line);
+  color: var(--accent);
+  background: var(--accent-2);
+  transform: none;
+}
+.section-tree .canvasIconButton.activeToggle,
+.section-tree .visibilityToggle.activeToggle,
+.section-tree .visibilityOption.on {
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+  color: var(--accent);
+  background: var(--accent-2);
+}
+.section-tree .canvasBottomControls { gap: 2px; padding: 4px; border-radius: 12px; }
+.section-tree .canvasBottomControls .compactTextButton { min-height: 40px; padding-inline: 8px; }
+.section-tree .visibilityControl { gap: 3px; padding: 4px; border-radius: 14px; }
+.section-tree .visibilityOptions { gap: 2px; }
+.section-tree .achievementSummaryToggle { min-height: 40px; border-color: var(--line); background: var(--surface); box-shadow: var(--shadow); }
+.section-tree .canvasNewPieceButton { min-height: 44px; border-radius: 10px; }
+.section-tree .canvasIconButton:focus-visible,
+.section-tree .visibilityToggle:focus-visible,
+.section-tree .visibilityOption:focus-visible,
+.section-tree .achievementSummaryToggle:focus-visible,
+.section-tree .canvasNewPieceButton:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 
 @media (max-width: 1050px) {
   .section-tree.mainArea { padding-top: 12px; }
@@ -948,6 +1013,8 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
   .section-tree .zoomControls .iconButton { width: 34px; height: 34px; min-width: 34px; }
   .section-tree .treeCanvas { height: calc(100dvh - 180px); min-height: 0; padding: 0; }
   .section-tree .treeHint { display: none; }
+  .section-tree .treeWorkspace.toolsCollapsed .treeToolbar { display: flex; }
+  .section-tree .canvasToolsToggle { display: inline-flex !important; }
 }
 
 @media (max-width: 920px) and (orientation: landscape), (max-width: 760px) and (max-height: 520px) {
@@ -2598,4 +2665,10 @@ input:focus, select:focus, textarea:focus { border-color: #c77a4e; box-shadow: 0
   .achievementBadge-timeline { flex-basis: 48px; }
   .recentItem > .achievementBadge-recent { flex-basis: 60px; }
 }
+
+/* The canvas is the single home for tree controls. */
+.section-tree .treeToolbar { display: none !important; }
+.section-tree .canvasTopRightControls { display: grid !important; }
+.section-tree .canvasBottomLeftControls,
+.section-tree .canvasBottomControls { display: flex !important; }
 
