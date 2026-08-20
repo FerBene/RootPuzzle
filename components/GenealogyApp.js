@@ -2755,11 +2755,43 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
           <SlidersHorizontal size={16} strokeWidth={2} aria-hidden="true" />
           <span>{toolsOpen ? t('actions.hideTools') : t('actions.tools')}</span>
         </button>
-        <div className="treeScope">
-          <label>
-            <span>{t('tree.branch')}</span>
-            <select value={person.id} onChange={(e) => { setShowAllPeople(false); setFocusedId(e.target.value); }}>{[...db.people].sort(comparePeopleByName).map((p) => <option key={p.id} value={p.id}>{displayName(p)}</option>)}</select>
-          </label>
+        <div className="treeControls" id="treeCanvasTools">
+          <button className={`secondaryButton iconTextButton ${showAllPeople ? 'activeToggle' : ''}`} type="button" onClick={() => setShowAllPeople((value) => !value)}>
+            <UsersRound size={16} strokeWidth={2} aria-hidden="true" />
+            <span>{showAllPeople ? t('actions.focusedBranch') : t('actions.allPieces')}</span>
+          </button>
+          {!showAllPeople && <div className="treeFilterChecks" aria-label={t('tree.filters')}>
+            <label data-short="Asc."><input type="checkbox" checked={showAncestors} onChange={(event) => setShowAncestors(event.target.checked)} /> {t('tree.ancestry')}</label>
+            <label data-short="Desc."><input type="checkbox" checked={showDescendants} onChange={(event) => setShowDescendants(event.target.checked)} /> {t('tree.descendants')}</label>
+            <label data-short="Gen."><input type="checkbox" checked={showGeneration} onChange={(event) => setShowGeneration(event.target.checked)} /> {t('tree.generation')}</label>
+          </div>}
+          <div className="zoomControls" aria-label={t('tree.tools')}>
+            <button className={`secondaryButton iconTextButton ${temporalScale ? 'activeToggle' : ''}`} type="button" onClick={() => setTemporalScale((value) => !value)} title={t('tree.temporalScale')}>
+              <Hourglass size={16} strokeWidth={2} aria-hidden="true" />
+              <span>{t('tree.scale')}</span>
+            </button>
+            <button className={`iconButton ${isCanvasMaximized ? 'activeToggle' : ''}`} type="button" onClick={() => setCanvasMaximized((value) => !value)} title={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')} aria-label={isCanvasMaximized ? t('tree.restore') : t('tree.maximize')}>
+              {isCanvasMaximized ? <Minimize2 size={18} strokeWidth={2} aria-hidden="true" /> : <Maximize2 size={18} strokeWidth={2} aria-hidden="true" />}
+            </button>
+            <button className={`iconButton ${canvasBackground ? 'activeToggle' : ''}`} type="button" onClick={() => backgroundInputRef.current?.click()} title={t('tree.background')} aria-label={t('tree.changeBackground')}>
+              <ImageIcon size={18} strokeWidth={2} aria-hidden="true" />
+            </button>
+            {canvasBackground && <button className="textButton compactTextButton" type="button" onClick={() => setCanvasBackground('')}>{t('actions.remove')}</button>}
+            <input ref={backgroundInputRef} hidden type="file" accept="image/*" onChange={loadCanvasBackground} />
+            <button className="iconButton" type="button" onClick={exportCurrentCanvasPdf} title={t('actions.exportPdf')} aria-label={t('actions.exportPdf')}>
+              <FileDown size={18} strokeWidth={2} aria-hidden="true" />
+            </button>
+            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale - 0.12)} title={t('tree.zoomOut')} aria-label={t('tree.zoomOut')}>
+              <ZoomOut size={18} strokeWidth={2} aria-hidden="true" />
+            </button>
+            <span>{Math.round(viewport.scale * 100)}%</span>
+            <button className="iconButton" type="button" onClick={() => setZoom(viewport.scale + 0.12)} title={t('tree.zoomIn')} aria-label={t('tree.zoomIn')}>
+              <ZoomIn size={18} strokeWidth={2} aria-hidden="true" />
+            </button>
+            <button className="iconButton" type="button" onClick={fitActiveCards} title={t('tree.center')} aria-label={t('tree.center')}>
+              <LocateFixed size={18} strokeWidth={2} aria-hidden="true" />
+            </button>
+        </div>
         </div>
       </div>
       <div ref={canvasRef} className={`treeCanvas ${temporalScale ? 'temporalCanvas' : ''} ${canvasBackground ? 'hasCanvasBackground' : ''}`} style={canvasBackground ? { '--canvas-bg-image': `url(${canvasBackground})` } : undefined} onWheel={(event) => { event.preventDefault(); setZoom(viewport.scale + (event.deltaY > 0 ? -0.08 : 0.08)); }} onPointerDownCapture={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onClickCapture={(event) => { if (suppressCardClickRef.current > Date.now() && event.target.closest?.('.treeCard')) { event.preventDefault(); event.stopPropagation(); } }}>

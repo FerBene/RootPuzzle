@@ -161,6 +161,44 @@ Crear una matriz de pruebas SQL con dos usuarios, dos árboles y los tres roles:
 - una invitación expirada o usada no puede aceptarse;
 - una URL pública solo devuelve campos permitidos y nunca habilita escritura.
 
+## Antecedente: borrado lógico de árboles y RPC `soft_delete_tree`
+
+Si el owner puede ver el botón **Eliminar árbol**, pero la llamada a
+`/rest/v1/rpc/soft_delete_tree` falla, revisar el problema en este orden:
+
+1. Confirmar que `soft_delete_tree(uuid)` existe en `pg_proc` y que
+   `authenticated` tiene permiso `execute`.
+2. Confirmar en `tree_memberships` que el usuario tenga `role = 'owner'` para
+   el `tree_id`. En el SQL Editor, `auth.uid()` no representa la sesión del
+   navegador; para diagnosticar se debe consultar la tabla sin ese filtro o
+   simular el claim JWT dentro de una transacción reversible.
+3. Ejecutar `notify pgrst, 'reload schema';` después de crear o reemplazar el
+   RPC. Un `404` desde `/rpc/soft_delete_tree` indica que PostgREST no lo
+   encuentra en su schema cache; no implica un problema de RLS del owner.
+4. Si el endpoint pasa a responder `400`, revisar el cuerpo de la respuesta y
+   la definición SQL. Los nombres de salida de `returns table` (`id`,
+   `is_deleted`, `deleted_at`) pueden colisionar con nombres de columnas dentro
+   del `update`. Las columnas deben calificarse mediante un alias:
+
+```sql
+update public.trees as target
+set
+  is_deleted = true,
+  deleted_at = coalesce(target.deleted_at, now()),
+  deleted_by = auth.uid(),
+  updated_at = now()
+where target.id = target_tree_id
+  and target.is_deleted = false
+returning target.* into deleted_tree;
+```
+
+La función vigente debe usar una única firma canónica (`target_tree_id` o
+`tree_id`), tener `security definer` con `search_path` fijo, verificar
+`public.is_tree_owner(target_tree_id)`, otorgar `execute` a `authenticated` y
+recargar PostgREST después de la definición. En el incidente de agosto de
+2026, la membresía owner era correcta y el problema se resolvió recreando el
+RPC con referencias calificadas y ejecutando el reload del schema.
+
 ## Orden de implementación sugerido
 
 1. Migración de esquema y funciones RLS.

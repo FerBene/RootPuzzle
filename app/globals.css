@@ -885,7 +885,8 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .section-tree .topbarStats .stat strong { font-size: 16px; }
 .section-tree .topbarStats .stat span { font-size: 11px; }
 .section-tree .topbarActions .primaryButton { padding: 9px 12px; }
-.section-tree .treeWorkspace { min-height: calc(100vh - 112px); overflow: hidden; }
+.section-tree.mainArea { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+.section-tree .treeWorkspace { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
 .section-tree .treeToolbar { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, auto); gap: 12px; align-items: center; padding: 10px 12px; }
 .treeScope { display: grid; grid-template-columns: minmax(220px, 1fr) auto; gap: 8px; align-items: end; min-width: 0; }
 .treeScope label { display: grid; gap: 4px; min-width: 0; color: var(--muted); font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
@@ -898,7 +899,7 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .section-tree .zoomControls .secondaryButton { padding: 8px 10px; }
 .section-tree .zoomControls .iconButton { width: 34px; height: 34px; }
 .section-tree .zoomControls span { min-width: 38px; }
-.section-tree .treeCanvas { height: calc(100vh - 190px); min-height: 520px; }
+.section-tree .treeCanvas { flex: 1 1 auto; height: auto; min-height: 0; }
 .section-tree .treeHint { padding: 7px 12px 9px; }
 
 @media (max-width: 1050px) {
@@ -1897,6 +1898,7 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
   box-shadow: 0 16px 30px rgba(57, 43, 31, .15);
 }
 .treeNode.treeCard.focal { transform: scale(1.045); box-shadow: 0 18px 34px color-mix(in srgb, var(--card-accent) 22%, transparent); }
+.treeNode.treeCard.focal { outline: 2px solid color-mix(in srgb, var(--card-accent) 38%, transparent); outline-offset: 5px; }
 .treeCard.central { --card-accent: #e45d2c; --card-wash: #ffd8ca; }
 .treeCard.cardTone-mother { --card-accent: #d8676d; --card-wash: #f8d9dc; }
 .treeCard.cardTone-father { --card-accent: #b27628; --card-wash: #efdfcc; }
