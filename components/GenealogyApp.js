@@ -7,7 +7,7 @@ import { exportGedcom, importGedcom } from '@/lib/gedcom';
 import { placeLabel, searchPlaces } from '@/lib/geocoding';
 import { acceptTreeInvitation, createRemoteTree, createTreeInvitation, deleteRemoteTree, getRemoteTree, listAccessibleTrees, listTreeInvitations, remoteTreeStorageKey, renameRemoteTree, removePersonImage, revokeTreeInvitation, saveRemoteTree, uploadPersonImage } from '@/lib/supabaseStore';
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
-import { AlertTriangle, ArrowDownFromLine, ArrowUpFromLine, Award, BookOpen, CalendarDays, Check, ChevronDown, ChevronsLeft, ChevronsRight, Clock3, Compass, Copy, Database, Eye, EyeOff, FileDown, GitBranch, Globe2, Hourglass, Image as ImageIcon, Layers3, LocateFixed, LockKeyhole, Maximize2, Minimize2, Moon, MoreHorizontal, Puzzle, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sprout, Sun, Trash2, TreePine, UserCircle, UserPlus, UsersRound, Waypoints, ZoomIn, ZoomOut } from 'lucide-react';
+import { AlertTriangle, ArrowDownFromLine, ArrowUpFromLine, Award, BookOpen, CalendarDays, Check, ChevronDown, ChevronsLeft, ChevronsRight, Clock3, Compass, Copy, Database, Eye, EyeOff, FileDown, GitBranch, Globe2, Hourglass, Image as ImageIcon, Layers3, LocateFixed, LockKeyhole, Maximize2, Minimize2, Moon, MoreHorizontal, Pencil, Puzzle, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sprout, Sun, Trash2, TreePine, UserCircle, UserPlus, UsersRound, Waypoints, ZoomIn, ZoomOut } from 'lucide-react';
 import FamilyMap from '@/components/FamilyMap';
 
 const iconProps = { size: 20, strokeWidth: 1.9, 'aria-hidden': true };
@@ -2033,6 +2033,25 @@ const datePartsFromLegacy = (value) => {
 
 const birthDateFromParts = (year, month, day) => year ? `${year}${month ? `-${String(month).padStart(2, '0')}` : ''}${day ? `-${String(day).padStart(2, '0')}` : ''}` : '';
 
+const formatPersonDate = (person, prefix, language = 'es') => {
+  const legacy = datePartsFromLegacy(person?.[`${prefix}Date`]);
+  const year = person?.[`${prefix}Year`] ?? legacy.birthYear;
+  const month = person?.[`${prefix}Month`] ?? legacy.birthMonth;
+  const day = person?.[`${prefix}Day`] ?? legacy.birthDay;
+  if (!year) return '';
+  const monthNames = language === 'en'
+    ? ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+    : ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const value = day && month
+    ? (language === 'en' ? `${monthNames[month - 1]} ${day}, ${year}` : `${day} de ${monthNames[month - 1]} de ${year}`)
+    : month
+      ? (language === 'en' ? `${monthNames[month - 1]} ${year}` : `${monthNames[month - 1]} de ${year}`)
+      : String(year);
+  return person?.[`${prefix}DateCertainty`] === 'approx' || person?.[`${prefix}DateCertainty`] === undefined && person?.[`${prefix}Certainty`] === 'approx'
+    ? (language === 'en' ? `Approx. ${value}` : `Aprox. ${value}`)
+    : value;
+};
+
 function PlaceSearch({ value, places = [], onChange }) {
   const { language } = useI18n();
   const [query, setQuery] = useState(value?.name || '');
@@ -2107,7 +2126,7 @@ function LifePlaceField({ t, title, places, value, onChange, certainty, setCerta
   </fieldset>;
 }
 
-function PersonForm({ initial, people = [], places = [], showRelation = false, onCancel, onSave }) {
+function PersonForm({ initial, people = [], places = [], sources = [], citations = [], showRelation = false, relationContent = null, onCancel, onSave }) {
   const { t } = useI18n();
   const [form, setForm] = useState(() => {
     const legacy = datePartsFromLegacy(initial?.birthDate);
@@ -2174,54 +2193,54 @@ function PersonForm({ initial, people = [], places = [], showRelation = false, o
     }
   };
   return (
-    <form onSubmit={submit} className="formStack">
-      <div className="formIntro"><strong>{initial?.id ? 'Actualizá los datos de esta persona' : 'Empezá con los datos que conozcas'}</strong><span>Los campos restantes pueden completarse más adelante desde la ficha.</span></div>
-      <div className="formGrid two">
-        <label className={errors.identity ? 'hasError' : ''}>{t('forms.names')}<input value={form.givenNames} onChange={set('givenNames')} autoFocus aria-invalid={Boolean(errors.identity)} /></label>
-        <label className={errors.identity ? 'hasError' : ''}>{t('forms.surnames')}<input value={form.surnames} onChange={set('surnames')} aria-invalid={Boolean(errors.identity)} /></label>
-      </div>
-      {errors.identity && <p className="formError" role="alert">{errors.identity}</p>}
-      <div className="lifeSection">
-        <LifeDateField t={t} title={t('forms.birthDateLabel')} year={form.birthYear} month={form.birthMonth} day={form.birthDay} setPart={(part) => set(`birth${part[0].toUpperCase()}${part.slice(1)}`)} certainty={form.birthDateCertainty} setCertainty={(value) => setForm((prev) => ({ ...prev, birthDateCertainty: value }))} error={errors.birthDate} idPrefix="birth-date" />
-        <LifePlaceField t={t} title={t('forms.birthPlace')} places={places} value={places.find((place) => place.id === form.birthPlaceId) || (form.birthPlace && { name: form.birthPlace, id: form.birthPlaceId, hierarchy: form._placeHierarchy })} certainty={form.birthPlaceCertainty} setCertainty={(value) => setForm((prev) => ({ ...prev, birthPlaceCertainty: value }))} onChange={(selection) => setForm((prev) => selection ? ({ ...prev, birthPlace: selection.place.name, birthPlaceId: selection.place.id, birthPlacePrecision: selection.precision, _placeHierarchy: selection.hierarchy }) : ({ ...prev, birthPlace: '', birthPlaceId: null, birthPlacePrecision: null, _placeHierarchy: [] }))} />
-      </div>
-      <div className="formGrid two">
-        {showRelation ? (
-          relationOptions.length ? <div className="relationEditor"><div className="relationPickerGroup"><label>{t('forms.relationship')}<select value={relationKind} onChange={(event) => { setRelationKind(event.target.value); setErrors((prev) => ({ ...prev, relationPersonId: '' })); }}><option value="">{t('forms.noLinkYet')}</option><option value="parent_of">{t('forms.parentOf')}</option><option value="child_of">{t('forms.childOf')}</option><option value="partner_of">{t('forms.partnerOf')}</option></select></label>{relationKind && <PersonPicker people={relationOptions} onPick={(id) => { setRelations((prev) => prev.some((relation) => relation.kind === relationKind && relation.personId === id) ? prev : [...prev, { kind: relationKind, personId: id }]); setRelationKind(''); setErrors((prev) => ({ ...prev, relationPersonId: '' })); }} label="Agregar" />}</div>{relationKind && <p className="fieldError">Elegí una persona y presioná Agregar.</p>}{relations.length > 0 && <div className="relationDraftList" aria-label="Parentescos a agregar">{relations.map((relation, index) => { const linkedPerson = relationOptions.find((person) => person.id === relation.personId); const label = relation.kind === 'parent_of' ? t('forms.parentOf') : relation.kind === 'child_of' ? t('forms.childOf') : t('forms.partnerOf'); return <span className="relationDraftChip" key={`${relation.kind}-${relation.personId}-${index}`}><b>{label}</b><span>{displayName(linkedPerson)}</span><button type="button" onClick={() => setRelations((prev) => prev.filter((_, relationIndex) => relationIndex !== index))} aria-label="Quitar parentesco">×</button></span>; })}</div>}</div> : <label>{t('forms.relationship')}<input disabled placeholder={t('forms.noPiecesToLink')} /></label>
-        ) : (
-          <label>{t('forms.nickname')}<input value={form.nickname} onChange={set('nickname')} /></label>
-        )}
-      </div>
-      <details className="moreData">
-        <summary>{t('forms.moreData')}</summary>
-        <div className="moreDataBody">
-          <div className="profileImageField">
-            <PersonAvatar person={form} large />
-            <div>
-              <span>{t('forms.profileImage')}</span>
-              <div className="buttonRow compact">
-                <button type="button" className="secondaryButton" onClick={() => imageInputRef.current?.click()}>{t('actions.uploadImage')}</button>
-                {form.profileImage && <button type="button" className="textButton" onClick={() => setForm((prev) => ({ ...prev, profileImage: '', profileImagePath: '', _profileImageFile: null }))}>{t('actions.remove')}</button>}
-              </div>
-              <input ref={imageInputRef} hidden type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={setProfileImage} />
-              <small>JPG, PNG o WebP · máximo 10 MB de origen · se guarda como WebP menor a 100 KB</small>
-            </div>
+    <form onSubmit={submit} className="formStack personForm">
+      <div className="personFormAvatar profileImageField">
+        <PersonAvatar person={form} large />
+        <div>
+          <span>{t('forms.profileImage')}</span>
+          <div className="buttonRow compact">
+            <button type="button" className="secondaryButton" onClick={() => imageInputRef.current?.click()}>{t('actions.uploadImage')}</button>
+            {form.profileImage && <button type="button" className="textButton" onClick={() => setForm((prev) => ({ ...prev, profileImage: '', profileImagePath: '', _profileImageFile: null }))}>{t('actions.remove')}</button>}
           </div>
-          {errors.profileImage && <p className="formError" role="alert">{errors.profileImage}</p>}
-          {showRelation && <label>{t('forms.nickname')}<input value={form.nickname} onChange={set('nickname')} /></label>}
-          <label>{t('forms.email')}<input type="email" value={form.email} onChange={set('email')} placeholder={t('placeholders.email')} /></label>
-          <div className="formGrid two">
-            <label>{t('forms.gender')}<select value={form.sex} onChange={set('sex')}><option value="">{t('forms.unspecified')}</option><option value="M">{t('forms.male')}</option><option value="F">{t('forms.female')}</option><option value="X">{t('forms.otherGender')}</option></select></label>
-            <span />
-          </div>
-          <div className="lifeSection">
-            <LifeDateField t={t} title={t('forms.deathDateLabel')} year={form.deathYear} month={form.deathMonth} day={form.deathDay} setPart={(part) => set(`death${part[0].toUpperCase()}${part.slice(1)}`)} certainty={form.deathDateCertainty} setCertainty={(value) => setForm((prev) => ({ ...prev, deathDateCertainty: value }))} error={errors.deathDate} idPrefix="death-date" />
-            <LifePlaceField t={t} title={t('forms.deathPlace')} places={places} value={places.find((place) => place.id === form.deathPlaceId) || (form.deathPlace && { name: form.deathPlace, id: form.deathPlaceId, hierarchy: form._deathPlaceHierarchy })} certainty={form.deathPlaceCertainty} setCertainty={(value) => setForm((prev) => ({ ...prev, deathPlaceCertainty: value }))} onChange={(selection) => setForm((prev) => selection ? ({ ...prev, deathPlace: selection.place.name, deathPlaceId: selection.place.id, deathPlacePrecision: selection.precision, _deathPlaceHierarchy: selection.hierarchy }) : ({ ...prev, deathPlace: '', deathPlaceId: null, deathPlacePrecision: null, _deathPlaceHierarchy: [] }))} />
-          </div>
-          <label>{t('forms.occupation')}<input value={form.occupation} onChange={set('occupation')} /></label>
-          <label>{t('forms.notes')}<textarea rows="5" value={form.notes} onChange={set('notes')} placeholder={t('placeholders.notes')} /></label>
+          <input ref={imageInputRef} hidden type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={setProfileImage} />
+          <small>JPG, PNG o WebP · máximo 10 MB de origen · se guarda como WebP menor a 100 KB</small>
         </div>
-      </details>
+      </div>
+      {errors.profileImage && <p className="formError" role="alert">{errors.profileImage}</p>}
+      <section className="personFormSection">
+        <h3 className="personFormSectionTitle">Identidad</h3>
+        <div className="formGrid two">
+          <label className={errors.identity ? 'hasError' : ''}>{t('forms.names')}<input value={form.givenNames} onChange={set('givenNames')} autoFocus aria-invalid={Boolean(errors.identity)} /></label>
+          <label className={errors.identity ? 'hasError' : ''}>{t('forms.surnames')}<input value={form.surnames} onChange={set('surnames')} aria-invalid={Boolean(errors.identity)} /></label>
+        </div>
+        {errors.identity && <p className="formError" role="alert">{errors.identity}</p>}
+        <label>{t('forms.nickname')}<input value={form.nickname} onChange={set('nickname')} /></label>
+      </section>
+      <section className="personFormSection">
+        <h3 className="personFormSectionTitle">Nacimiento</h3>
+        <div className="lifeSection">
+          <LifeDateField t={t} title={t('forms.birthDateLabel')} year={form.birthYear} month={form.birthMonth} day={form.birthDay} setPart={(part) => set(`birth${part[0].toUpperCase()}${part.slice(1)}`)} certainty={form.birthDateCertainty} setCertainty={(value) => setForm((prev) => ({ ...prev, birthDateCertainty: value }))} error={errors.birthDate} idPrefix="birth-date" />
+          <LifePlaceField t={t} title={t('forms.birthPlace')} places={places} value={places.find((place) => place.id === form.birthPlaceId) || (form.birthPlace && { name: form.birthPlace, id: form.birthPlaceId, hierarchy: form._placeHierarchy })} certainty={form.birthPlaceCertainty} setCertainty={(value) => setForm((prev) => ({ ...prev, birthPlaceCertainty: value }))} onChange={(selection) => setForm((prev) => selection ? ({ ...prev, birthPlace: selection.place.name, birthPlaceId: selection.place.id, birthPlacePrecision: selection.precision, _placeHierarchy: selection.hierarchy }) : ({ ...prev, birthPlace: '', birthPlaceId: null, birthPlacePrecision: null, _placeHierarchy: [] }))} />
+        </div>
+      </section>
+      <section className="personFormSection">
+        <h3 className="personFormSectionTitle">Fallecimiento</h3>
+        <div className="lifeSection">
+          <LifeDateField t={t} title={t('forms.deathDateLabel')} year={form.deathYear} month={form.deathMonth} day={form.deathDay} setPart={(part) => set(`death${part[0].toUpperCase()}${part.slice(1)}`)} certainty={form.deathDateCertainty} setCertainty={(value) => setForm((prev) => ({ ...prev, deathDateCertainty: value }))} error={errors.deathDate} idPrefix="death-date" />
+          <LifePlaceField t={t} title={t('forms.deathPlace')} places={places} value={places.find((place) => place.id === form.deathPlaceId) || (form.deathPlace && { name: form.deathPlace, id: form.deathPlaceId, hierarchy: form._deathPlaceHierarchy })} certainty={form.deathPlaceCertainty} setCertainty={(value) => setForm((prev) => ({ ...prev, deathPlaceCertainty: value }))} onChange={(selection) => setForm((prev) => selection ? ({ ...prev, deathPlace: selection.place.name, deathPlaceId: selection.place.id, deathPlacePrecision: selection.precision, _deathPlaceHierarchy: selection.hierarchy }) : ({ ...prev, deathPlace: '', deathPlaceId: null, deathPlacePrecision: null, _deathPlaceHierarchy: [] }))} />
+        </div>
+      </section>
+      <section className="personFormSection">
+        <h3 className="personFormSectionTitle">Datos adicionales</h3>
+        <div className="formGrid two">
+          <label>{t('forms.occupation')}<input value={form.occupation} onChange={set('occupation')} /></label>
+          <label>{t('forms.email')}<input type="email" value={form.email} onChange={set('email')} placeholder={t('placeholders.email')} /></label>
+        </div>
+        <label>{t('forms.gender')}<select value={form.sex} onChange={set('sex')}><option value="">{t('forms.unspecified')}</option><option value="M">{t('forms.male')}</option><option value="F">{t('forms.female')}</option><option value="X">{t('forms.otherGender')}</option></select></label>
+      </section>
+      {showRelation ? <section className="personFormSection"><h3 className="personFormSectionTitle">{t('drawer.family')}</h3>{relationOptions.length ? <div className="relationEditor"><div className="relationPickerGroup"><label>{t('forms.relationship')}<select value={relationKind} onChange={(event) => { setRelationKind(event.target.value); setErrors((prev) => ({ ...prev, relationPersonId: '' })); }}><option value="">{t('forms.noLinkYet')}</option><option value="parent_of">{t('forms.parentOf')}</option><option value="child_of">{t('forms.childOf')}</option><option value="partner_of">{t('forms.partnerOf')}</option></select></label>{relationKind && <PersonPicker people={relationOptions} onPick={(id) => { setRelations((prev) => prev.some((relation) => relation.kind === relationKind && relation.personId === id) ? prev : [...prev, { kind: relationKind, personId: id }]); setRelationKind(''); setErrors((prev) => ({ ...prev, relationPersonId: '' })); }} label="Agregar" />}</div>{relationKind && <p className="fieldError">Elegí una persona y presioná Agregar.</p>}{relations.length > 0 && <div className="relationDraftList" aria-label="Parentescos a agregar">{relations.map((relation, index) => { const linkedPerson = relationOptions.find((person) => person.id === relation.personId); const label = relation.kind === 'parent_of' ? t('forms.parentOf') : relation.kind === 'child_of' ? t('forms.childOf') : t('forms.partnerOf'); return <span className="relationDraftChip" key={`${relation.kind}-${relation.personId}-${index}`}><b>{label}</b><span>{displayName(linkedPerson)}</span><button type="button" onClick={() => setRelations((prev) => prev.filter((_, relationIndex) => relationIndex !== index))} aria-label="Quitar parentesco">×</button></span>; })}</div>}</div> : <p className="muted small">{t('forms.noPiecesToLink')}</p>}</section> : relationContent}
+      <section className="personFormSection"><h3 className="personFormSectionTitle">{t('forms.notes')}</h3><textarea rows="5" value={form.notes} onChange={set('notes')} placeholder={t('placeholders.notes')} /></section>
+      <PersonSourcesSection sources={sources} citations={citations} personId={initial?.id} />
       {errors.submit && <p className="formError" role="alert">{errors.submit}</p>}
       <div className="modalActions"><button type="button" className="secondaryButton" onClick={onCancel} disabled={saving}>{t('actions.cancel')}</button><button className="primaryButton" disabled={saving}>{saving ? 'Guardando…' : initial?.id ? t('actions.saveChanges') : t('actions.createPiece')}</button></div>
       {cropSource && <ImageCropper source={cropSource} onClose={() => setCropSource(null)} onConfirm={applyProfileImage} />}
@@ -2260,6 +2279,30 @@ function PersonPicker({ people, excludeId, onPick, label }) {
   );
 }
 
+function PersonReadOnlyField({ label, value, children }) {
+  return <div className="personReadOnlyField"><dt>{label}</dt><dd>{children || value || '—'}</dd></div>;
+}
+
+function PersonReadOnlyLifeSection({ person, places, prefix, title, dateLabel, placeLabel, language }) {
+  const placeId = person?.[`${prefix}PlaceId`];
+  const placeValue = places.find((place) => place.id === placeId)?.name || person?.[`${prefix}Place`] || '';
+  const dateValue = formatPersonDate(person, prefix, language);
+  const dateCertainty = person?.[`${prefix}DateCertainty`] === 'approx';
+  const placeCertainty = person?.[`${prefix}PlaceCertainty`] === 'approx';
+  return <section className="personFormSection personReadOnlyLife"><h3 className="personFormSectionTitle">{title}</h3><div className="personReadOnlyLifeGrid"><PersonReadOnlyField label={dateLabel} value={dateValue}>{dateValue || '—'}{dateCertainty && <small>Aprox.</small>}</PersonReadOnlyField><PersonReadOnlyField label={placeLabel} value={placeValue}>{placeValue || '—'}{placeValue && placeCertainty && <small>Aprox.</small>}</PersonReadOnlyField></div></section>;
+}
+
+function PersonSourcesSection({ sources = [], citations = [], personId }) {
+  const { t } = useI18n();
+  const linked = citations.filter((citation) => citation.personId === personId).map((citation) => ({ citation, source: sources.find((source) => source.id === citation.sourceId) })).filter(({ source }) => source);
+  return <section className="personFormSection personSourcesSection"><h3 className="personFormSectionTitle">{t('sections.sources')}</h3>{linked.length ? <div className="personSourceList">{linked.map(({ citation, source }) => <article className="personSourceItem" key={citation.id || `${source.id}-${citation.quote || ''}`}><strong>{source.title}</strong>{source.repository && <span>{source.repository}</span>}{citation.quote && <p>{citation.quote}</p>}{citation.notes && <small>{citation.notes}</small>}</article>)}</div> : <p className="muted small">Sin fuentes asociadas.</p>}</section>;
+}
+
+function PersonRelationshipsSection({ db, person, rel, canEdit, onOpen, onLink, onRemoveRelation }) {
+  const { t } = useI18n();
+  return <section className="personFormSection personRelationshipsSection"><h3 className="personFormSectionTitle">{t('drawer.family')}</h3><RelationList title={t('drawer.parents')} kind="parent" people={[...rel.parents].sort(comparePeopleByDate)} onOpen={onOpen} onRemove={canEdit ? onRemoveRelation : undefined} />{canEdit && <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('parent', id)} label={t('drawer.addParent')} />}<RelationList title={t('drawer.partners')} kind="partner" people={[...rel.partners].sort(comparePeopleByDate)} onOpen={onOpen} onRemove={canEdit ? onRemoveRelation : undefined} />{canEdit && <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('partner', id)} label={t('drawer.addPartner')} />}<RelationList title={t('drawer.children')} kind="child" people={[...rel.children].sort(comparePeopleByDate)} onOpen={onOpen} onRemove={canEdit ? onRemoveRelation : undefined} />{canEdit && <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('child', id)} label={t('drawer.addChild')} />}</section>;
+}
+
 function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus, onLink, onDelete, onRemoveRelation, onAddEvent, canEdit = true }) {
   const { language, t } = useI18n();
 
@@ -2268,53 +2311,32 @@ function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus
   const rel = relativesFor(db, person.id);
   const events = db.events.filter((event) => event.personId === person.id);
   const timeline = makeLifeTimeline(person, events);
-  const life = [person.birthDate && `N. ${person.birthDate}`, person.deathDate && `F. ${person.deathDate}`].filter(Boolean).join(' · ');
   const openInTree = (id = person.id) => {
     onClose();
     onFocus(id);
   };
   const isEditing = mode === 'edit';
+  const relationContent = <PersonRelationshipsSection db={db} person={person} rel={rel} canEdit={canEdit} onOpen={openInTree} onLink={onLink} onRemoveRelation={onRemoveRelation} />;
 
   return (
     <Modal
-      title={isEditing ? t('drawer.editPerson') : t('drawer.personalFile')}
+      title={displayName(person)}
       onClose={onClose}
       className={`personModal ${personStatusClass(person)}`}
       backdropClassName="personModalBackdrop"
-      headerActions={<><span className={`modePill ${isEditing ? 'editing' : 'viewing'}`}>{isEditing ? t('drawer.editing') : t('drawer.view')}</span>{canEdit && <button className="iconButton dangerIcon" type="button" onClick={onDelete} title={t('drawer.deletePerson')} aria-label={t('drawer.deletePerson')}><Trash2 size={18} strokeWidth={2} aria-hidden="true" /></button>}</>}
+      headerActions={<>{isEditing && <span className="modePill editing">{t('drawer.editing')}</span>}{!isEditing && canEdit && <button className="iconButton" type="button" onClick={() => onModeChange('edit')} title="Editar persona" aria-label="Editar persona"><Pencil size={18} strokeWidth={2} aria-hidden="true" /></button>}{canEdit && <button className="iconButton dangerIcon" type="button" onClick={onDelete} title={t('drawer.deletePerson')} aria-label={t('drawer.deletePerson')}><Trash2 size={18} strokeWidth={2} aria-hidden="true" /></button>}</>}
     >
-      <div className="personModalIntro"><p className="eyebrow">{isEditing ? t('drawer.editMode') : t('drawer.viewMode')}</p><span>{displayName(person)}</span></div>
-
-        {isEditing ? <div className="drawerEdit">
-          <div className="modeNotice editing">{t('drawer.editingNotice')}</div>
-          <PersonForm initial={person} places={db.places} onCancel={() => onModeChange('view')} onSave={(form) => onSave(person.id, form)} />
-        </div> : <div className="drawerView">
-          <div className="modeNotice viewing">{t('drawer.viewingNotice')}</div>
-          <div className="detailTop">
-            <PersonAvatar person={person} large />
-            <div><p className="eyebrow">{t('drawer.person')}</p><h2>{displayName(person)}</h2><p className="muted">{life || t('drawer.datesToResearch')}</p><span className={`statusPill ${personStatusClass(person)}`}>{personStatusLabel(person, language)}</span></div>
-          </div>
-          <div className="detailActions">{canEdit && <button className="secondaryButton" onClick={() => onModeChange('edit')}>{t('actions.edit')}</button>}<button className="secondaryButton" onClick={() => openInTree()}>{t('actions.viewInTree')}</button></div>
-          <dl className="factList">
-            <div><dt>{t('facts.nickname')}</dt><dd>{displayField(person.nickname)}</dd></div>
-            <div><dt>{t('facts.email')}</dt><dd>{person.email ? <a href={`mailto:${person.email}`}>{person.email}</a> : '-'}</dd></div>
-            <div><dt>{t('facts.birth')}</dt><dd>{[person.birthDate, person.birthPlace].filter(Boolean).join(' · ') || '-'}</dd></div>
-            <div><dt>{t('facts.death')}</dt><dd>{[person.deathDate, person.deathPlace].filter(Boolean).join(' · ') || '-'}</dd></div>
-            <div><dt>{t('facts.occupation')}</dt><dd>{displayField(person.occupation)}</dd></div>
-            <div><dt>{t('facts.notes')}</dt><dd>{displayField(person.notes)}</dd></div>
-          </dl>
-          <section className="detailSection"><div className="sectionTitle"><h3>{t('drawer.family')}</h3></div>
-            <RelationList title={t('drawer.parents')} kind="parent" people={[...rel.parents].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={canEdit ? onRemoveRelation : undefined} />
-            {canEdit && <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('parent', id)} label={t('drawer.addParent')} />}
-            <RelationList title={t('drawer.partners')} kind="partner" people={[...rel.partners].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={canEdit ? onRemoveRelation : undefined} />
-            {canEdit && <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('partner', id)} label={t('drawer.addPartner')} />}
-            <RelationList title={t('drawer.children')} kind="child" people={[...rel.children].sort(comparePeopleByDate)} onOpen={openInTree} onRemove={canEdit ? onRemoveRelation : undefined} />
-            {canEdit && <PersonPicker people={db.people} excludeId={person.id} onPick={(id) => onLink('child', id)} label={t('drawer.addChild')} />}
-          </section>
-          <section className="detailSection"><div className="sectionTitle"><h3>{t('drawer.timeline')}</h3>{canEdit && <button className="textButton" onClick={onAddEvent}>{t('actions.add')}</button>}</div>
-            {timeline.length ? <ol className="timelineList">{timeline.map((event) => <li key={event.id} className="timelineItem"><span className="timelineDot" /><div><strong>{event.type}</strong><span>{[event.date, event.place].filter(Boolean).join(' · ') || t('tree.noDate')}</span>{event.description && <p>{event.description}</p>}</div></li>)}</ol> : <p className="muted small">{t('drawer.noEvents')}</p>}
-          </section>
-        </div>}
+      {isEditing ? <PersonForm initial={person} people={db.people} places={db.places} sources={db.sources} citations={db.citations} relationContent={relationContent} onCancel={() => onModeChange('view')} onSave={(form) => onSave(person.id, form)} /> : <div className="personReadOnly">
+        <div className="personReadOnlyAvatar"><PersonAvatar person={person} large /></div>
+        <section className="personFormSection personIdentityReadOnly"><h3 className="personFormSectionTitle">Identidad</h3><dl className="personReadOnlyGrid"><PersonReadOnlyField label={t('forms.names')} value={person.givenNames} /><PersonReadOnlyField label={t('forms.surnames')} value={person.surnames} /><PersonReadOnlyField label={t('forms.nickname')} value={person.nickname} /></dl><span className={`statusPill ${personStatusClass(person)}`}>{personStatusLabel(person, language)}</span></section>
+        <PersonReadOnlyLifeSection person={person} places={db.places} prefix="birth" title="Nacimiento" dateLabel={t('forms.birthDateLabel')} placeLabel={t('forms.birthPlace')} language={language} />
+        <PersonReadOnlyLifeSection person={person} places={db.places} prefix="death" title="Fallecimiento" dateLabel={t('forms.deathDateLabel')} placeLabel={t('forms.deathPlace')} language={language} />
+        <section className="personFormSection"><h3 className="personFormSectionTitle">Datos adicionales</h3><dl className="personReadOnlyGrid"><PersonReadOnlyField label={t('forms.occupation')} value={person.occupation} /><PersonReadOnlyField label={t('forms.email')}><>{person.email ? <a href={`mailto:${person.email}`}>{person.email}</a> : '—'}</></PersonReadOnlyField></dl></section>
+        {relationContent}
+        <section className="personFormSection"><h3 className="personFormSectionTitle">{t('forms.notes')}</h3><p className="personReadOnlyText">{person.notes || '—'}</p></section>
+        <PersonSourcesSection sources={db.sources} citations={db.citations} personId={person.id} />
+        <section className="personFormSection personTimelineSection"><div className="sectionTitle"><h3 className="personFormSectionTitle">{t('drawer.timeline')}</h3>{canEdit && <button type="button" className="textButton" onClick={onAddEvent}>{t('actions.add')}</button>}</div>{timeline.length ? <ol className="timelineList">{timeline.map((event) => <li key={event.id} className="timelineItem"><span className="timelineDot" /><div><strong>{event.type}</strong><span>{[event.date, event.place].filter(Boolean).join(' · ') || t('tree.noDate')}</span>{event.description && <p>{event.description}</p>}</div></li>)}</ol> : <p className="muted small">{t('drawer.noEvents')}</p>}</section>
+      </div>}
     </Modal>
   );
 }
@@ -2361,7 +2383,7 @@ function useTreeCardMetrics() {
   return metrics;
 }
 
-function TreeCard({ person, label, relationGroup = 'family', sourceCount = 0, cardVariant = 'landscape', onOpen, onFocus, focal = false, style }) {
+function TreeCard({ person, label, relationGroup = 'family', sourceCount = 0, cardVariant = 'landscape', onOpen, onFocus, focal = false, highlighted = false, onHoverStart, onHoverEnd, style }) {
   const { language, t } = useI18n();
   const clickTimerRef = useRef(null);
 
@@ -2395,7 +2417,7 @@ function TreeCard({ person, label, relationGroup = 'family', sourceCount = 0, ca
   };
 
   return (
-    <button className={`treeCard treeNode treeCard-${cardVariant} cardTone-${cardTone} ${hasImage ? 'hasImage' : 'isEmpty'} ${personStatusClass(person)} ${relationGroup} ${focal ? 'focal' : ''}`} style={style} onPointerDown={(e) => e.stopPropagation()} onClick={handleClick} onDoubleClick={handleDoubleClick} title={t('tree.cardTitle')}>
+    <button className={`treeCard treeNode treeCard-${cardVariant} cardTone-${cardTone} ${hasImage ? 'hasImage' : 'isEmpty'} ${personStatusClass(person)} ${relationGroup} ${focal ? 'focal' : ''} ${highlighted ? 'highlighted' : ''}`} style={style} onPointerDown={(e) => e.stopPropagation()} onPointerEnter={onHoverStart} onPointerLeave={onHoverEnd} onClick={handleClick} onDoubleClick={handleDoubleClick} title={t('tree.cardTitle')}>
       <span className={`lifeDot ${personStatusClass(person)}`} aria-label={personStatusLabel(person, language)} title={personStatusLabel(person, language)} />
       <span className="treeCardMenu" aria-hidden="true"><MoreHorizontal size={18} strokeWidth={2.4} /></span>
       <span className="treePortraitFrame">
@@ -2425,6 +2447,33 @@ function TreeCard({ person, label, relationGroup = 'family', sourceCount = 0, ca
 
 function TreeConnector({ type, style }) {
   return <div className={`treeConnector ${type}`} style={style} aria-hidden="true"><span /></div>;
+}
+
+function TreeEdge({ edge, highlighted = false, onHoverStart, onHoverEnd }) {
+  let d = edge.path;
+  if (!d && edge.kind === 'peer') {
+    d = `M ${edge.from.x} ${edge.from.y} C ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.from.y}, ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.to.y}, ${edge.to.x} ${edge.to.y}`;
+  }
+  if (!d) {
+    const middleY = edge.from.y + (edge.to.y - edge.from.y) / 2;
+    d = `M ${edge.from.x} ${edge.from.y} C ${edge.from.x} ${middleY}, ${edge.to.x} ${middleY}, ${edge.to.x} ${edge.to.y}`;
+  }
+  const lineClass = edge.path
+    ? 'familyLine temporalRoutedLine'
+    : edge.kind === 'peer'
+      ? 'peerLine'
+      : edge.kind === 'convergence'
+        ? 'convergenceLine'
+        : edge.kind === 'sibling'
+          ? 'siblingLine'
+          : 'familyLine';
+
+  return (
+    <g className={`treeEdge ${highlighted ? 'highlighted' : ''}`} onPointerDown={(event) => event.stopPropagation()} onPointerEnter={onHoverStart} onPointerLeave={onHoverEnd}>
+      <path className="treeEdgeHitArea" d={d} />
+      <path className={lineClass} d={d} />
+    </g>
+  );
 }
 
 function CanvasIconButton({ Icon, label, active = false, className = '', children, ...props }) {
@@ -2508,6 +2557,8 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
   const [isCanvasMaximized, setCanvasMaximized] = useState(false);
   const [canvasBackground, setCanvasBackground] = useState('');
   const [toolsOpen, setToolsOpen] = useState(false);
+  const [hoveredCardKey, setHoveredCardKey] = useState(null);
+  const [hoveredEdgeId, setHoveredEdgeId] = useState(null);
   const dragRef = useRef(null);
   const canvasRef = useRef(null);
   const suppressCardClickRef = useRef(0);
@@ -2522,6 +2573,43 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
     });
     return counts;
   }, [db.citations]);
+  const highlightedEdgeIds = useMemo(() => {
+    const activeIds = new Set();
+    if (!hoveredEdgeId) return activeIds;
+    const connectorKeys = new Set(layout.nodes.filter((node) => node.isConnector).map((node) => node.key));
+    const pendingKeys = [];
+    const initialEdge = layout.edges.find((edge) => edge.id === hoveredEdgeId);
+    if (!initialEdge) return activeIds;
+    activeIds.add(initialEdge.id);
+    [initialEdge.fromKey, initialEdge.toKey].forEach((key) => {
+      if (connectorKeys.has(key)) pendingKeys.push(key);
+    });
+
+    const visitedKeys = new Set();
+    while (pendingKeys.length) {
+      const connectorKey = pendingKeys.shift();
+      if (visitedKeys.has(connectorKey)) continue;
+      visitedKeys.add(connectorKey);
+      layout.edges.forEach((edge) => {
+        if (edge.fromKey !== connectorKey && edge.toKey !== connectorKey) return;
+        activeIds.add(edge.id);
+        [edge.fromKey, edge.toKey].forEach((key) => {
+          if (connectorKeys.has(key) && !visitedKeys.has(key)) pendingKeys.push(key);
+        });
+      });
+    }
+    return activeIds;
+  }, [hoveredEdgeId, layout.edges, layout.nodes]);
+  const highlightedNodeKeys = useMemo(() => {
+    const keys = new Set();
+    if (hoveredCardKey) keys.add(hoveredCardKey);
+    layout.edges.forEach((edge) => {
+      if (!highlightedEdgeIds.has(edge.id)) return;
+      if (edge.fromKey) keys.add(edge.fromKey);
+      if (edge.toKey) keys.add(edge.toKey);
+    });
+    return keys;
+  }, [hoveredCardKey, highlightedEdgeIds, layout.edges]);
 
   const fitActiveCards = () => {
     const canvas = canvasRef.current;
@@ -2831,20 +2919,13 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
         <div className="treePanLayer" style={{ transform: `translate(${viewport.x + (temporalScale && layout.temporal ? TEMPORAL_AXIS_WIDTH + TEMPORAL_AXIS_GAP : 0)}px, ${viewport.y}px) scale(${viewport.scale})` }}>
           <div className="treeContent" style={{ width: layout.width, height: layout.height, '--tree-card-width': `${cardMetrics.width}px`, '--tree-card-height': `${cardMetrics.height}px` }}>
             {(layout.groups || []).map((group) => <div key={group.id} className={`familyGroupBand ${group.kind}`} style={{ left: group.x, top: group.y, width: group.width, height: group.height }}><span>{group.label}</span></div>)}
-            <svg className="treeLines" viewBox={`0 0 ${layout.width} ${layout.height}`} aria-hidden="true">
-              {layout.edges.map((edge) => {
-                if (edge.path) return <path key={edge.id} className="familyLine temporalRoutedLine" d={edge.path} />;
-                if (edge.kind === 'peer') {
-                  return <path key={edge.id} className="peerLine" d={`M ${edge.from.x} ${edge.from.y} C ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.from.y}, ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.to.y}, ${edge.to.x} ${edge.to.y}`} />;
-                }
-                const middleY = edge.from.y + (edge.to.y - edge.from.y) / 2;
-                return <path key={edge.id} className={edge.kind === 'convergence' ? 'convergenceLine' : edge.kind === 'sibling' ? 'siblingLine' : 'familyLine'} d={`M ${edge.from.x} ${edge.from.y} C ${edge.from.x} ${middleY}, ${edge.to.x} ${middleY}, ${edge.to.x} ${edge.to.y}`} />;
-              })}
+            <svg className="treeLines treeLinesInteractive" viewBox={`0 0 ${layout.width} ${layout.height}`} aria-hidden="true">
+              {layout.edges.map((edge) => <TreeEdge key={edge.id} edge={edge} highlighted={highlightedEdgeIds.has(edge.id)} onHoverStart={() => setHoveredEdgeId(edge.id)} onHoverEnd={() => setHoveredEdgeId(null)} />)}
             </svg>
             {layout.nodes.map((node) => {
               if (node.isConnector) return <TreeConnector key={node.key} type={node.connectorType} style={{ left: node.x, top: node.y }} />;
               const label = showAllPeople ? allPeopleNodeLabel(node, language) : treeNodeLabel(node, language);
-              return <TreeCard key={node.key} person={node.person} label={label} relationGroup={node.relationGroup || relationGroupFromLabel(label)} sourceCount={sourceCountByPerson.get(node.id) || 0} cardVariant={cardMetrics.variant} focal={!showAllPeople && node.id === person.id} onOpen={onOpenPerson} onFocus={(id) => { setShowAllPeople(false); setFocusedId(id); }} style={{ left: node.x, top: node.y }} />;
+              return <TreeCard key={node.key} person={node.person} label={label} relationGroup={node.relationGroup || relationGroupFromLabel(label)} sourceCount={sourceCountByPerson.get(node.id) || 0} cardVariant={cardMetrics.variant} focal={!showAllPeople && node.id === person.id} highlighted={highlightedNodeKeys.has(node.key)} onHoverStart={() => setHoveredCardKey(node.key)} onHoverEnd={() => setHoveredCardKey(null)} onOpen={onOpenPerson} onFocus={(id) => { setShowAllPeople(false); setFocusedId(id); }} style={{ left: node.x, top: node.y }} />;
             })}
           </div>
         </div>
@@ -3518,7 +3599,7 @@ export default function GenealogyApp() {
         window.location.reload();
       }
     });
-  }, [authUser]);
+  }, [authUser?.id]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -3597,7 +3678,7 @@ export default function GenealogyApp() {
     };
 
     initialize();
-  }, [authUser]);
+  }, [authUser?.id]);
 
   useEffect(() => {
     if (!hydrated || publicDb) return;
@@ -4275,7 +4356,7 @@ export default function GenealogyApp() {
       </div>}
 
       {drawerPersonId && <PersonDrawer db={db} person={db.people.find((p) => p.id === drawerPersonId)} mode={drawerMode} onModeChange={setDrawerMode} onClose={() => { setDrawerPersonId(null); setDrawerMode('view'); }} onSave={saveExistingPerson} onFocus={openInTree} onLink={linkPerson} onRemoveRelation={(kind, otherId) => removeRelation(drawerPersonId, kind, otherId)} onDelete={deleteSelected} onAddEvent={() => setEventModal(true)} canEdit={canEdit} />}
-      {personModal && <Modal title={t('modalTitles.newPiece')} onClose={() => setPersonModal(null)}><PersonForm initial={personModal.person} people={db.people} places={db.places} showRelation onCancel={() => setPersonModal(null)} onSave={savePerson} /></Modal>}
+      {personModal && <Modal title={t('modalTitles.newPiece')} onClose={() => setPersonModal(null)}><PersonForm initial={personModal.person} people={db.people} places={db.places} sources={db.sources} citations={db.citations} showRelation onCancel={() => setPersonModal(null)} onSave={savePerson} /></Modal>}
       {eventModal && selected && <EventForm person={selected} onClose={() => setEventModal(false)} onSave={addEvent} />}
       {sourceModal && <SourceForm onClose={() => setSourceModal(false)} onSave={(source) => { updateDb((prev) => ({ ...prev, sources: [...prev.sources, { id: newId('source'), ...source }] })); setSourceModal(false); }} />}
       {personDeleteModalOpen && selected && <Modal title={t('deletion.personTitle')} onClose={() => setPersonDeleteModalOpen(false)}>
