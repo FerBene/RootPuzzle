@@ -9,6 +9,8 @@ import { displayName } from '@/lib/model';
 
 const WORLD_WIDTH = 1000;
 const WORLD_HEIGHT = 500;
+const TIME_STEPS = [1, 5, 10];
+const PLAYBACK_SPEEDS = { slow: 1200, normal: 800, fast: 500 };
 const worldProjection = geoNaturalEarth1().fitSize([WORLD_WIDTH, WORLD_HEIGHT], { type: 'Sphere' });
 const worldPath = geoPath(worldProjection);
 const worldCountries = feature(worldAtlas, worldAtlas.objects.countries).features;
@@ -39,10 +41,24 @@ const placeLabel = (person, place) => {
   return label || person.birthPlace || 'Lugar no especificado';
 };
 
+const placeCombiningMarksPattern = new RegExp('[' + String.fromCharCode(0x0300) + '-' + String.fromCharCode(0x036f) + ']', 'g');
+const normalizedPlaceText = (value) => String(value || '').normalize('NFD').replace(placeCombiningMarksPattern, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+const placeForPerson = (person, placeById, places) => {
+  const byId = person?.birthPlaceId ? placeById.get(person.birthPlaceId) : null;
+  if (byId) return byId;
+  const birthPlace = normalizedPlaceText(person?.birthPlace);
+  if (!birthPlace) return null;
+  return places
+    .map((place) => ({ place, name: normalizedPlaceText(place.name) }))
+    .filter(({ name }) => name && (name === birthPlace || birthPlace.includes(name) || name.includes(birthPlace)))
+    .sort((a, b) => b.name.length - a.name.length)[0]?.place || null;
+};
+
 const branchOptionsFor = (people) => {
   const counts = new Map();
   people.forEach((person) => String(person.surnames || '').split(/\s+/).map((value) => value.trim()).filter((value) => value.length > 2).forEach((surname) => counts.set(surname, (counts.get(surname) || 0) + 1)));
-  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es')).slice(0, 4).map(([surname]) => ({ value: surname, label: `Rama ${surname}` }));
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'es')).slice(0, 4).map(([surname, count]) => ({ value: surname, label: `Rama ${surname}`, count }));
 };
 
 function WorldBase() {
@@ -55,11 +71,11 @@ function WorldBase() {
   </>;
 }
 
-function FamilyMapMarkers({ locations, currentYear, selectedLocation, onSelect }) {
+function FamilyMapMarkers({ locations, currentEventIds, selectedLocation, onSelect }) {
   return <g className="familyMapMarkers" aria-label="Nacimientos ubicados en el mapa">
     {locations.map((location) => {
       const point = project(location.latitude, location.longitude);
-      const current = location.currentPeople.some((person) => person.year === currentYear);
+      const current = location.currentPeople.some((person) => currentEventIds.has(person.id));
       const selected = selectedLocation?.key === location.key;
       return <g key={location.key} className={`familyMapMarker ${current ? 'current' : ''} ${selected ? 'selected' : ''}`} transform={`translate(${point.x} ${point.y})`} role="button" tabIndex="0" aria-label={`${location.label}: ${location.people.length} personas`} onClick={() => onSelect(location)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(location); } }}>
         {current && <circle className="familyMapMarkerPulse" r="15" />}
@@ -90,58 +106,78 @@ function BirthLocationPopover({ location, mapViewport, onClose, onViewInTree }) 
   </div>;
 }
 
-function FamilyTimeline({ years, currentIndex, isPlaying, onIndexChange, onTogglePlay, onReset }) {
+function FamilyTimeline({ years, currentIndex, isPlaying, timeStep, playbackSpeed, onTimeStepChange, onPlaybackSpeedChange, onIndexChange, onTogglePlay, onReset }) {
   const currentYear = years[currentIndex];
+  const speedLabel = playbackSpeed === 'slow' ? 'Lenta' : playbackSpeed === 'fast' ? 'Rápida' : 'Normal';
   return <section className="familyTimeline" aria-label="Línea de tiempo de nacimientos">
     <div className="familyTimelineHeader">
-      <div><span className="eyebrow">Recorrido familiar</span><strong>{currentYear || '—'}</strong></div>
+      <div><span className="eyebrow">Recorrido familiar</span><strong>{currentYear || '—'}</strong><small>{years.length ? `Paso de ${timeStep} ${timeStep === 1 ? 'año' : 'años'} · ${currentIndex + 1} de ${years.length}` : 'Sin años disponibles'}</small></div>
       <div className="familyTimelineActions">
-        <button className="secondaryButton iconTextButton" type="button" onClick={onTogglePlay} disabled={!years.length} aria-label={isPlaying ? 'Pausar reproducción' : 'Reproducir nacimientos'}>{isPlaying ? <CirclePause size={16} /> : <CirclePlay size={16} />}<span>{isPlaying ? 'Pausa' : 'Play'}</span></button>
+        <button className="secondaryButton iconTextButton" type="button" onClick={onTogglePlay} disabled={!years.length} aria-label={isPlaying ? 'Pausar recorrido temporal' : 'Reproducir recorrido temporal'}>{isPlaying ? <CirclePause size={16} /> : <CirclePlay size={16} />}<span>{isPlaying ? 'Pausar' : currentIndex >= years.length - 1 ? 'Reproducir de nuevo' : 'Reproducir'}</span></button>
         <button className="secondaryButton iconTextButton" type="button" onClick={onReset} disabled={!years.length}><RotateCcw size={15} /><span>Reiniciar</span></button>
       </div>
     </div>
-    <input className="familyTimelineSlider" type="range" min="0" max={Math.max(0, years.length - 1)} step="1" value={currentIndex} onChange={(event) => onIndexChange(Number(event.target.value))} disabled={!years.length} aria-label="Año seleccionado" />
-    <div className="familyTimelineYears" aria-hidden="true">{years.map((year, index) => <button type="button" key={year} className={index === currentIndex ? 'active' : ''} onClick={() => onIndexChange(index)}>{year}</button>)}</div>
+    <div className="familyTimelineControls">
+      <label><span>Paso temporal</span><select value={timeStep} onChange={(event) => onTimeStepChange(Number(event.target.value))} disabled={!years.length}>{TIME_STEPS.map((step) => <option value={step} key={step}>Cada {step} {step === 1 ? 'año' : 'años'}</option>)}</select></label>
+      <label><span>Velocidad</span><select value={playbackSpeed} onChange={(event) => onPlaybackSpeedChange(event.target.value)} disabled={!years.length}><option value="slow">Lenta</option><option value="normal">Normal</option><option value="fast">Rápida</option></select></label>
+      <span className="familyTimelineSpeed" aria-label={`Velocidad ${speedLabel}`}>{PLAYBACK_SPEEDS[playbackSpeed] / 1000}s por paso</span>
+    </div>
+    <input className="familyTimelineSlider" type="range" min="0" max={Math.max(0, years.length - 1)} step="1" value={currentIndex} onChange={(event) => onIndexChange(Number(event.target.value))} disabled={!years.length} aria-label={`Año de corte, ${currentYear || 'sin año'}; muestra el acumulado hasta ese año`} aria-valuetext={currentYear ? `Hasta ${currentYear}` : 'Sin año disponible'} />
+    <div className="familyTimelineYears" aria-hidden="true">{years.map((year, index) => <span key={year} className={index === currentIndex ? 'active' : ''}>{year}</span>)}</div>
   </section>;
 }
 
-export default function FamilyMap({ people = [], places = [], onViewInTree }) {
+export default function FamilyMap({ people = [], places = [], onViewInTree, activeTreeName = 'Mi árbol familiar', accessibleTrees = [], remoteTreeId = '', onChangeTree }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [branchFilter, setBranchFilter] = useState('all');
+  const [timeStep, setTimeStep] = useState(10);
+  const [playbackSpeed, setPlaybackSpeed] = useState('normal');
   const [mapViewport, setMapViewport] = useState({ x: 0, y: 0, scale: 1 });
   const mapGestureRef = useRef(null);
   const mapSvgRef = useRef(null);
   const placeById = useMemo(() => new Map(places.map((place) => [place.id, place])), [places]);
   const branchOptions = useMemo(() => branchOptionsFor(people), [people]);
-  const events = useMemo(() => people.map((person) => {
-    const place = placeById.get(person.birthPlaceId);
+  const filteredPeople = useMemo(() => people.filter((person) => branchFilter === 'all' || String(person.surnames || '').toLowerCase().includes(branchFilter.toLowerCase())), [people, branchFilter]);
+  const events = useMemo(() => filteredPeople.map((person) => {
+    const place = placeForPerson(person, placeById, places);
     const coordinates = safeCoordinates(place);
     return { person, year: yearFrom(person), place, coordinates, label: placeLabel(person, place), verified: Boolean(coordinates) && place?.verified !== false };
-  }).filter((event) => event.year && (branchFilter === 'all' || String(event.person.surnames || '').toLowerCase().includes(branchFilter.toLowerCase()))).sort((a, b) => a.year - b.year || displayName(a.person).localeCompare(displayName(b.person), 'es')), [people, placeById, branchFilter]);
-  const years = useMemo(() => [...new Set(events.map((event) => event.year))], [events]);
+  }).filter((event) => event.year).sort((a, b) => a.year - b.year || displayName(a.person).localeCompare(displayName(b.person), 'es')), [filteredPeople, placeById, places]);
+  const years = useMemo(() => {
+    if (!events.length) return [];
+    const first = Math.floor(events[0].year / timeStep) * timeStep;
+    const last = Math.ceil(events[events.length - 1].year / timeStep) * timeStep;
+    return Array.from({ length: Math.floor((last - first) / timeStep) + 1 }, (_, index) => first + index * timeStep);
+  }, [events, timeStep]);
   const currentYear = years[currentIndex] || null;
+  const previousYear = currentIndex > 0 ? years[currentIndex - 1] : null;
   const visibleEvents = useMemo(() => events.filter((event) => event.year <= currentYear), [events, currentYear]);
-  const currentEvents = useMemo(() => events.filter((event) => event.year === currentYear), [events, currentYear]);
+  const currentEvents = useMemo(() => events.filter((event) => event.year <= currentYear && (!previousYear || event.year > previousYear)), [events, currentYear, previousYear]);
+  const currentEventIds = useMemo(() => new Set(currentEvents.map((event) => event.person.id)), [currentEvents]);
   const locations = useMemo(() => {
     const grouped = new Map();
     visibleEvents.filter((event) => event.verified).forEach((event) => {
       const key = `${event.coordinates.latitude.toFixed(3)}:${event.coordinates.longitude.toFixed(3)}`;
       const existing = grouped.get(key) || { key, latitude: event.coordinates.latitude, longitude: event.coordinates.longitude, label: event.label, people: [], currentPeople: [] };
       existing.people.push({ ...event.person, year: event.year, birthPlace: event.label });
-      if (event.year === currentYear) existing.currentPeople.push({ ...event.person, year: event.year });
+      if (currentEventIds.has(event.person.id)) existing.currentPeople.push({ ...event.person, year: event.year });
       grouped.set(key, existing);
     });
     return [...grouped.values()];
-  }, [visibleEvents, currentYear]);
+  }, [visibleEvents, currentEventIds]);
   const visiblePeople = visibleEvents.length;
   const pendingCount = visibleEvents.filter((event) => !event.verified).length;
-  const currentPending = currentEvents.filter((event) => !event.verified).length;
+  const locationsPendingInStep = currentEvents.filter((event) => !event.verified).length;
+  const peopleWithoutYear = filteredPeople.filter((person) => !yearFrom(person)).length;
 
   useEffect(() => {
     setCurrentIndex(0); setSelectedLocation(null); setIsPlaying(false);
   }, [branchFilter]);
+  useEffect(() => {
+    setCurrentIndex(0); setSelectedLocation(null); setIsPlaying(false);
+  }, [timeStep]);
   const mapPointFromEvent = (event) => {
     const rect = mapSvgRef.current?.getBoundingClientRect();
     if (!rect) return { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 };
@@ -204,36 +240,51 @@ export default function FamilyMap({ people = [], places = [], onViewInTree }) {
   };
   useEffect(() => {
     if (!isPlaying || !years.length) return undefined;
-    const timer = window.setInterval(() => setCurrentIndex((index) => {
-      if (index >= years.length - 1) { setIsPlaying(false); return index; }
-      return index + 1;
-    }), 1000);
-    return () => window.clearInterval(timer);
-  }, [isPlaying, years.length]);
+    let frameId;
+    const startedAt = performance.now();
+    const duration = PLAYBACK_SPEEDS[playbackSpeed];
+    const tick = (now) => {
+      if (now - startedAt >= duration) {
+        setCurrentIndex((index) => {
+          if (index >= years.length - 1) { setIsPlaying(false); return index; }
+          return index + 1;
+        });
+        return;
+      }
+      frameId = window.requestAnimationFrame(tick);
+    };
+    frameId = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [isPlaying, currentIndex, years.length, playbackSpeed]);
   useEffect(() => { if (currentIndex >= years.length && years.length) setCurrentIndex(years.length - 1); }, [currentIndex, years.length]);
 
   return <section className="familyMapPage">
     <header className="familyMapHeader">
       <div className="familyMapTitle"><span className="familyMapTitleIcon"><Globe2 size={25} /></span><div><p className="eyebrow">Exploración geográfica</p><h2>Mapa familiar</h2><p>Explora dónde comenzó cada historia familiar a través del tiempo.</p></div></div>
-      <label className="familyMapFilter"><span>Rama familiar</span><select value={branchFilter} onChange={(event) => setBranchFilter(event.target.value)}><option value="all">Todo el árbol</option>{branchOptions.map((branch) => <option value={branch.value} key={branch.value}>{branch.label}</option>)}</select></label>
+      <div className="familyMapFilters">
+        <div className="familyMapTreeContext"><span>Árbol activo</span>{accessibleTrees.length > 1 ? <select value={remoteTreeId} onChange={(event) => onChangeTree?.(event.target.value)} aria-label="Cambiar árbol activo">{accessibleTrees.map((tree) => <option value={tree.id} key={tree.id}>{tree.name}</option>)}</select> : <strong>{activeTreeName}</strong>}</div>
+        <label className="familyMapFilter"><span>Rama familiar</span><select value={branchFilter} onChange={(event) => setBranchFilter(event.target.value)}><option value="all">Todo el árbol</option>{branchOptions.map((branch) => <option value={branch.value} key={branch.value}>{branch.label} · {branch.count}</option>)}</select></label>
+      </div>
     </header>
-    <div className="familyMapStats" aria-label="Resumen del mapa"><div><span>Año</span><strong>{currentYear || '—'}</strong></div><div><span>Personas visibles</span><strong>{visiblePeople}</strong></div><div><span>Ubicaciones pendientes</span><strong>{pendingCount}</strong></div></div>
+    <div className="familyMapStats" aria-label="Resumen del mapa"><div><span>Año de corte</span><strong>{currentYear || '—'}</strong></div><div><span>Personas hasta este año</span><strong>{visiblePeople}</strong></div><div><span>Ubicaciones confirmadas</span><strong>{locations.length}</strong></div><div><span>Personas sin ubicación</span><strong>{pendingCount}</strong></div></div>
+    <p className="familyMapExplanation" aria-live="polite">El mapa muestra el acumulado de personas con año de nacimiento hasta {currentYear || 'el año seleccionado'}. {currentEvents.length ? `${currentEvents.length} ${currentEvents.length === 1 ? 'persona se incorporó' : 'personas se incorporaron'} en este paso.` : 'No hay novedades en este paso.'}</p>
     <>
       <div className={`familyMapCanvas ${!events.length ? 'empty' : ''}`} aria-label="Mapa mundial de nacimientos" onWheel={onMapWheel}>
         <svg ref={mapSvgRef} viewBox={`0 0 ${WORLD_WIDTH} ${WORLD_HEIGHT}`} role="img" aria-label={`Mapa mundial de nacimientos${currentYear ? ` hasta ${currentYear}` : ''}`} onPointerDown={onMapPointerDown} onPointerMove={onMapPointerMove} onPointerUp={onMapPointerUp} onPointerCancel={onMapPointerUp}>
-          <g transform={`translate(${mapViewport.x} ${mapViewport.y}) scale(${mapViewport.scale})`}><WorldBase /><FamilyMapMarkers locations={locations} currentYear={currentYear} selectedLocation={selectedLocation} onSelect={setSelectedLocation} /></g>
+          <g transform={`translate(${mapViewport.x} ${mapViewport.y}) scale(${mapViewport.scale})`}><WorldBase /><FamilyMapMarkers locations={locations} currentEventIds={currentEventIds} selectedLocation={selectedLocation} onSelect={setSelectedLocation} /></g>
         </svg>
         <div className="familyMapZoomControls" aria-label="Controles del mapa">
           <button type="button" onClick={() => zoomMapAt(mapViewport.scale * 1.2)} title="Acercar" aria-label="Acercar"><Plus size={16} /></button>
           <button type="button" onClick={() => zoomMapAt(mapViewport.scale / 1.2)} title="Alejar" aria-label="Alejar"><Minus size={16} /></button>
           <button type="button" onClick={() => setMapViewport({ x: 0, y: 0, scale: 1 })} title="Recentrar mapa" aria-label="Recentrar mapa"><LocateFixed size={16} /></button>
         </div>
-        {!events.length && <div className="familyMapEmptyOverlay"><Globe2 size={25} /><strong>{people.length ? 'Agregá años de nacimiento para recorrer el mapa' : 'Tu mapa familiar empieza acá'}</strong><span>{people.length ? 'El mapa mundial queda listo para ubicar las historias.' : 'Cuando agregues personas y lugares, aparecerán sus ubicaciones.'}</span></div>}
+        {!events.length && <div className="familyMapEmptyOverlay"><Globe2 size={25} /><strong>{people.length ? (peopleWithoutYear ? 'Agregá años de nacimiento para recorrer el mapa' : 'No hay personas en esta rama') : 'Tu mapa familiar empieza acá'}</strong><span>{people.length ? (peopleWithoutYear ? `${peopleWithoutYear} ${peopleWithoutYear === 1 ? 'persona no tiene' : 'personas no tienen'} un año de nacimiento válido.` : 'Probá con otra rama familiar.') : 'Cuando agregues personas y lugares, aparecerán sus ubicaciones.'}</span></div>}
+        {events.length > 0 && !locations.length && <div className="familyMapEmptyOverlay"><Globe2 size={25} /><strong>No hay ubicaciones confirmadas todavía</strong><span>Las personas tienen años de nacimiento, pero sus lugares todavía no tienen coordenadas confirmadas.</span></div>}
         {selectedLocation && <BirthLocationPopover location={selectedLocation} mapViewport={mapViewport} onClose={() => setSelectedLocation(null)} onViewInTree={onViewInTree} />}
-        <div className="familyMapLegend"><span><i className="geolocatedDot" /> Ubicación confirmada</span><span><i className="pendingDot" /> Pendiente de confirmar: {currentPending}</span></div>
+        <div className="familyMapLegend"><span><i className="geolocatedDot" /> Ubicación confirmada</span><span><i className="pendingDot" /> Sin ubicación: {pendingCount}</span></div>
       </div>
-      <FamilyTimeline years={years} currentIndex={currentIndex} isPlaying={isPlaying} onIndexChange={(index) => { setCurrentIndex(index); setIsPlaying(false); }} onTogglePlay={() => { if (!isPlaying && currentIndex >= years.length - 1) setCurrentIndex(0); setIsPlaying((value) => !value); }} onReset={() => { setCurrentIndex(0); setIsPlaying(false); setSelectedLocation(null); }} />
-      {events.length > 0 && <div className="familyMapContext"><div><span className="eyebrow">En este año</span><h3>{currentYear}</h3></div><div className="familyMapContextList">{currentEvents.length ? currentEvents.map((event) => <button type="button" className={`familyMapContextItem ${event.verified ? '' : 'pending'}`} key={event.person.id} onClick={() => event.verified && setSelectedLocation(locations.find((location) => location.people.some((person) => person.id === event.person.id)) || null)}><span>{event.verified ? <Globe2 size={16} /> : <span className="pendingIcon">?</span>}</span><div><strong>{displayName(event.person)}</strong><small>{event.label}{!event.verified && ' · Ubicación pendiente de confirmar'}</small></div></button>) : <p className="muted">No hay nacimientos registrados en este año.</p>}</div></div>}
+      <FamilyTimeline years={years} currentIndex={currentIndex} isPlaying={isPlaying} timeStep={timeStep} playbackSpeed={playbackSpeed} onTimeStepChange={setTimeStep} onPlaybackSpeedChange={(speed) => { setPlaybackSpeed(speed); setIsPlaying(false); }} onIndexChange={(index) => { setCurrentIndex(index); setIsPlaying(false); }} onTogglePlay={() => { if (!isPlaying && currentIndex >= years.length - 1) setCurrentIndex(0); setIsPlaying((value) => !value); }} onReset={() => { setCurrentIndex(0); setIsPlaying(false); setSelectedLocation(null); }} />
+      {events.length > 0 && <div className="familyMapContext"><div><span className="eyebrow">Novedades del período</span><h3>Hasta {currentYear}</h3><p>{currentEvents.length ? `${currentEvents.length} ${currentEvents.length === 1 ? 'persona incorporada' : 'personas incorporadas'}${locationsPendingInStep ? ` · ${locationsPendingInStep} sin ubicación` : ''}` : 'Sin novedades en este paso'}</p></div><div className="familyMapContextList">{currentEvents.length ? currentEvents.map((event) => <button type="button" className={`familyMapContextItem ${event.verified ? '' : 'pending'}`} key={event.person.id} onClick={() => event.verified && setSelectedLocation(locations.find((location) => location.people.some((person) => person.id === event.person.id)) || null)}><span>{event.verified ? <Globe2 size={16} /> : <span className="pendingIcon">?</span>}</span><div><strong>{displayName(event.person)}</strong><small>{event.label}{!event.verified && ' · Ubicación pendiente de confirmar'}</small></div></button>) : <p className="muted">El mapa conserva el acumulado anterior. Avanzá para encontrar nuevas personas.</p>}</div></div>}
     </>
   </section>;
 }

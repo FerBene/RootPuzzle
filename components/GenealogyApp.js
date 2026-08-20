@@ -3977,16 +3977,17 @@ export default function GenealogyApp() {
             {sidebarCollapsed ? <ChevronsRight size={18} strokeWidth={1.9} aria-hidden="true" /> : <ChevronsLeft size={18} strokeWidth={1.9} aria-hidden="true" />}
           </button>
         </div>
-        {isSupabaseConfigured && (remoteTreeId || accessibleTrees.length === 0) && <div className="sidebarTreeContext">
+        <div className="sidebarTreeContext">
           <span className="sidebarContextLabel">ÁRBOL ACTIVO</span>
-          {remoteTreeId ? <>
+          {isSupabaseConfigured && remoteTreeId ? <>
             <button type="button" className={`activeTreeButton ${treeMenuOpen ? 'open' : ''}`} aria-expanded={treeMenuOpen} onClick={() => setTreeMenuOpen((value) => !value)}>
               <span className="activeTreeIcon"><Sprout size={15} strokeWidth={2} /></span><span className="activeTreeName">{activeTree?.name || db.settings.treeName}</span><ChevronDown className="activeTreeChevron" size={15} strokeWidth={2.2} aria-hidden="true" />
             </button>
             <small>{currentTreeRole || 'viewer'}</small>
           </> : <>
-            <span className="activeTreeEmpty">No hay un árbol activo</span>
-            {canCreateTree && <button type="button" className="treeMenuCreate standaloneTreeCreate" onClick={openNewTreeModal}><span>+</span> Crear nuevo árbol</button>}
+            <div className="activeTreeButton localTreeButton"><span className="activeTreeIcon"><Sprout size={15} strokeWidth={2} /></span><span className="activeTreeName">{db.settings.treeName || 'Mi árbol familiar'}</span></div>
+            <small>{isSupabaseConfigured ? 'Sin árbol remoto seleccionado' : 'Cuenta local'}</small>
+            {isSupabaseConfigured && canCreateTree && <button type="button" className="treeMenuCreate standaloneTreeCreate" onClick={openNewTreeModal}><span>+</span> Crear nuevo árbol</button>}
           </>}
           {remoteTreeId && treeMenuOpen && <div className="treeMenu" role="menu">
             <span className="treeMenuLabel">Tus árboles</span>
@@ -3995,7 +3996,7 @@ export default function GenealogyApp() {
             {isOwner && <button type="button" className="treeMenuCreate" onClick={openNewTreeModal}><span>+</span> Crear nuevo árbol</button>}
             {isOwner && <button type="button" className="treeMenuDelete" onClick={openDeleteTreeModal}><Trash2 size={13} /> Eliminar árbol</button>}
           </div>}
-        </div>}
+        </div>
         <nav>{sections.filter(([id]) => id !== 'collaborators').map(([id, label, icon]) => {
           const sectionLabel = t(label);
           return <button key={id} type="button" title={sectionLabel} className={section === id ? 'active' : ''} aria-current={section === id ? 'page' : undefined} onClick={() => { setSection(id); }}><span className="navIcon">{icon}</span><span className="navLabel">{sectionLabel}</span></button>;
@@ -4045,7 +4046,7 @@ export default function GenealogyApp() {
 
         {section === 'findings' && <FindingsView db={db} />}
 
-        {section === 'family-map' && <FamilyMap people={db.people} places={db.places} onViewInTree={openFamilyMapPerson} />}
+        {section === 'family-map' && <FamilyMap people={db.people} places={db.places} activeTreeName={activeTree?.name || db.settings.treeName} accessibleTrees={accessibleTrees} remoteTreeId={remoteTreeId || ''} onChangeTree={selectRemoteTree} onViewInTree={openFamilyMapPerson} />}
 
         {section === 'timeline' && <TimelineView db={db} onOpenPerson={(id) => { setSelectedId(id); setFocusedId(id); setSection('people'); }} />}
 
