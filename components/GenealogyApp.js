@@ -282,6 +282,20 @@ const THEME_STORAGE_KEY = 'raices.theme';
 const LANGUAGE_STORAGE_KEY = 'rootPuzzle.language';
 const CANVAS_BACKGROUND_STORAGE_KEY = 'raices.canvasBackground';
 const PROFILE_IMAGE_STORAGE_PREFIX = 'rootPuzzle.profileImage.';
+const FOCUSED_PERSON_STORAGE_PREFIX = 'rootPuzzle.focusedPerson.';
+
+const saveFocusedPersonId = (treeKey, personId) => {
+  try { localStorage.setItem(`${FOCUSED_PERSON_STORAGE_PREFIX}${treeKey}`, personId); } catch { /* Keep the selection in memory if storage is unavailable. */ }
+};
+
+const getStoredFocusedPersonId = (treeKey, database) => {
+  try {
+    const storedId = localStorage.getItem(`${FOCUSED_PERSON_STORAGE_PREFIX}${treeKey}`);
+    return storedId && database.people.some((person) => person.id === storedId) ? storedId : null;
+  } catch {
+    return null;
+  }
+};
 const PUBLIC_TREE_HASH_PREFIX = '#public-tree=';
 
 const parseDateRank = (value) => {
@@ -1900,7 +1914,7 @@ function Stat({ value, label }) {
   return <div className="stat"><strong>{value}</strong><span>{label}</span></div>;
 }
 
-function Modal({ title, onClose, children }) {
+function Modal({ title, onClose, children, className = '', headerActions = null, backdropClassName = '' }) {
   const titleId = useId();
   const dialogRef = useRef(null);
   const restoreFocusRef = useRef(null);
@@ -1934,9 +1948,9 @@ function Modal({ title, onClose, children }) {
     };
   }, [onClose]);
   return (
-    <div className="modalBackdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-      <div ref={dialogRef} className="modal" role="dialog" aria-modal="true" aria-labelledby={titleId} onMouseDown={(e) => e.stopPropagation()}>
-        <div className="modalHeader"><h2 id={titleId}>{title}</h2><button className="iconButton" type="button" onClick={onClose} aria-label="Cerrar ventana">×</button></div>
+    <div className={`modalBackdrop ${backdropClassName}`.trim()} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <div ref={dialogRef} className={`modal ${className}`.trim()} role="dialog" aria-modal="true" aria-labelledby={titleId} onMouseDown={(e) => e.stopPropagation()}>
+        <div className="modalHeader"><h2 id={titleId}>{title}</h2><div className="modalHeaderActions">{headerActions}<button className="iconButton" type="button" onClick={onClose} aria-label="Cerrar ventana">×</button></div></div>
         {children}
       </div>
     </div>
@@ -2248,29 +2262,6 @@ function PersonPicker({ people, excludeId, onPick, label }) {
 
 function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus, onLink, onDelete, onRemoveRelation, onAddEvent, canEdit = true }) {
   const { language, t } = useI18n();
-  const drawerRef = useRef(null);
-  const restoreFocusRef = useRef(null);
-  useEffect(() => {
-    restoreFocusRef.current = document.activeElement;
-    const focusableSelector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-    const focusInitial = () => drawerRef.current?.querySelector('button:not([disabled]), input:not([disabled]), select, textarea')?.focus();
-    const onKey = (event) => {
-      if (event.key === 'Escape') onClose();
-      if (event.key !== 'Tab' || !drawerRef.current) return;
-      const focusable = [...drawerRef.current.querySelectorAll(focusableSelector)];
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-    };
-    window.addEventListener('keydown', onKey);
-    window.requestAnimationFrame(focusInitial);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      if (restoreFocusRef.current instanceof HTMLElement) restoreFocusRef.current.focus();
-    };
-  }, [onClose]);
 
   if (!person) return null;
 
@@ -2285,21 +2276,14 @@ function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus
   const isEditing = mode === 'edit';
 
   return (
-    <div className="drawerBackdrop" onMouseDown={onClose}>
-      <aside ref={drawerRef} className={`personDrawer ${personStatusClass(person)}`} role="dialog" aria-modal="true" aria-labelledby="person-drawer-title" onMouseDown={(event) => event.stopPropagation()}>
-        <div className="drawerHeader">
-          <div>
-            <p className="eyebrow">{isEditing ? t('drawer.editMode') : t('drawer.viewMode')}</p>
-            <h2 id="person-drawer-title">{isEditing ? t('drawer.editPerson') : t('drawer.personalFile')}</h2>
-          </div>
-          <div className="drawerHeaderActions">
-            <span className={`modePill ${isEditing ? 'editing' : 'viewing'}`}>{isEditing ? t('drawer.editing') : t('drawer.view')}</span>
-            {canEdit && <button className="iconButton dangerIcon" type="button" onClick={onDelete} title={t('drawer.deletePerson')} aria-label={t('drawer.deletePerson')}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 6h18" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 6v14a2 2 0 002 2h4a2 2 0 002-2V6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>}
-            <button className="iconButton" type="button" onClick={onClose} aria-label={language === 'es' ? 'Cerrar ventana' : 'Close window'}>×</button>
-          </div>
-        </div>
+    <Modal
+      title={isEditing ? t('drawer.editPerson') : t('drawer.personalFile')}
+      onClose={onClose}
+      className={`personModal ${personStatusClass(person)}`}
+      backdropClassName="personModalBackdrop"
+      headerActions={<><span className={`modePill ${isEditing ? 'editing' : 'viewing'}`}>{isEditing ? t('drawer.editing') : t('drawer.view')}</span>{canEdit && <button className="iconButton dangerIcon" type="button" onClick={onDelete} title={t('drawer.deletePerson')} aria-label={t('drawer.deletePerson')}><Trash2 size={18} strokeWidth={2} aria-hidden="true" /></button>}</>}
+    >
+      <div className="personModalIntro"><p className="eyebrow">{isEditing ? t('drawer.editMode') : t('drawer.viewMode')}</p><span>{displayName(person)}</span></div>
 
         {isEditing ? <div className="drawerEdit">
           <div className="modeNotice editing">{t('drawer.editingNotice')}</div>
@@ -2331,8 +2315,7 @@ function PersonDrawer({ db, person, mode, onModeChange, onClose, onSave, onFocus
             {timeline.length ? <ol className="timelineList">{timeline.map((event) => <li key={event.id} className="timelineItem"><span className="timelineDot" /><div><strong>{event.type}</strong><span>{[event.date, event.place].filter(Boolean).join(' · ') || t('tree.noDate')}</span>{event.description && <p>{event.description}</p>}</div></li>)}</ol> : <p className="muted small">{t('drawer.noEvents')}</p>}
           </section>
         </div>}
-      </aside>
-    </div>
+    </Modal>
   );
 }
 
@@ -3558,7 +3541,7 @@ export default function GenealogyApp() {
         const nextDb = parsed.people.length ? parsed : defaultDatabase();
         setDb(nextDb);
         setSelectedId(nextDb.settings.rootPersonId || nextDb.people[0]?.id || null);
-        setFocusedId(nextDb.settings.rootPersonId || nextDb.people[0]?.id || null);
+        setFocusedId(getStoredFocusedPersonId('local', nextDb) || nextDb.settings.rootPersonId || nextDb.people[0]?.id || null);
 
         if (isSupabaseConfigured) {
           const { data: trees, error: treesError } = await listAccessibleTrees();
@@ -3588,7 +3571,7 @@ export default function GenealogyApp() {
             const remoteDb = normalizeDatabase(data.data);
             setDb(remoteDb);
             setSelectedId(remoteDb.settings.rootPersonId || remoteDb.people[0]?.id || null);
-            setFocusedId(remoteDb.settings.rootPersonId || remoteDb.people[0]?.id || null);
+            setFocusedId(getStoredFocusedPersonId(data.id, remoteDb) || remoteDb.settings.rootPersonId || remoteDb.people[0]?.id || null);
             setRemoteTreeId(data.id);
             setRemoteTreeDataReadyId(data.id);
             localStorage.setItem(remoteTreeStorageKey, data.id);
@@ -3683,6 +3666,12 @@ export default function GenealogyApp() {
     };
     syncRemote();
   }, [db, hydrated, publicDb, remoteTreeId, remoteTreeDataReadyId, t]);
+
+  const setFocusedPerson = (id, treeKey = remoteTreeId || 'local') => {
+    if (!id || !db.people.some((person) => person.id === id)) return;
+    setFocusedId(id);
+    saveFocusedPersonId(treeKey, id);
+  };
 
   const selected = db.people.find((p) => p.id === selectedId) || null;
   const filteredPeople = useMemo(() => {
@@ -3829,7 +3818,7 @@ export default function GenealogyApp() {
       return next;
     });
     setSelectedId(person.id);
-    setFocusedId((id) => id || person.id);
+    if (!focusedId) setFocusedPerson(person.id);
     setDrawerPersonId(person.id);
     setDrawerMode('view');
     setPersonModal(null);
@@ -3903,17 +3892,17 @@ export default function GenealogyApp() {
     setSelectedId(next);
     setDrawerPersonId(null);
     setDrawerMode('view');
-    if (focusedId === id) setFocusedId(next);
+    if (focusedId === id) setFocusedPerson(next);
   };
 
   const openInTree = (id) => {
-    setFocusedId(id);
+    setFocusedPerson(id);
     setSelectedId(id);
     setSection('tree');
   };
 
   const openFamilyMapPerson = (id) => {
-    setFocusedId(id);
+    setFocusedPerson(id);
     openPersonDrawer(id, 'view');
     setSection('tree');
   };
@@ -3978,7 +3967,9 @@ export default function GenealogyApp() {
       if (!confirm(t('confirms.replaceData'))) return;
       setDb(parsed);
       setSelectedId(parsed.people[0]?.id || null);
-      setFocusedId(parsed.settings.rootPersonId || parsed.people[0]?.id || null);
+      const nextFocusedId = parsed.settings.rootPersonId || parsed.people[0]?.id || null;
+      setFocusedId(nextFocusedId);
+      if (nextFocusedId) saveFocusedPersonId('local', nextFocusedId);
     } catch {
       alert(t('errors.jsonRead'));
     }
@@ -3992,7 +3983,9 @@ export default function GenealogyApp() {
       const next = { ...emptyDatabase(), ...imported, settings: { ...emptyDatabase().settings, rootPersonId: imported.people[0]?.id || null } };
       setDb(next);
       setSelectedId(imported.people[0]?.id || null);
-      setFocusedId(imported.people[0]?.id || null);
+      const nextFocusedId = imported.people[0]?.id || null;
+      setFocusedId(nextFocusedId);
+      if (nextFocusedId) saveFocusedPersonId('local', nextFocusedId);
     } catch {
       alert(t('errors.gedcomRead'));
     }
@@ -4149,13 +4142,13 @@ export default function GenealogyApp() {
           </div>
         </header>
 
-        {section === 'tree' && <TreeView db={db} focusedId={focusedId} setFocusedId={(id) => { setFocusedId(id); setSelectedId(id); }} onOpenPerson={(id) => openPersonDrawer(id, 'view')} onAdd={canEdit ? () => setPersonModal({ mode: 'new' }) : undefined} />}
+        {section === 'tree' && <TreeView db={db} focusedId={focusedId} setFocusedId={(id) => { setFocusedPerson(id); setSelectedId(id); }} onOpenPerson={(id) => openPersonDrawer(id, 'view')} onAdd={canEdit ? () => setPersonModal({ mode: 'new' }) : undefined} />}
 
         {section === 'findings' && <FindingsView db={db} />}
 
         {section === 'family-map' && <FamilyMap people={db.people} places={db.places} activeTreeName={activeTree?.name || db.settings.treeName} accessibleTrees={accessibleTrees} remoteTreeId={remoteTreeId || ''} onChangeTree={selectRemoteTree} onViewInTree={openFamilyMapPerson} />}
 
-        {section === 'timeline' && <TimelineView db={db} onOpenPerson={(id) => { setSelectedId(id); setFocusedId(id); setSection('people'); }} />}
+        {section === 'timeline' && <TimelineView db={db} onOpenPerson={(id) => { setSelectedId(id); setFocusedPerson(id); setSection('people'); }} />}
 
         {section === 'people' && <div className="peopleLayout peopleListOnly">
           <section className="peoplePane">

@@ -914,6 +914,35 @@ h1, h2 { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "
 .section-tree .canvasBottomLeftControls,
 .section-tree .canvasBottomControls { display: flex !important; }
 
+/* Person details and editing use the same modal language as new pieces. */
+.modalHeaderActions { display: flex; align-items: center; gap: 8px; }
+.personModalBackdrop { animation: personModalBackdropIn .18s ease-out both; }
+.personModal {
+  width: min(820px, 96vw);
+  max-height: min(860px, calc(100dvh - 32px));
+  padding: 24px;
+  animation: personModalIn .24s cubic-bezier(.22, .8, .24, 1) both;
+}
+.personModal .modalHeader { margin-bottom: 12px; }
+.personModalIntro { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: -4px 0 16px; color: var(--muted); }
+.personModalIntro .eyebrow { margin: 0; }
+.personModalIntro > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); font-size: 12px; font-weight: 800; }
+.personModal .drawerView,
+.personModal .drawerEdit { min-width: 0; }
+.personModal .detailTop { margin-top: 0; }
+.personModal .modeNotice { margin-top: 0; }
+@keyframes personModalBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes personModalIn { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (max-width: 760px) {
+  .personModal { width: min(100%, 720px); max-height: calc(100dvh - 16px); padding: 18px 14px 140px; border-radius: 18px 18px 12px 12px; }
+  .personModal .modalHeader { top: -18px; margin: -18px -14px 14px; padding: 14px; }
+  .personModalIntro { align-items: flex-start; flex-direction: column; gap: 3px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .personModalBackdrop,
+  .personModal { animation: none; }
+}
+
 /* Canvas control system: one surface, one touch target, predictable states. */
 .section-tree .canvasViewportControls,
 .section-tree .canvasBottomControls,
