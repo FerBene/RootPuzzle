@@ -5,7 +5,7 @@ import { achievementCategories, calculateCompleteAncestors, calculateCountries, 
 import { defaultDatabase, displayName, emptyDatabase, newId, normalizeDatabase, relativesFor, STORAGE_KEY } from '@/lib/model';
 import { exportGedcom, importGedcom } from '@/lib/gedcom';
 import { placeLabel, searchPlaces } from '@/lib/geocoding';
-import { acceptTreeInvitation, createRemoteTree, createTreeInvitation, deleteRemoteTree, getRemoteTree, listAccessibleTrees, listTreeInvitations, remoteTreeStorageKey, renameRemoteTree, revokeTreeInvitation, saveRemoteTree } from '@/lib/supabaseStore';
+import { acceptTreeInvitation, createRemoteTree, createTreeInvitation, deleteRemoteTree, getRemoteTree, listAccessibleTrees, listTreeInvitations, remoteTreeStorageKey, renameRemoteTree, removePersonImage, revokeTreeInvitation, saveRemoteTree, uploadPersonImage } from '@/lib/supabaseStore';
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
 import { AlertTriangle, ArrowDownFromLine, ArrowUpFromLine, Award, BookOpen, CalendarDays, Check, ChevronDown, ChevronsLeft, ChevronsRight, Clock3, Compass, Copy, Database, Eye, EyeOff, FileDown, GitBranch, Globe2, Hourglass, Image as ImageIcon, Layers3, LocateFixed, LockKeyhole, Maximize2, Minimize2, Moon, MoreHorizontal, Puzzle, RotateCcw, Search, ShieldCheck, SlidersHorizontal, Sprout, Sun, Trash2, TreePine, UserCircle, UserPlus, UsersRound, Waypoints, ZoomIn, ZoomOut } from 'lucide-react';
 import FamilyMap from '@/components/FamilyMap';
@@ -138,6 +138,7 @@ const blankPerson = () => ({
   nickname: '',
   email: '',
   profileImage: '',
+  profileImagePath: '',
   sex: '',
   birthDate: '',
   birthPlace: '',
@@ -174,8 +175,15 @@ const downloadText = (filename, text, type = 'text/plain') => {
 };
 
 const readProfileImage = (file) => new Promise((resolve, reject) => {
-  if (!file || !file.type?.startsWith('image/')) {
-    reject(new Error('El archivo no es una imagen.'));
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+  const extension = String(file?.name || '').split('.').pop()?.toLowerCase();
+  if (!file || !allowedTypes.includes(file.type) || !allowedExtensions.includes(extension)) {
+    reject(new Error('Formato no admitido. Usá JPG, PNG o WebP.'));
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    reject(new Error('La imagen original no puede superar los 10 MB.'));
     return;
   }
 
@@ -185,16 +193,33 @@ const readProfileImage = (file) => new Promise((resolve, reject) => {
     const img = new Image();
     img.onerror = () => reject(new Error('No pude procesar la imagen.'));
     img.onload = () => {
-      const maxSize = 520;
-      const ratio = Math.min(1, maxSize / Math.max(img.width, img.height));
-      const width = Math.max(1, Math.round(img.width * ratio));
-      const height = Math.max(1, Math.round(img.height * ratio));
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.84));
+      const makeBlob = (maxSize, quality) => new Promise((blobResolve) => {
+        const ratio = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * ratio));
+        canvas.height = Math.max(1, Math.round(img.height * ratio));
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blobResolve, 'image/webp', quality);
+      });
+      (async () => {
+        for (const maxSize of [800, 700, 600, 500, 400]) {
+          for (const quality of [0.82, 0.74, 0.66, 0.58, 0.5, 0.42]) {
+            const blob = await makeBlob(maxSize, quality);
+            if (blob && blob.size < 100 * 1024) {
+              const dataUrl = await new Promise((dataResolve, dataReject) => {
+                const dataReader = new FileReader();
+                dataReader.onload = () => dataResolve(dataReader.result);
+                dataReader.onerror = () => dataReject(new Error('No pude preparar la vista previa.'));
+                dataReader.readAsDataURL(blob);
+              });
+              resolve({ file: new File([blob], `${crypto.randomUUID()}.webp`, { type: 'image/webp' }), dataUrl });
+              return;
+            }
+          }
+        }
+        reject(new Error('No pude comprimir la imagen por debajo de 100 KB.'));
+      })().catch(reject);
     };
     img.src = reader.result;
   };
@@ -2025,6 +2050,7 @@ function PersonForm({ initial, people = [], places = [], showRelation = false, o
   const [relationKind, setRelationKind] = useState('');
   const [relations, setRelations] = useState([]);
   const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
   useEffect(() => {
     if (!Object.keys(errors).length) return;
     document.querySelector('[aria-invalid="true"]')?.focus();
@@ -2039,15 +2065,16 @@ function PersonForm({ initial, people = [], places = [], showRelation = false, o
     const file = event.target.files?.[0];
     if (!file) return;
     try {
-      const profileImage = await readProfileImage(file);
-      setForm((prev) => ({ ...prev, profileImage }));
+      const { file: compressedFile, dataUrl } = await readProfileImage(file);
+      setForm((prev) => ({ ...prev, profileImage: dataUrl, _profileImageFile: compressedFile, _profileImageError: '' }));
+      setErrors((prev) => ({ ...prev, profileImage: '' }));
     } catch (error) {
-      alert(error.message || t('errors.imageLoad'));
+      setErrors((prev) => ({ ...prev, profileImage: error.message || t('errors.imageLoad') }));
     } finally {
       event.target.value = '';
     }
   };
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
     const year = form.birthYear === '' ? null : Number(form.birthYear);
     const month = form.birthMonth === '' ? null : Number(form.birthMonth);
@@ -2062,10 +2089,18 @@ function PersonForm({ initial, people = [], places = [], showRelation = false, o
     if (!valid) nextErrors.birthDate = 'Revisá la fecha: podés indicar solo el año, año y mes, o una fecha completa válida.';
     if (!deathValid) nextErrors.deathDate = 'Revisá la fecha de fallecimiento: puede ser solo el año, año y mes, o una fecha completa válida.';
     if (relationKind) nextErrors.relationPersonId = 'Elegí una persona y agregá ese parentesco, o quitá el tipo de relación.';
+    if (errors.profileImage) nextErrors.profileImage = errors.profileImage;
     if (Object.keys(nextErrors).length) { setErrors(nextErrors); return; }
     const precision = day ? 'day' : month ? 'month' : year ? 'year' : null;
     const deathPrecision = deathDay ? 'day' : deathMonth ? 'month' : deathYear ? 'year' : null;
-    onSave({ ...form, birthYear: year, birthMonth: month, birthDay: day, birthDatePrecision: precision, birthDate: birthDateFromParts(year, month, day), deathYear, deathMonth, deathDay, deathDatePrecision: deathPrecision, deathDate: birthDateFromParts(deathYear, deathMonth, deathDay) }, showRelation ? relations : []);
+    setSaving(true);
+    try {
+      await onSave({ ...form, birthYear: year, birthMonth: month, birthDay: day, birthDatePrecision: precision, birthDate: birthDateFromParts(year, month, day), deathYear, deathMonth, deathDay, deathDatePrecision: deathPrecision, deathDate: birthDateFromParts(deathYear, deathMonth, deathDay) }, showRelation ? relations : []);
+    } catch (error) {
+      setErrors((prev) => ({ ...prev, submit: error.message || 'No se pudo guardar la persona.' }));
+    } finally {
+      setSaving(false);
+    }
   };
   return (
     <form onSubmit={submit} className="formStack">
@@ -2095,11 +2130,13 @@ function PersonForm({ initial, people = [], places = [], showRelation = false, o
               <span>{t('forms.profileImage')}</span>
               <div className="buttonRow compact">
                 <button type="button" className="secondaryButton" onClick={() => imageInputRef.current?.click()}>{t('actions.uploadImage')}</button>
-                {form.profileImage && <button type="button" className="textButton" onClick={() => setForm((prev) => ({ ...prev, profileImage: '' }))}>{t('actions.remove')}</button>}
+                {form.profileImage && <button type="button" className="textButton" onClick={() => setForm((prev) => ({ ...prev, profileImage: '', profileImagePath: '', _profileImageFile: null }))}>{t('actions.remove')}</button>}
               </div>
-              <input ref={imageInputRef} hidden type="file" accept="image/*" onChange={setProfileImage} />
+              <input ref={imageInputRef} hidden type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onChange={setProfileImage} />
+              <small>JPG, PNG o WebP · máximo 10 MB de origen · se guarda como WebP menor a 100 KB</small>
             </div>
           </div>
+          {errors.profileImage && <p className="formError" role="alert">{errors.profileImage}</p>}
           {showRelation && <label>{t('forms.nickname')}<input value={form.nickname} onChange={set('nickname')} /></label>}
           <label>{t('forms.email')}<input type="email" value={form.email} onChange={set('email')} placeholder={t('placeholders.email')} /></label>
           <div className="formGrid two">
@@ -2114,7 +2151,8 @@ function PersonForm({ initial, people = [], places = [], showRelation = false, o
           <label>{t('forms.notes')}<textarea rows="5" value={form.notes} onChange={set('notes')} placeholder={t('placeholders.notes')} /></label>
         </div>
       </details>
-      <div className="modalActions"><button type="button" className="secondaryButton" onClick={onCancel}>{t('actions.cancel')}</button><button className="primaryButton">{initial?.id ? t('actions.saveChanges') : t('actions.createPiece')}</button></div>
+      {errors.submit && <p className="formError" role="alert">{errors.submit}</p>}
+      <div className="modalActions"><button type="button" className="secondaryButton" onClick={onCancel} disabled={saving}>{t('actions.cancel')}</button><button className="primaryButton" disabled={saving}>{saving ? 'Guardando…' : initial?.id ? t('actions.saveChanges') : t('actions.createPiece')}</button></div>
     </form>
   );
 }
@@ -3652,10 +3690,27 @@ export default function GenealogyApp() {
     setNewTreeName('');
   };
 
-  const savePerson = (form, relations = []) => {
+  const preparePersonValues = async (form, personId, previousPerson = null) => {
+    const { _placeHierarchy, _deathPlaceHierarchy, _profileImageFile, ...personValues } = form;
+    if (isSupabaseConfigured && remoteTreeId && _profileImageFile) {
+      const { data, error } = await uploadPersonImage({ treeId: remoteTreeId, personId, file: _profileImageFile });
+      if (error || !data?.path) throw error || new Error('No se pudo subir la imagen.');
+      personValues.profileImage = data.url || data.path;
+      personValues.profileImagePath = data.path;
+      if (previousPerson?.profileImagePath && previousPerson.profileImagePath !== data.path) await removePersonImage(previousPerson.profileImagePath);
+    } else if (isSupabaseConfigured && remoteTreeId && !form.profileImage && previousPerson?.profileImagePath) {
+      await removePersonImage(previousPerson.profileImagePath);
+      personValues.profileImage = '';
+      personValues.profileImagePath = '';
+    }
+    return { personValues, _placeHierarchy, _deathPlaceHierarchy };
+  };
+
+  const savePerson = async (form, relations = []) => {
     const now = new Date().toISOString();
-    const { _placeHierarchy, _deathPlaceHierarchy, ...personValues } = form;
-    const person = { id: newId('person'), ...personValues, createdAt: now, updatedAt: now };
+    const personId = newId('person');
+    const { personValues, _placeHierarchy, _deathPlaceHierarchy } = await preparePersonValues(form, personId);
+    const person = { id: personId, ...personValues, createdAt: now, updatedAt: now };
     updateDb((prev) => {
       const nextPlaces = [...(prev.places || []), ...(_placeHierarchy || []), ...(_deathPlaceHierarchy || [])].reduce((all, place) => all.some((item) => item.id === place.id) ? all : [...all, { ...place, createdAt: place.createdAt || now, updatedAt: now }], []);
       let next = { ...prev, places: nextPlaces, people: [...prev.people, person], settings: { ...prev.settings, rootPersonId: prev.settings.rootPersonId || person.id } };
@@ -3673,9 +3728,10 @@ export default function GenealogyApp() {
     setPersonModal(null);
   };
 
-  const saveExistingPerson = (personId, form) => {
+  const saveExistingPerson = async (personId, form) => {
     const now = new Date().toISOString();
-    const { _placeHierarchy, _deathPlaceHierarchy, ...personValues } = form;
+    const previousPerson = db.people.find((person) => person.id === personId);
+    const { personValues, _placeHierarchy, _deathPlaceHierarchy } = await preparePersonValues(form, personId, previousPerson);
     updateDb((prev) => ({ ...prev, places: [...(prev.places || []), ...(_placeHierarchy || []), ...(_deathPlaceHierarchy || [])].reduce((all, place) => all.some((item) => item.id === place.id) ? all : [...all, { ...place, createdAt: place.createdAt || now, updatedAt: now }], []), people: prev.people.map((p) => p.id === personId ? { ...p, ...personValues, id: p.id, createdAt: p.createdAt, updatedAt: now } : p) }));
     setSelectedId(personId);
     setDrawerPersonId(personId);
