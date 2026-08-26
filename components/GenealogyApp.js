@@ -258,8 +258,8 @@ const readCanvasBackgroundImage = (file) => new Promise((resolve, reject) => {
 });
 
 const TREE_CARD_VARIANTS = {
-  landscape: { variant: 'portrait', width: 188, height: 200, columnGap: 18, rowGap: 52, maxColumnGap: 52 },
-  portrait: { variant: 'portrait', width: 176, height: 192, columnGap: 14, rowGap: 48, maxColumnGap: 48 }
+  landscape: { variant: 'portrait', width: 188, height: 204, columnGap: 18, rowGap: 52, maxColumnGap: 52 },
+  portrait: { variant: 'portrait', width: 176, height: 198, columnGap: 14, rowGap: 48, maxColumnGap: 48 }
 };
 const TREE_CARD_DEFAULT = TREE_CARD_VARIANTS.landscape;
 const TREE_CARD_WIDTH = TREE_CARD_DEFAULT.width;
@@ -934,7 +934,15 @@ const positionTreeNodes = (nodes, edgesByKey, cardMetrics = TREE_CARD_DEFAULT) =
       block.forEach((node, index) => { node.x = start + index * (cardWidth + TREE_MIN_CARD_GAP); });
     });
 
-    const orderedBlocks = [...atomicBlocks.values()].sort((a, b) => Math.min(...a.map((node) => node.x)) - Math.min(...b.map((node) => node.x)));
+    const hasSemanticOrder = generation === 0 && row.some((node) => Number.isFinite(node.layoutOrder));
+    const blockOrder = (block) => Math.min(...block.map((node) => Number.isFinite(node.layoutOrder) ? node.layoutOrder : 0));
+    const orderedBlocks = [...atomicBlocks.values()].sort((a, b) => {
+      if (hasSemanticOrder) {
+        const orderDifference = blockOrder(a) - blockOrder(b);
+        if (orderDifference) return orderDifference;
+      }
+      return Math.min(...a.map((node) => node.x)) - Math.min(...b.map((node) => node.x));
+    });
     let nextAvailableX = Number.NEGATIVE_INFINITY;
     orderedBlocks.forEach((block) => {
       const minX = Math.min(...block.map((node) => node.x));
@@ -1105,6 +1113,9 @@ const buildAncestorLayout = (db, rootId, options = {}, language = 'es', cardMetr
       .filter((node) => node.key !== rootKey)
       .map((node) => ({ ...node, slot: node.slot + descendantShift }))
   ];
+  nodes.forEach((node) => {
+    if (!node.isConnector && node.generation === 0 && node.id === rootId) node.layoutOrder = 10;
+  });
   const edgeById = new Map([...ancestors.edges, ...descendants.edges].map((edge) => [edge.id, edge]));
 
   if (showGeneration) {
@@ -1141,6 +1152,7 @@ const buildAncestorLayout = (db, rootId, options = {}, language = 'es', cardMetr
         person: peopleById.get(id),
         generation: 0,
         slot: rootSlot - siblingIds.length + index,
+        layoutOrder: 10,
         relationLabel: kinTerm(language, 'sibling', peopleById.get(id)),
         relationGroup: 'sibling',
         familyGroupId: 'focus_siblings',
@@ -1160,6 +1172,7 @@ const buildAncestorLayout = (db, rootId, options = {}, language = 'es', cardMetr
         person: peopleById.get(id),
         generation: 0,
         slot: rootSlot + index + 1,
+        layoutOrder: 20,
         relationLabel: kinTerms[language]?.partner || kinTerms.es.partner,
         relationGroup: 'partner',
         familyGroupId: 'focus_partners',
@@ -1173,7 +1186,7 @@ const buildAncestorLayout = (db, rootId, options = {}, language = 'es', cardMetr
     const cousinStart = rootSlot + partnerIds.length + 1;
     cousinIds.forEach((id, index) => {
       const key = `cousin_${id}`;
-      nodes.push({ key, id, person: peopleById.get(id), generation: 0, slot: cousinStart + index, relationLabel: kinTerm(language, 'cousin', peopleById.get(id)), relationGroup: 'collateral', familyGroupId: 'focus_cousins', familyGroupLabel: translate(language, 'tree.cousins') });
+      nodes.push({ key, id, person: peopleById.get(id), generation: 0, slot: cousinStart + index, layoutOrder: 30, relationLabel: kinTerm(language, 'cousin', peopleById.get(id)), relationGroup: 'collateral', familyGroupId: 'focus_cousins', familyGroupLabel: translate(language, 'tree.cousins') });
       existingNodeIds.add(id);
       auntUncleIds.forEach((auntUncleId) => {
         if (!(childrenByParent.get(auntUncleId) || []).includes(id)) return;
@@ -2056,6 +2069,22 @@ const formatPersonDate = (person, prefix, language = 'es') => {
     : value;
 };
 
+const formatTreeBirthDate = (person, language = 'es') => {
+  const legacy = datePartsFromLegacy(person?.birthDate);
+  const year = person?.birthYear ?? legacy.birthYear;
+  const month = person?.birthMonth ?? legacy.birthMonth;
+  const day = person?.birthDay ?? legacy.birthDay;
+  if (!year) return '';
+  const value = day && month
+    ? `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`
+    : month
+      ? `${String(month).padStart(2, '0')}/${year}`
+      : String(year);
+  const isApproximate = person?.birthDateCertainty === 'approx'
+    || person?.birthDateCertainty === undefined && person?.birthCertainty === 'approx';
+  return isApproximate ? (language === 'en' ? `Approx. ${value}` : `Aprox. ${value}`) : value;
+};
+
 function PlaceSearch({ value, places = [], onChange }) {
   const { language } = useI18n();
   const [query, setQuery] = useState(value?.name || '');
@@ -2397,9 +2426,8 @@ function TreeCard({ person, label, relationGroup = 'family', sourceCount = 0, ca
 
   if (!person) return null;
   const hasName = Boolean(String(person.givenNames || person.surnames || person.nickname || '').trim());
-  const hasBirthDate = Boolean(String(person.birthDate || '').trim());
-  const familyBranch = String(person.surnames || '').trim().split(/\s+/)[0] || '';
-  const hasBranch = Boolean(familyBranch);
+  const birthDate = formatTreeBirthDate(person, language);
+  const hasBirthDate = Boolean(birthDate);
   const hasImage = Boolean(person.profileImage);
   const cardTone = cardToneFromLabel(label);
 
@@ -2421,7 +2449,7 @@ function TreeCard({ person, label, relationGroup = 'family', sourceCount = 0, ca
   };
 
   return (
-    <button className={`treeCard treeNode treeCard-${cardVariant} cardTone-${cardTone} ${hasImage ? 'hasImage' : 'isEmpty'} ${personStatusClass(person)} ${relationGroup} ${focal ? 'focal' : ''} ${highlighted ? 'highlighted' : ''}`} style={style} onPointerDown={(e) => e.stopPropagation()} onPointerEnter={onHoverStart} onPointerLeave={onHoverEnd} onClick={handleClick} onDoubleClick={handleDoubleClick} title={t('tree.cardTitle')}>
+    <button className={`treeCard treeNode treeCard-${cardVariant} cardTone-${cardTone} ${hasImage ? 'hasImage' : 'isEmpty'} ${personStatusClass(person)} ${relationGroup} ${focal ? 'focal' : ''} ${highlighted ? 'highlighted' : ''}`} style={style} onPointerDown={(e) => e.stopPropagation()} onPointerEnter={(e) => { if (e.pointerType !== 'touch') onHoverStart(); }} onPointerLeave={(e) => { if (e.pointerType !== 'touch') onHoverEnd(); }} onClick={handleClick} onDoubleClick={handleDoubleClick} title={t('tree.cardTitle')}>
       <span className={`lifeDot ${personStatusClass(person)}`} aria-label={personStatusLabel(person, language)} title={personStatusLabel(person, language)} />
       <span className="treeCardMenu" aria-hidden="true"><MoreHorizontal size={18} strokeWidth={2.4} /></span>
       <span className="treePortraitFrame">
@@ -2429,21 +2457,15 @@ function TreeCard({ person, label, relationGroup = 'family', sourceCount = 0, ca
       </span>
 
       <span className="treeCardBody">
-        <span className="treeCardTopline">
-          <span className="treeLabel"><UsersRound size={12} strokeWidth={2.25} aria-hidden="true" />{label}</span>
-          {sourceCount > 0 && <span className="treeCardSourceBadge" title={t('card.sources')}><BookOpen size={11} strokeWidth={2.2} aria-hidden="true" />{sourceCount}</span>}
-        </span>
         <strong className="treeCardName">{hasName ? displayName(person) : t('card.missingName')}</strong>
+        <span className="treeLabel"><UsersRound size={12} strokeWidth={2.25} aria-hidden="true" />{label}</span>
         <span className="treeCardDetails">
           <span className="treeCardFact">
             <CalendarDays size={13} strokeWidth={2.2} aria-hidden="true" />
-            <span><em>{t('card.birthDate')}</em><b>{hasBirthDate ? person.birthDate : t('tree.noDate')}</b></span>
-          </span>
-          <span className="treeCardMetaItem branchMeta">
-            <Sprout size={13} strokeWidth={2.2} aria-hidden="true" />
-            <span><em>{t('card.familyBranch')}</em><b>{hasBranch ? familyBranch : t('card.noBranch')}</b></span>
+            <span><em>{t('card.birthDate')}</em><b>{hasBirthDate ? birthDate : t('tree.noDate')}</b></span>
           </span>
         </span>
+        {sourceCount > 0 && <span className="treeCardSourceBadge" title={t('card.sources')}><BookOpen size={11} strokeWidth={2.2} aria-hidden="true" />{sourceCount}</span>}
       </span>
     </button>
   );
@@ -2453,7 +2475,7 @@ function TreeConnector({ type, style }) {
   return <div className={`treeConnector ${type}`} style={style} aria-hidden="true"><span /></div>;
 }
 
-function TreeEdge({ edge, highlighted = false, onHoverStart, onHoverEnd }) {
+function TreeEdge({ edge, highlighted = false, onHoverStart, onHoverEnd, onTouchSelect }) {
   let d = edge.path;
   if (!d && edge.kind === 'peer') {
     d = `M ${edge.from.x} ${edge.from.y} C ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.from.y}, ${edge.from.x + (edge.to.x - edge.from.x) / 2} ${edge.to.y}, ${edge.to.x} ${edge.to.y}`;
@@ -2473,7 +2495,7 @@ function TreeEdge({ edge, highlighted = false, onHoverStart, onHoverEnd }) {
           : 'familyLine';
 
   return (
-    <g className={`treeEdge ${highlighted ? 'highlighted' : ''}`} onPointerDown={(event) => event.stopPropagation()} onPointerEnter={onHoverStart} onPointerLeave={onHoverEnd}>
+    <g className={`treeEdge ${highlighted ? 'highlighted' : ''}`} onPointerDown={(event) => event.stopPropagation()} onPointerUp={(event) => { event.stopPropagation(); if (event.pointerType === 'touch') onTouchSelect(); }} onPointerEnter={(event) => { if (event.pointerType !== 'touch') onHoverStart(); }} onPointerLeave={(event) => { if (event.pointerType !== 'touch') onHoverEnd(); }}>
       <path className="treeEdgeHitArea" d={d} />
       <path className={lineClass} d={d} />
     </g>
@@ -2875,7 +2897,7 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
         </div>
         </div>
       </div>
-      <div ref={canvasRef} className={`treeCanvas ${temporalScale ? 'temporalCanvas' : ''} ${canvasBackground ? 'hasCanvasBackground' : ''}`} style={canvasBackground ? { '--canvas-bg-image': `url(${canvasBackground})` } : undefined} onWheel={(event) => { event.preventDefault(); setZoom(viewport.scale + (event.deltaY > 0 ? -0.08 : 0.08)); }} onPointerDownCapture={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onClickCapture={(event) => { if (suppressCardClickRef.current > Date.now() && event.target.closest?.('.treeCard')) { event.preventDefault(); event.stopPropagation(); } }}>
+      <div ref={canvasRef} className={`treeCanvas ${temporalScale ? 'temporalCanvas' : ''} ${canvasBackground ? 'hasCanvasBackground' : ''}`} style={canvasBackground ? { '--canvas-bg-image': `url(${canvasBackground})` } : undefined} onWheel={(event) => { event.preventDefault(); setZoom(viewport.scale + (event.deltaY > 0 ? -0.08 : 0.08)); }} onPointerDownCapture={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onClickCapture={(event) => { if (suppressCardClickRef.current > Date.now() && event.target.closest?.('.treeCard')) { event.preventDefault(); event.stopPropagation(); return; } if (!event.target.closest?.('.treeEdge')) setHoveredEdgeId(null); }}>
         {temporalScale && layout.temporal && <div className="temporalGuideLayer" aria-hidden="true">
           {layout.temporal.ticks.map((tick, index) => <div key={tick.year} className={`temporalGuideLine ${index % 2 ? 'alternate' : ''}`} style={{ top: viewport.y + tick.y * viewport.scale }} />)}
           {layout.temporal.hasUnknownDates && <div className="temporalGuideLine unknown" style={{ top: viewport.y + layout.temporal.unknownY * viewport.scale }} />}
@@ -2922,9 +2944,8 @@ function TreeView({ db, focusedId, setFocusedId, onOpenPerson, onAdd }) {
         </div>
         <div className="treePanLayer" style={{ transform: `translate(${viewport.x + (temporalScale && layout.temporal ? TEMPORAL_AXIS_WIDTH + TEMPORAL_AXIS_GAP : 0)}px, ${viewport.y}px) scale(${viewport.scale})` }}>
           <div className="treeContent" style={{ width: layout.width, height: layout.height, '--tree-card-width': `${cardMetrics.width}px`, '--tree-card-height': `${cardMetrics.height}px` }}>
-            {(layout.groups || []).map((group) => <div key={group.id} className={`familyGroupBand ${group.kind}`} style={{ left: group.x, top: group.y, width: group.width, height: group.height }}><span>{group.label}</span></div>)}
             <svg className="treeLines treeLinesInteractive" viewBox={`0 0 ${layout.width} ${layout.height}`} aria-hidden="true">
-              {layout.edges.map((edge) => <TreeEdge key={edge.id} edge={edge} highlighted={highlightedEdgeIds.has(edge.id)} onHoverStart={() => setHoveredEdgeId(edge.id)} onHoverEnd={() => setHoveredEdgeId(null)} />)}
+              {layout.edges.map((edge) => <TreeEdge key={edge.id} edge={edge} highlighted={highlightedEdgeIds.has(edge.id)} onHoverStart={() => setHoveredEdgeId(edge.id)} onHoverEnd={() => setHoveredEdgeId(null)} onTouchSelect={() => setHoveredEdgeId((current) => current === edge.id ? null : edge.id)} />)}
             </svg>
             {layout.nodes.map((node) => {
               if (node.isConnector) return <TreeConnector key={node.key} type={node.connectorType} style={{ left: node.x, top: node.y }} />;
@@ -3194,7 +3215,6 @@ function PublicTreePage({ db }) {
         <div ref={canvasRef} className="treeCanvas publicCanvas" onWheel={(event) => { event.preventDefault(); setZoom(viewport.scale + (event.deltaY > 0 ? -0.08 : 0.08)); }} onPointerDownCapture={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onClickCapture={(event) => { if (suppressCardClickRef.current > Date.now() && event.target.closest?.('.treeCard')) { event.preventDefault(); event.stopPropagation(); } }}>
           <div className="treePanLayer" style={{ transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})` }}>
             <div className="treeContent" style={{ width: layout.width, height: layout.height, '--tree-card-width': `${cardMetrics.width}px`, '--tree-card-height': `${cardMetrics.height}px` }}>
-              {(layout.groups || []).map((group) => <div key={group.id} className={`familyGroupBand ${group.kind}`} style={{ left: group.x, top: group.y, width: group.width, height: group.height }}><span>{group.label}</span></div>)}
               <svg className="treeLines" viewBox={`0 0 ${layout.width} ${layout.height}`} aria-hidden="true">
                 {layout.edges.map((edge) => {
                   if (edge.kind === 'peer') {
